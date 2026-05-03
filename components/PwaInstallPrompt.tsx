@@ -10,21 +10,20 @@ interface BeforeInstallPromptEvent extends Event {
 
 export function PwaInstallPrompt() {
   const [event, setEvent] = React.useState<BeforeInstallPromptEvent | null>(null);
-  const [installed, setInstalled] = React.useState(false);
+  // Lazy init avoids the set-state-in-effect anti-pattern.
+  const [installed, setInstalled] = React.useState(
+    () => typeof window !== 'undefined' && window.matchMedia('(display-mode: standalone)').matches,
+  );
 
   React.useEffect(() => {
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
-    if (isStandalone) {
-      setInstalled(true);
-      return;
-    }
+    if (installed) return;
     const handler = (e: Event) => {
       e.preventDefault();
       setEvent(e as BeforeInstallPromptEvent);
     };
     window.addEventListener('beforeinstallprompt', handler);
     return () => window.removeEventListener('beforeinstallprompt', handler);
-  }, []);
+  }, [installed]);
 
   if (installed || !event) return null;
 
