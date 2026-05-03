@@ -1,0 +1,11 @@
+# CODEOWNERS — auto-requests review on every PR.
+# Default rule: @AndreLiar reviews everything until the team grows.
+
+*                       @AndreLiar
+
+# Path-specific overrides (uncomment + customise as the team grows):
+# /features/livreur/    @AndreLiar @rider-lead
+# /features/vendor/     @AndreLiar @vendor-lead
+# /features/admin/      @AndreLiar
+# /lib/api/             @AndreLiar
+# /.github/workflows/   @AndreLiar

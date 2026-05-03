@@ -14,9 +14,7 @@ export default function HomePage() {
         <p className="text-sm font-semibold uppercase tracking-widest text-chop-orange">
           Douala · Cameroun
         </p>
-        <h1 className="text-4xl font-extrabold leading-tight sm:text-6xl">
-          Mange sans attendre.
-        </h1>
+        <h1 className="text-4xl font-extrabold leading-tight sm:text-6xl">Mange sans attendre.</h1>
         <p className="max-w-prose text-lg text-muted-foreground">
           De la rue à ta porte. Commande tes plats préférés auprès des vendeurs autour de toi —
           livré à moto en 30 minutes.
