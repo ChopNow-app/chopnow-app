@@ -71,6 +71,26 @@ CI runs the same four commands. Husky also runs:
 
 Bypass: `git commit --no-verify` / `git push --no-verify`. Use sparingly.
 
+### CI gates
+
+Two promotion stages, each with different goals:
+
+| Gate                             | Triggered on                            | Required checks (block merge)         | Warning-only                                                                                       |
+| -------------------------------- | --------------------------------------- | ------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| **Gate 1** — `feature → develop` | every PR targeting `develop`            | lint · typecheck · unit tests · build | `npm audit --audit-level=high` · i18n hardcoded-string reminder when `features/` or `app/` changes |
+| **Gate 2** — `develop → main`    | every PR targeting `main` (release PRs) | same as Gate 1 (Sprint 1)             | same as Gate 1                                                                                     |
+
+**Sprint 1 keeps it simple** — same workflow runs at both gates. From Sprint 2 onward we'll add at Gate 2:
+
+- 3 Playwright happy-path E2E tests (one per actor)
+- Bundle-size threshold (baseline × 1.4 once the first prod build ships)
+- OpenAPI client compatibility check vs `chopnow-api`
+- Smoke deploy to a Vercel preview environment
+
+**Why one workflow file (`ci.yml`) for now:** integration/E2E tests don't exist yet. We'll split into `release.yml` + `nightly.yml` when there's something heavier to gate on.
+
+**Why CI runs only on PRs (not on push to develop/main):** every commit on `develop` already passed CI as a PR. Re-running on the merge commit is wasted minutes.
+
 ## Architecture rules (enforced in review)
 
 ### 1. Routes live in `app/`; logic lives in `features/`
