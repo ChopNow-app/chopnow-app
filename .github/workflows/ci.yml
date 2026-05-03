@@ -1,27 +1,27 @@
-# CI pipeline — disabled until Sprint 1 starts.
-# To enable: uncomment the push/pull_request triggers below.
+# CI — runs on every PR and on push to develop / main.
 
 name: CI
 
 on:
   workflow_dispatch:
-  # push:
-  #   branches: [main]
-  # pull_request:
-  #   branches: [main]
+  push:
+    branches: [develop, main]
+  pull_request:
+    branches: [develop, main]
 
 jobs:
-  lint-typecheck-build:
+  lint-typecheck-test-build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-
       - run: npm ci
       - run: npm run lint
       - run: npm run typecheck
+      - run: npm test
       - run: npm run build
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:3001

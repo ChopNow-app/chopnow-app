@@ -1,4 +1,4 @@
-import { api } from './api-client';
+import { apiRaw } from '@/lib/api/api-client';
 
 const ACCESS_KEY = 'chopnow.access';
 const REFRESH_KEY = 'chopnow.refresh';
@@ -18,6 +18,10 @@ export const auth = {
     if (typeof window === 'undefined') return null;
     return localStorage.getItem(ACCESS_KEY);
   },
+  getRefreshToken(): string | null {
+    if (typeof window === 'undefined') return null;
+    return localStorage.getItem(REFRESH_KEY);
+  },
   clear() {
     if (typeof window === 'undefined') return;
     localStorage.removeItem(ACCESS_KEY);
@@ -29,11 +33,14 @@ export const auth = {
 
   // --- API calls ---
   async requestOtp(phone: string) {
-    return api.post<{ ok: true; expiresInSeconds: number }>('/auth/request-otp', { phone });
+    return apiRaw.post<{ ok: true; expiresInSeconds: number }>('/api/auth/request-otp', { phone });
   },
   async verifyOtp(phone: string, code: string) {
-    const tokens = await api.post<AuthTokens>('/auth/verify-otp', { phone, code });
+    const tokens = await apiRaw.post<AuthTokens>('/api/auth/verify-otp', { phone, code });
     this.saveTokens(tokens);
     return tokens;
+  },
+  async logout() {
+    this.clear();
   },
 };

@@ -1,0 +1,33 @@
+{
+  "Common": {
+    "appName": "ChopNow",
+    "slogan": "Mange sans attendre.",
+    "tagline": "De la rue à ta porte.",
+    "cancel": "Annuler",
+    "continue": "Continuer",
+    "loading": "Chargement…"
+  },
+  "Auth": {
+    "phoneLabel": "Numéro de téléphone",
+    "phonePlaceholder": "6XX XXX XXX",
+    "phoneInvalid": "Numéro camerounais invalide (commence par 65–69)",
+    "requestOtp": "Recevoir le code",
+    "sending": "Envoi…",
+    "otpLabel": "Code à 6 chiffres",
+    "verify": "Vérifier",
+    "consent": "En créant votre compte, vous acceptez que ChopNow utilise votre numéro de téléphone et votre position GPS uniquement pour la gestion de vos livraisons."
+  },
+  "Consumer": {
+    "ctaOrder": "Commander maintenant",
+    "ctaLogin": "Se connecter"
+  },
+  "Livreur": {
+    "dashboard": "Tableau de bord livreur"
+  },
+  "Vendor": {
+    "dashboard": "Espace vendeur"
+  },
+  "Admin": {
+    "console": "Console Admin"
+  }
+}
