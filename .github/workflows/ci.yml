@@ -1,11 +1,10 @@
-# CI — runs on every PR and on push to develop / main.
+# CI — Gate 1 (feature → develop) and required check for develop → main releases.
+# Runs only on PRs, not on push (saves minutes; same SHA's already validated by the PR).
 
 name: CI
 
 on:
   workflow_dispatch:
-  push:
-    branches: [develop, main]
   pull_request:
     branches: [develop, main]
 
@@ -19,9 +18,27 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm run lint
-      - run: npm run typecheck
-      - run: npm test
-      - run: npm run build
+
+      # --- Required (block merge) ---
+      - name: Lint
+        run: npm run lint
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Unit tests
+        run: npm test
+      - name: Build
+        run: npm run build
         env:
           NEXT_PUBLIC_API_URL: http://localhost:3001
+
+      # --- Warning only (informational, never blocks merge) ---
+      - name: Security audit (warning only)
+        run: |
+          echo "::group::npm audit"
+          npm audit --audit-level=high || true
+          echo "::endgroup::"
+
+      - name: i18n hardcoded-string check (warning only)
+        if: contains(github.event.pull_request.changed_files, 'features/') || contains(github.event.pull_request.changed_files, 'app/')
+        run: |
+          echo "::warning::Reminder: user-facing strings should go through next-intl (messages/fr.json + messages/en.json)."
