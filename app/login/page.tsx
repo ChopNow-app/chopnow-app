@@ -15,8 +15,11 @@ import { auth } from '@/lib/auth';
  * (6-digit code in). On success we redirect to the `?next=` path or
  * `/restaurants` by default — Story 1.2 already keeps the user signed in
  * across reloads via the refresh-token rotation wired into the API client.
+ *
+ * Next 16 build-time prerender bails out of CSR pages that read
+ * `useSearchParams()` without a Suspense boundary — we provide one here.
  */
-export default function LoginPage() {
+function LoginScreen() {
   const router = useRouter();
   const params = useSearchParams();
   const next = params.get('next') || '/restaurants';
@@ -32,6 +35,36 @@ export default function LoginPage() {
   };
 
   return (
+    <section className="container max-w-md py-10">
+      <h1 className="mb-2 text-3xl font-extrabold">
+        {phone ? 'Code de vérification' : 'Connexion'}
+      </h1>
+      <p className="mb-6 text-sm text-muted-foreground">
+        {phone
+          ? 'Saisis le code reçu sur WhatsApp pour terminer la connexion.'
+          : "Entre ton numéro de téléphone — nous t'envoyons un code par WhatsApp."}
+      </p>
+
+      {phone ? (
+        <div className="space-y-4">
+          <OtpVerifyForm phone={phone} onVerified={onVerified} onResend={resend} />
+          <button
+            type="button"
+            onClick={() => setPhone(null)}
+            className="text-sm text-muted-foreground underline"
+          >
+            ← Changer de numéro
+          </button>
+        </div>
+      ) : (
+        <OtpRequestForm onRequested={setPhone} />
+      )}
+    </section>
+  );
+}
+
+export default function LoginPage() {
+  return (
     <main className="min-h-dvh bg-chop-warm text-chop-ink">
       <header className="container py-4">
         <Link href="/" className="text-xl font-extrabold uppercase tracking-tight">
@@ -39,31 +72,11 @@ export default function LoginPage() {
         </Link>
       </header>
 
-      <section className="container max-w-md py-10">
-        <h1 className="mb-2 text-3xl font-extrabold">
-          {phone ? 'Code de vérification' : 'Connexion'}
-        </h1>
-        <p className="mb-6 text-sm text-muted-foreground">
-          {phone
-            ? 'Saisis le code reçu sur WhatsApp pour terminer la connexion.'
-            : "Entre ton numéro de téléphone — nous t'envoyons un code par WhatsApp."}
-        </p>
-
-        {phone ? (
-          <div className="space-y-4">
-            <OtpVerifyForm phone={phone} onVerified={onVerified} onResend={resend} />
-            <button
-              type="button"
-              onClick={() => setPhone(null)}
-              className="text-sm text-muted-foreground underline"
-            >
-              ← Changer de numéro
-            </button>
-          </div>
-        ) : (
-          <OtpRequestForm onRequested={setPhone} />
-        )}
-      </section>
+      <React.Suspense
+        fallback={<div className="container max-w-md py-10 text-sm">Chargement…</div>}
+      >
+        <LoginScreen />
+      </React.Suspense>
     </main>
   );
 }
