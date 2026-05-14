@@ -145,7 +145,7 @@ function CourseSummaryCard({ course }: { course: RiderCourse }) {
         </span>
       </div>
       <div className="mt-2 flex items-center justify-between text-xs text-white/60">
-        <span>{course.items.length} plat(s)</span>
+        <span>{course.items?.length ?? 0} plat(s)</span>
         <span className="font-mono">{course.totalXAF.toLocaleString('fr-FR')} FCFA</span>
       </div>
     </Link>

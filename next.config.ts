@@ -3,6 +3,15 @@ import createNextIntlPlugin from 'next-intl/plugin';
 
 const withNextIntl = createNextIntlPlugin('./lib/i18n/request.ts');
 
+const isDev = process.env.NODE_ENV !== 'production';
+
+// In dev the backend is plain http://localhost:* so connect-src must allow it,
+// otherwise the browser blocks every fetch to /api. In prod the API lives on
+// https:// and we keep the tighter policy.
+const connectSrc = isDev
+  ? "connect-src 'self' http://localhost:* https: wss: ws:"
+  : "connect-src 'self' https: wss:";
+
 const securityHeaders = [
   { key: 'X-Frame-Options', value: 'DENY' },
   { key: 'X-Content-Type-Options', value: 'nosniff' },
@@ -22,7 +31,7 @@ const securityHeaders = [
       "style-src 'self' 'unsafe-inline' fonts.googleapis.com",
       "font-src 'self' fonts.gstatic.com data:",
       "img-src 'self' data: blob: https:",
-      "connect-src 'self' https: wss:",
+      connectSrc,
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",
