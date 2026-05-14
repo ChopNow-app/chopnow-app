@@ -75,7 +75,8 @@ function OrderContent({ order, onReload }: { order: OrderView; onReload: () => v
         </header>
 
         <p className="text-sm text-muted-foreground">
-          Chez <span className="font-semibold">{order.vendor.name}</span>
+          {/^chez\b/i.test(order.vendor.name) ? null : 'Chez '}
+          <span className="font-semibold">{order.vendor.name}</span>
         </p>
       </section>
 

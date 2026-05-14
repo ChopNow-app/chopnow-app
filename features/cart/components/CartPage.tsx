@@ -6,10 +6,36 @@ import { useRouter } from 'next/navigation';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { apiRaw, ApiClientError } from '@/lib/api/api-client';
 import { auth } from '@/lib/auth';
 import { useCart } from '../store';
 import { useAddresses, type SavedAddress } from '../hooks/useAddresses';
 import { initiateMomo, placeOrder, type PaymentMethod } from '../api';
+
+/**
+ * Fetch the authenticated user's phone once on mount. Used as the final
+ * fallback for `deliveryPhone` so that CASH orders with no per-address phone
+ * still send a valid number (the backend requires one). Returns null while
+ * loading or if unauthenticated.
+ */
+function useUserPhone(): string | null {
+  const [phone, setPhone] = React.useState<string | null>(null);
+  React.useEffect(() => {
+    let cancelled = false;
+    apiRaw
+      .get<{ phone: string }>('/api/users/me')
+      .then((u) => {
+        if (!cancelled) setPhone(u.phone ?? null);
+      })
+      .catch(() => {
+        if (!cancelled) setPhone(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  return phone;
+}
 
 const MIN_ORDER_XAF = 1200;
 const formatXAF = (n: number) => `${n.toLocaleString('fr-FR')} FCFA`;
@@ -24,6 +50,7 @@ export function CartPage() {
   const cart = useCart();
   const router = useRouter();
   const addresses = useAddresses();
+  const userPhone = useUserPhone();
 
   const [paymentMethod, setPaymentMethod] = React.useState<PaymentMethod>('MTN_MOMO');
   const [noteForVendor, setNoteForVendor] = React.useState('');
@@ -90,7 +117,11 @@ export function CartPage() {
           deliveryQuartier: selectedAddress.quartier ?? 'Inconnu',
           deliveryLandmark: undefined,
           deliveryDescription: selectedAddress.description ?? undefined,
-          deliveryPhone: selectedAddress.phone ?? payerPhone,
+          deliveryPhone:
+            selectedAddress.phone ||
+            (payerPhone.length > 0 ? payerPhone : undefined) ||
+            userPhone ||
+            '',
         },
         crypto.randomUUID(),
       );
@@ -123,7 +154,9 @@ export function CartPage() {
       <section className="container space-y-6 py-2">
         <h1 className="text-2xl font-extrabold">Panier</h1>
         {cart.vendorName ? (
-          <p className="text-sm text-muted-foreground">Chez {cart.vendorName}</p>
+          <p className="text-sm text-muted-foreground">
+            {/^chez\b/i.test(cart.vendorName) ? cart.vendorName : `Chez ${cart.vendorName}`}
+          </p>
         ) : null}
 
         <ul className="space-y-2">
