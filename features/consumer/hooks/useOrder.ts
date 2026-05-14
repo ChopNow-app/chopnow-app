@@ -55,6 +55,7 @@ export interface OrderView {
   refusalReason: string | null;
   vendor: { id: string; name: string; userId?: string };
   items: OrderItem[];
+  rating: { id: string; vendorScore: number; riderScore: number; comment: string | null } | null;
 }
 
 export type OrderState =
