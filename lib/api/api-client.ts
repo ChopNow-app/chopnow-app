@@ -142,7 +142,31 @@ export const apiRaw = {
   get: <T>(path: string, init?: RequestInit) => request<T>(path, { ...init, method: 'GET' }),
   post: <T>(path: string, body: unknown, init?: RequestInit) =>
     request<T>(path, { ...init, method: 'POST', body: JSON.stringify(body) }),
+  put: <T>(path: string, body: unknown, init?: RequestInit) =>
+    request<T>(path, { ...init, method: 'PUT', body: JSON.stringify(body) }),
   patch: <T>(path: string, body: unknown, init?: RequestInit) =>
     request<T>(path, { ...init, method: 'PATCH', body: JSON.stringify(body) }),
   delete: <T>(path: string, init?: RequestInit) => request<T>(path, { ...init, method: 'DELETE' }),
+  /**
+   * Multipart upload — used for vendor item photos. Does NOT set Content-Type
+   * so the browser fills in the boundary. Auth bearer is read from the same
+   * storage key as `request`. Skips the refresh-on-401 flow.
+   */
+  upload: async <T>(
+    path: string,
+    form: FormData,
+    method: 'POST' | 'PATCH' = 'PATCH',
+  ): Promise<T> => {
+    const token = readAccess();
+    const res = await fetch(`${API_URL}${path}`, {
+      method,
+      body: form,
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new ApiClientError(res.status, body);
+    }
+    return res.json() as Promise<T>;
+  },
 };
