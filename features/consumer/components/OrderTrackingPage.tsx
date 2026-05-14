@@ -84,6 +84,8 @@ function OrderContent({ order, onReload }: { order: OrderView; onReload: () => v
         <OrderTimeline order={order} />
       </section>
 
+      <NoRiderAvailableBlock order={order} />
+
       <DeliveryCodeBlock order={order} />
 
       <RatingSection order={order} onSubmitted={onReload} />
@@ -146,6 +148,41 @@ function OrderContent({ order, onReload }: { order: OrderView; onReload: () => v
         ) : null}
       </section>
     </main>
+  );
+}
+
+/**
+ * Story 4.14 — terminal "no rider available" state. When dispatch retried
+ * 10× over 5 minutes without finding an online rider, the backend marks
+ * the order EXPIRED with refusalReason=NO_RIDER_AVAILABLE. Show the
+ * consumer a clear terminal block + the refund / re-order CTA. MoMo
+ * orders auto-refund (paymentStatus=REFUNDED); CASH orders just close.
+ */
+function NoRiderAvailableBlock({ order }: { order: OrderView }) {
+  if (order.status !== 'EXPIRED' || order.refusalReason !== 'NO_RIDER_AVAILABLE') return null;
+  const isPaidMomo = order.paymentStatus === 'REFUNDED';
+  return (
+    <section className="container mt-6">
+      <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-4">
+        <p className="text-base font-bold">😔 Aucun livreur disponible</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          On n&apos;a pas trouvé de livreur libre dans ta zone. La commande a été annulée
+          automatiquement.
+        </p>
+        {isPaidMomo ? (
+          <p className="mt-2 text-sm">
+            ✅ Ton paiement MoMo a été remboursé — tu le verras sur ton compte sous 24h.
+          </p>
+        ) : (
+          <p className="mt-2 text-sm">
+            ✅ Aucun montant n&apos;a été prélevé (paiement à la livraison).
+          </p>
+        )}
+        <Button asChild className="mt-4 w-full">
+          <Link href="/restaurants">Choisir un autre vendeur</Link>
+        </Button>
+      </div>
+    </section>
   );
 }
 
