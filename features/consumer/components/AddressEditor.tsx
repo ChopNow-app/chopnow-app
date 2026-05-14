@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { apiRaw, ApiClientError } from '@/lib/api/api-client';
 import { useGeolocation } from '../hooks/useGeolocation';
+import { GpsHelpDialog } from './GpsHelpDialog';
 import type { SavedAddress } from '@/features/cart/hooks/useAddresses';
 
 const schema = z.object({
@@ -46,6 +47,7 @@ export function AddressEditor({ initial, onSaved, onCancel }: AddressEditorProps
   );
   const [saving, setSaving] = React.useState(false);
   const [serverError, setServerError] = React.useState<string | null>(null);
+  const [showGpsHelp, setShowGpsHelp] = React.useState(false);
 
   const {
     register,
@@ -176,6 +178,11 @@ export function AddressEditor({ initial, onSaved, onCancel }: AddressEditorProps
             <button type="button" className="ml-2 underline" onClick={geo.request}>
               Réessayer
             </button>
+            {geo.status === 'denied' ? (
+              <button type="button" className="ml-2 underline" onClick={() => setShowGpsHelp(true)}>
+                Comment activer ?
+              </button>
+            ) : null}
           </>
         ) : (
           <button type="button" className="underline" onClick={geo.request}>
@@ -195,6 +202,8 @@ export function AddressEditor({ initial, onSaved, onCancel }: AddressEditorProps
           Annuler
         </Button>
       </div>
+
+      {showGpsHelp ? <GpsHelpDialog onClose={() => setShowGpsHelp(false)} /> : null}
     </form>
   );
 }

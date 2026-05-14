@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { useCatalogue } from '../hooks/useCatalogue';
 import { DOUALA_FALLBACK, useGeolocation } from '../hooks/useGeolocation';
 import { VendorCard } from './VendorCard';
+import { GpsHelpDialog } from './GpsHelpDialog';
 import type { VendorCard as VendorCardType } from '../types';
 
 /**
@@ -26,6 +27,7 @@ const PLAN_LABEL: Record<1 | 2 | 3, { title: string; subtitle: string }> = {
 export function CataloguePage() {
   const geo = useGeolocation();
   const [showPlan3, setShowPlan3] = React.useState(false);
+  const [showGpsHelp, setShowGpsHelp] = React.useState(false);
 
   React.useEffect(() => {
     if (geo.status === 'idle') geo.request();
@@ -55,9 +57,20 @@ export function CataloguePage() {
       <header className="container py-6">
         <h1 className="text-2xl font-bold">Restaurants</h1>
         <p className="text-sm text-muted-foreground">
-          {geo.status === 'denied' || geo.status === 'unsupported'
-            ? 'Position approximative (centre de Douala) — active la localisation pour de meilleurs résultats.'
-            : 'Vendeurs ouverts autour de toi.'}
+          {geo.status === 'denied' || geo.status === 'unsupported' ? (
+            <>
+              Position approximative (centre de Douala).{' '}
+              {geo.status === 'denied' ? (
+                <button type="button" className="underline" onClick={() => setShowGpsHelp(true)}>
+                  Activer la localisation
+                </button>
+              ) : (
+                'Géolocalisation non supportée par ce navigateur.'
+              )}
+            </>
+          ) : (
+            'Vendeurs ouverts autour de toi.'
+          )}
         </p>
       </header>
 
@@ -115,6 +128,8 @@ export function CataloguePage() {
           </>
         ) : null}
       </div>
+
+      {showGpsHelp ? <GpsHelpDialog onClose={() => setShowGpsHelp(false)} /> : null}
     </main>
   );
 }
