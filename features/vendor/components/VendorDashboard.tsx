@@ -7,6 +7,7 @@ import { apiRaw, ApiClientError } from '@/lib/api/api-client';
 import { useVendorAvailability } from '../hooks/useVendorAvailability';
 import { useVendorOrders, type VendorOrder } from '../hooks/useVendorOrders';
 import { useMenuItems, type MenuItem } from '../hooks/useMenuItems';
+import { MenuItemEditor } from './MenuItemEditor';
 
 const formatXAF = (n: number) => `${n.toLocaleString('fr-FR')} FCFA`;
 
@@ -22,6 +23,9 @@ export function VendorDashboard() {
   const availability = useVendorAvailability();
   const orders = useVendorOrders();
   const menu = useMenuItems();
+  const [editing, setEditing] = React.useState<
+    { kind: 'new' } | { kind: 'edit'; item: MenuItem } | null
+  >(null);
 
   if (orders.status === 'unauthenticated' || availability.status === 'unauthenticated') {
     return (
@@ -97,7 +101,14 @@ export function VendorDashboard() {
       ) : null}
 
       <section>
-        <h2 className="mb-3 text-lg font-bold">Menu</h2>
+        <header className="mb-3 flex items-center justify-between">
+          <h2 className="text-lg font-bold">Menu</h2>
+          {menu.status === 'ready' ? (
+            <Button type="button" size="sm" onClick={() => setEditing({ kind: 'new' })}>
+              + Ajouter un plat
+            </Button>
+          ) : null}
+        </header>
         {menu.status === 'loading' || menu.status === 'idle' ? (
           <SkeletonList />
         ) : menu.status === 'error' ? (
@@ -107,19 +118,44 @@ export function VendorDashboard() {
         ) : menu.status === 'ready' ? (
           menu.items.length === 0 ? (
             <p className="bg-card rounded-lg border p-4 text-sm text-muted-foreground">
-              Aucun plat. Ajoute des plats depuis la gestion du menu (à venir).
+              Aucun plat. Clique sur « + Ajouter un plat » pour commencer.
             </p>
           ) : (
             <ul className="space-y-2">
               {menu.items.map((item) => (
                 <li key={item.id}>
-                  <MenuItemRow item={item} onToggleStock={menu.setInStock} />
+                  <MenuItemRow
+                    item={item}
+                    onToggleStock={menu.setInStock}
+                    onEdit={() => setEditing({ kind: 'edit', item })}
+                    onDelete={async () => {
+                      if (!window.confirm(`Supprimer « ${item.name} » ?`)) return;
+                      try {
+                        await menu.deleteItem(item.id);
+                      } catch (err) {
+                        window.alert(extract(err) ?? 'Suppression échouée');
+                      }
+                    }}
+                  />
                 </li>
               ))}
             </ul>
           )
         ) : null}
       </section>
+
+      {editing && menu.status === 'ready' ? (
+        <MenuItemEditor
+          initial={editing.kind === 'edit' ? editing.item : undefined}
+          onSave={(input) =>
+            editing.kind === 'edit'
+              ? menu.updateItem(editing.item.id, input)
+              : menu.createItem(input)
+          }
+          onUploadPhoto={menu.uploadPhoto}
+          onClose={() => setEditing(null)}
+        />
+      ) : null}
     </div>
   );
 }
@@ -306,9 +342,13 @@ function ActiveOrderCard({ order }: { order: VendorOrder }) {
 function MenuItemRow({
   item,
   onToggleStock,
+  onEdit,
+  onDelete,
 }: {
   item: MenuItem;
   onToggleStock: (id: string, inStock: boolean) => Promise<void>;
+  onEdit: () => void;
+  onDelete: () => Promise<void>;
 }) {
   return (
     <div
@@ -316,18 +356,45 @@ function MenuItemRow({
         !item.isInStock ? 'opacity-60' : ''
       }`}
     >
+      {item.photoUrl ? (
+        <img
+          src={item.photoUrl}
+          alt={item.name}
+          className="h-14 w-14 shrink-0 rounded-lg object-cover"
+        />
+      ) : (
+        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-muted text-xs text-muted-foreground">
+          —
+        </div>
+      )}
       <div className="min-w-0 flex-1">
         <p className="truncate font-semibold">{item.name}</p>
         <p className="text-xs text-muted-foreground">{formatXAF(item.priceXAF)}</p>
       </div>
-      <Button
-        type="button"
-        variant={item.isInStock ? 'outline' : 'default'}
-        size="sm"
-        onClick={() => onToggleStock(item.id, !item.isInStock)}
-      >
-        {item.isInStock ? '✓ Disponible' : '× Épuisé'}
-      </Button>
+      <div className="flex shrink-0 flex-col gap-1">
+        <Button
+          type="button"
+          variant={item.isInStock ? 'outline' : 'default'}
+          size="sm"
+          onClick={() => onToggleStock(item.id, !item.isInStock)}
+        >
+          {item.isInStock ? '✓ Dispo' : '× Épuisé'}
+        </Button>
+        <div className="flex gap-1">
+          <Button type="button" variant="outline" size="sm" onClick={onEdit} aria-label="Modifier">
+            ✏️
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={onDelete}
+            aria-label="Supprimer"
+          >
+            🗑
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }

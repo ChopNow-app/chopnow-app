@@ -16,6 +16,16 @@ export interface MenuItem {
   isAvailable: boolean;
   isInStock: boolean;
   sortOrder: number;
+  preparationMinutes?: number | null;
+}
+
+export interface MenuItemInput {
+  name: string;
+  description?: string;
+  priceXAF: number;
+  categoryId?: string;
+  preparationMinutes?: number;
+  sortOrder?: number;
 }
 
 export type MenuState =
@@ -27,6 +37,10 @@ export type MenuState =
 
 export function useMenuItems(): MenuState & {
   setInStock(itemId: string, inStock: boolean): Promise<void>;
+  createItem(input: MenuItemInput): Promise<MenuItem>;
+  updateItem(itemId: string, input: MenuItemInput): Promise<MenuItem>;
+  deleteItem(itemId: string): Promise<void>;
+  uploadPhoto(itemId: string, file: File): Promise<MenuItem>;
   reload(): void;
 } {
   const [state, setState] = React.useState<MenuState>({ status: 'idle' });
@@ -75,7 +89,6 @@ export function useMenuItems(): MenuState & {
     try {
       await apiRaw.patch(`/api/vendors/me/items/${itemId}/stock`, { isInStock: inStock });
     } catch (err) {
-      // Rollback on failure.
       setState((prev) => {
         if (prev.status !== 'ready') return prev;
         return {
@@ -84,11 +97,67 @@ export function useMenuItems(): MenuState & {
         };
       });
       if (err instanceof ApiClientError) {
-        // Surface to dev console; the UI flip-back is the user-visible cue.
         console.warn('stock toggle failed', err.status, err.body);
       }
     }
   }, []);
 
-  return React.useMemo(() => ({ ...state, setInStock, reload }), [state, setInStock, reload]);
+  /**
+   * Story 2.2 / 2.3 — create. The backend caps informal vendors at 15 items
+   * and surfaces `menu_limit_reached` — let the editor render that message.
+   */
+  const createItem = React.useCallback(async (input: MenuItemInput): Promise<MenuItem> => {
+    const created = await apiRaw.post<MenuItem>('/api/vendors/me/items', input);
+    setState((prev) =>
+      prev.status === 'ready' ? { ...prev, items: [...prev.items, created] } : prev,
+    );
+    return created;
+  }, []);
+
+  const updateItem = React.useCallback(
+    async (itemId: string, input: MenuItemInput): Promise<MenuItem> => {
+      const updated = await apiRaw.put<MenuItem>(`/api/vendors/me/items/${itemId}`, input);
+      setState((prev) =>
+        prev.status === 'ready'
+          ? { ...prev, items: prev.items.map((it) => (it.id === itemId ? updated : it)) }
+          : prev,
+      );
+      return updated;
+    },
+    [],
+  );
+
+  const deleteItem = React.useCallback(async (itemId: string): Promise<void> => {
+    await apiRaw.delete(`/api/vendors/me/items/${itemId}`);
+    setState((prev) =>
+      prev.status === 'ready'
+        ? { ...prev, items: prev.items.filter((it) => it.id !== itemId) }
+        : prev,
+    );
+  }, []);
+
+  /**
+   * Story 2.11 — vendor photo upload. multipart/form-data; the browser sets
+   * the boundary header (do NOT set Content-Type manually).
+   */
+  const uploadPhoto = React.useCallback(async (itemId: string, file: File): Promise<MenuItem> => {
+    const form = new FormData();
+    form.append('photo', file);
+    const updated = await apiRaw.upload<MenuItem>(
+      `/api/vendors/me/items/${itemId}/photo`,
+      form,
+      'PATCH',
+    );
+    setState((prev) =>
+      prev.status === 'ready'
+        ? { ...prev, items: prev.items.map((it) => (it.id === itemId ? updated : it)) }
+        : prev,
+    );
+    return updated;
+  }, []);
+
+  return React.useMemo(
+    () => ({ ...state, setInStock, createItem, updateItem, deleteItem, uploadPhoto, reload }),
+    [state, setInStock, createItem, updateItem, deleteItem, uploadPhoto, reload],
+  );
 }
