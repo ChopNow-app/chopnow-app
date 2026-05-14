@@ -29,6 +29,8 @@ export interface RiderCourse {
   deliveryLandmark: string | null;
   deliveryDescription: string | null;
   deliveryPhone: string;
+  deliveryLat: number;
+  deliveryLng: number;
   assignedAt: string | null;
   pickedUpAt: string | null;
   deliveredAt: string | null;
