@@ -84,6 +84,8 @@ function OrderContent({ order, onReload }: { order: OrderView; onReload: () => v
         <OrderTimeline order={order} />
       </section>
 
+      <DeliveryCodeBlock order={order} />
+
       <RatingSection order={order} onSubmitted={onReload} />
 
       <section className="container mt-8 space-y-4">
@@ -144,6 +146,37 @@ function OrderContent({ order, onReload }: { order: OrderView; onReload: () => v
         ) : null}
       </section>
     </main>
+  );
+}
+
+/**
+ * Story 4.13 — show the consumer their 4-digit delivery code. The rider
+ * must read this off the consumer at drop-off and submit it; this prevents
+ * a rider from marking "Livré" without actually delivering. Hidden once
+ * the order is DELIVERED (no longer useful) or for terminal-failure states.
+ */
+function DeliveryCodeBlock({ order }: { order: OrderView }) {
+  const SHOW_FOR: ReadonlySet<OrderView['status']> = new Set([
+    'CONFIRMED',
+    'ACCEPTED',
+    'IN_PREP',
+    'READY_PICKUP',
+    'PICKED_UP',
+  ]);
+  if (!SHOW_FOR.has(order.status) || !order.deliveryCode) return null;
+  return (
+    <section className="container mt-6">
+      <div className="bg-card rounded-lg border-2 border-chop-orange p-4 text-center">
+        <p className="text-xs uppercase tracking-widest text-muted-foreground">Code de livraison</p>
+        <p className="mt-2 font-mono text-5xl font-extrabold tracking-widest text-chop-orange">
+          {order.deliveryCode}
+        </p>
+        <p className="mt-2 text-xs text-muted-foreground">
+          Donne ce code au livreur à la livraison. Il ne pourra clôturer la course qu&apos;avec ce
+          code.
+        </p>
+      </div>
+    </section>
   );
 }
 

@@ -322,6 +322,15 @@ function OrderInboxCard({ order, onChanged }: { order: VendorOrder; onChanged: (
 }
 
 function ActiveOrderCard({ order }: { order: VendorOrder }) {
+  // Story 4.13 — show the pickup code only while a rider is en route to
+  // collect. Once status passes PICKED_UP the code is no longer useful
+  // (the rider already used it) so we hide it to declutter the inbox.
+  const SHOW_PICKUP_CODE_FOR: ReadonlySet<typeof order.status> = new Set([
+    'ACCEPTED',
+    'IN_PREP',
+    'READY_PICKUP',
+  ]);
+  const showCode = SHOW_PICKUP_CODE_FOR.has(order.status) && order.pickupCode;
   return (
     <div className="bg-card rounded-lg border p-3">
       <div className="flex items-start justify-between gap-3">
@@ -335,6 +344,16 @@ function ActiveOrderCard({ order }: { order: VendorOrder }) {
           {labelForActiveStatus(order.status)}
         </span>
       </div>
+      {showCode ? (
+        <div className="mt-3 rounded border-2 border-chop-orange bg-background p-2 text-center">
+          <p className="text-xs uppercase tracking-widest text-muted-foreground">
+            Code à donner au livreur
+          </p>
+          <p className="font-mono text-3xl font-extrabold tracking-widest text-chop-orange">
+            {order.pickupCode}
+          </p>
+        </div>
+      ) : null}
     </div>
   );
 }

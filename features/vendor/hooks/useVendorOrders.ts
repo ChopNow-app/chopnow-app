@@ -37,6 +37,9 @@ export interface VendorOrder {
     quantity: number;
     lineXAF: number;
   }>;
+  // Story 4.13 — vendor's 4-digit pickup code shown to the rider at pickup.
+  // Backend strips the consumer's deliveryCode from this list response.
+  pickupCode?: string;
 }
 
 export type OrdersState =
