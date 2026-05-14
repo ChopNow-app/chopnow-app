@@ -281,9 +281,10 @@ function AddressPicker({
     return (
       <div className="rounded-lg border bg-background p-3 text-sm">
         <p className="font-semibold">Aucune adresse enregistrée</p>
-        <p className="mt-1 text-muted-foreground">
-          Ajoute une adresse depuis ton profil pour passer la commande.
-        </p>
+        <p className="mt-1 text-muted-foreground">Ajoute une adresse pour passer la commande.</p>
+        <Button asChild variant="outline" size="sm" className="mt-3">
+          <Link href="/account/addresses">+ Ajouter une adresse</Link>
+        </Button>
       </div>
     );
   }
