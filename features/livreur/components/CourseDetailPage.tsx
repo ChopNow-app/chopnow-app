@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { apiRaw, ApiClientError } from '@/lib/api/api-client';
 import { useRiderCourses, type RiderCourse } from '../hooks/useRiderCourses';
+import { DeliveryMap } from './DeliveryMap';
 
 const formatXAF = (n: number) => `${n.toLocaleString('fr-FR')} FCFA`;
 
@@ -113,19 +114,23 @@ function CourseContent({
         <p className="text-sm text-white/70">📍 {course.vendor.quartier}</p>
       </section>
 
-      {/* Drop-off card — Story 4.2: landmark in big, description below, map is
-          orientation-only (deferred to the Mapbox PR). */}
-      <section className="rounded-lg border border-white/10 bg-white/5 p-4">
-        <p className="text-xs uppercase tracking-widest text-white/50">Livraison</p>
-        <p className="mt-1 text-lg font-bold">
-          {course.deliveryLandmark ?? `Quartier ${course.deliveryQuartier}`}
-        </p>
-        {course.deliveryDescription ? (
-          <p className="mt-1 text-sm text-white/70">{course.deliveryDescription}</p>
-        ) : null}
-        <p className="mt-2 text-xs text-white/50">
-          (Story 4.4 — carte Mapbox d&apos;orientation à venir)
-        </p>
+      {/* Drop-off card — Story 4.2 / 4.4: landmark in big, description below,
+          Mapbox static map + Maps deep-link for orientation. */}
+      <section className="space-y-3 rounded-lg border border-white/10 bg-white/5 p-4">
+        <div>
+          <p className="text-xs uppercase tracking-widest text-white/50">Livraison</p>
+          <p className="mt-1 text-lg font-bold">
+            {course.deliveryLandmark ?? `Quartier ${course.deliveryQuartier}`}
+          </p>
+          {course.deliveryDescription ? (
+            <p className="mt-1 text-sm text-white/70">{course.deliveryDescription}</p>
+          ) : null}
+        </div>
+        <DeliveryMap
+          lat={course.deliveryLat}
+          lng={course.deliveryLng}
+          label={course.deliveryLandmark ?? course.deliveryQuartier}
+        />
       </section>
 
       {/* Order content */}
