@@ -1,0 +1,350 @@
+'use client';
+
+import * as React from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { auth } from '@/lib/auth';
+import { useCart } from '../store';
+import { useAddresses, type SavedAddress } from '../hooks/useAddresses';
+import { initiateMomo, placeOrder, type PaymentMethod } from '../api';
+
+const MIN_ORDER_XAF = 1200;
+const formatXAF = (n: number) => `${n.toLocaleString('fr-FR')} FCFA`;
+
+const PAYMENT_OPTIONS: Array<{ id: PaymentMethod; label: string; sublabel: string }> = [
+  { id: 'MTN_MOMO', label: 'MTN MoMo', sublabel: 'Prompt USSD envoyé sur votre téléphone' },
+  { id: 'ORANGE_MONEY', label: 'Orange Money', sublabel: 'Prompt USSD envoyé sur votre téléphone' },
+  { id: 'CASH', label: 'Cash à la livraison', sublabel: "Préparez l'appoint exact" },
+];
+
+export function CartPage() {
+  const cart = useCart();
+  const router = useRouter();
+  const addresses = useAddresses();
+
+  const [paymentMethod, setPaymentMethod] = React.useState<PaymentMethod>('MTN_MOMO');
+  const [noteForVendor, setNoteForVendor] = React.useState('');
+  const [payerPhone, setPayerPhone] = React.useState('');
+  const [userPickedAddressId, setUserPickedAddressId] = React.useState<string | null>(null);
+  const [submitting, setSubmitting] = React.useState(false);
+  const [submitError, setSubmitError] = React.useState<string | null>(null);
+
+  // Derived default selection — if the user hasn't picked one yet, fall back
+  // to the marked-default or the first address. Cleaner than a useEffect +
+  // setState that the React 19 lint flags.
+  const selectedAddressId = React.useMemo(() => {
+    if (userPickedAddressId) return userPickedAddressId;
+    if (addresses.status !== 'ready' || addresses.addresses.length === 0) return null;
+    const def = addresses.addresses.find((a) => a.isDefault) ?? addresses.addresses[0];
+    return def.id;
+  }, [addresses, userPickedAddressId]);
+  const setSelectedAddressId = setUserPickedAddressId;
+
+  if (addresses.status === 'unauthenticated') {
+    return <AuthRequired />;
+  }
+
+  if (cart.isEmpty) {
+    return (
+      <main className="container py-16 text-center">
+        <h1 className="text-xl font-bold">Panier vide</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Choisis un vendeur pour commencer ta commande.
+        </p>
+        <Button asChild className="mt-6">
+          <Link href="/restaurants">Voir les restaurants</Link>
+        </Button>
+      </main>
+    );
+  }
+
+  const selectedAddress =
+    addresses.status === 'ready'
+      ? (addresses.addresses.find((a) => a.id === selectedAddressId) ?? null)
+      : null;
+
+  const belowMinimum = cart.subtotalXAF < MIN_ORDER_XAF;
+  const needsPayerPhone = paymentMethod !== 'CASH';
+  const canSubmit =
+    !belowMinimum &&
+    !submitting &&
+    selectedAddress !== null &&
+    (!needsPayerPhone || /^(?:6[5-9]\d{7}|\+?[1-9]\d{7,14})$/.test(payerPhone));
+
+  const onSubmit = async () => {
+    if (!selectedAddress || !cart.vendorId) return;
+    setSubmitError(null);
+    setSubmitting(true);
+    try {
+      const order = await placeOrder(
+        {
+          vendorId: cart.vendorId,
+          items: cart.lines.map((l) => ({ itemId: l.itemId, quantity: l.quantity })),
+          paymentMethod,
+          noteForVendor: noteForVendor.trim() || undefined,
+          deliveryLat: selectedAddress.lat,
+          deliveryLng: selectedAddress.lng,
+          deliveryQuartier: selectedAddress.quartier ?? 'Inconnu',
+          deliveryLandmark: undefined,
+          deliveryDescription: selectedAddress.description ?? undefined,
+          deliveryPhone: selectedAddress.phone ?? payerPhone,
+        },
+        crypto.randomUUID(),
+      );
+
+      if (paymentMethod !== 'CASH') {
+        await initiateMomo(order.id, payerPhone);
+      }
+
+      cart.clear();
+      router.replace(`/orders/${order.id}`);
+    } catch (err) {
+      const msg = (err as Error).message ?? 'Erreur lors de la création de la commande';
+      setSubmitError(msg);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <main className="min-h-dvh bg-chop-warm pb-16 text-chop-ink">
+      <header className="container py-4">
+        <Link
+          href={cart.vendorId ? `/vendors/${cart.vendorId}` : '/restaurants'}
+          className="text-sm text-muted-foreground"
+        >
+          ← Continuer mes achats
+        </Link>
+      </header>
+
+      <section className="container space-y-6 py-2">
+        <h1 className="text-2xl font-extrabold">Panier</h1>
+        {cart.vendorName ? (
+          <p className="text-sm text-muted-foreground">Chez {cart.vendorName}</p>
+        ) : null}
+
+        <ul className="space-y-2">
+          {cart.lines.map((line) => (
+            <li
+              key={line.itemId}
+              className="flex items-center gap-3 rounded-lg border bg-background p-3"
+            >
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-semibold">{line.name}</p>
+                <p className="text-sm text-muted-foreground">{formatXAF(line.priceXAF)} / unité</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => cart.setQuantity(line.itemId, line.quantity - 1)}
+                  aria-label={`Réduire ${line.name}`}
+                >
+                  −
+                </Button>
+                <span className="w-6 text-center font-semibold">{line.quantity}</span>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => cart.setQuantity(line.itemId, line.quantity + 1)}
+                  aria-label={`Augmenter ${line.name}`}
+                >
+                  +
+                </Button>
+              </div>
+            </li>
+          ))}
+        </ul>
+
+        <div className="rounded-lg border bg-background p-3 text-sm">
+          <div className="flex justify-between">
+            <span>Sous-total</span>
+            <span className="font-semibold">{formatXAF(cart.subtotalXAF)}</span>
+          </div>
+          {belowMinimum ? (
+            <p className="mt-2 text-destructive">
+              Commande minimum {formatXAF(MIN_ORDER_XAF)} — ajoute un plat pour continuer.
+            </p>
+          ) : (
+            <p className="mt-2 text-xs text-muted-foreground">
+              Les frais de livraison sont calculés par le serveur à la commande.
+            </p>
+          )}
+        </div>
+
+        <AddressPicker
+          state={addresses}
+          selectedAddressId={selectedAddressId}
+          onSelect={setSelectedAddressId}
+        />
+
+        <section>
+          <h2 className="mb-2 text-sm font-semibold">Mode de paiement</h2>
+          <ul className="space-y-2">
+            {PAYMENT_OPTIONS.map((opt) => (
+              <li key={opt.id}>
+                <label
+                  className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 ${
+                    paymentMethod === opt.id ? 'border-chop-orange bg-background' : 'bg-background'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="payment"
+                    value={opt.id}
+                    checked={paymentMethod === opt.id}
+                    onChange={() => setPaymentMethod(opt.id)}
+                    className="mt-1"
+                  />
+                  <span className="min-w-0">
+                    <p className="font-semibold">{opt.label}</p>
+                    <p className="text-xs text-muted-foreground">{opt.sublabel}</p>
+                  </span>
+                </label>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        {needsPayerPhone ? (
+          <div>
+            <label htmlFor="payerPhone" className="mb-1 block text-sm font-semibold">
+              Numéro MoMo pour le paiement
+            </label>
+            <Input
+              id="payerPhone"
+              type="tel"
+              inputMode="tel"
+              placeholder="670000000"
+              value={payerPhone}
+              onChange={(e) => setPayerPhone(e.target.value.replace(/\s+/g, ''))}
+            />
+            <p className="mt-1 text-xs text-muted-foreground">
+              {paymentMethod === 'MTN_MOMO'
+                ? 'Format MTN (commence par 65–68 ou 670–674).'
+                : 'Format Orange (commence par 69X).'}
+            </p>
+          </div>
+        ) : null}
+
+        <div>
+          <label htmlFor="note" className="mb-1 block text-sm font-semibold">
+            Note pour le vendeur <span className="text-xs text-muted-foreground">(optionnel)</span>
+          </label>
+          <Input
+            id="note"
+            placeholder="Sans piment, portion pour 2…"
+            maxLength={120}
+            value={noteForVendor}
+            onChange={(e) => setNoteForVendor(e.target.value)}
+          />
+          <p className="mt-1 text-xs text-muted-foreground">{noteForVendor.length} / 120</p>
+        </div>
+
+        {submitError ? <p className="text-sm text-destructive">{submitError}</p> : null}
+
+        <Button type="button" disabled={!canSubmit} onClick={onSubmit} className="w-full">
+          {submitting
+            ? 'Création de la commande…'
+            : paymentMethod === 'CASH'
+              ? 'Passer la commande (cash)'
+              : 'Passer la commande & payer'}
+        </Button>
+      </section>
+    </main>
+  );
+}
+
+function AddressPicker({
+  state,
+  selectedAddressId,
+  onSelect,
+}: {
+  state: ReturnType<typeof useAddresses>;
+  selectedAddressId: string | null;
+  onSelect: (id: string) => void;
+}) {
+  if (state.status === 'loading' || state.status === 'idle') {
+    return <div className="h-20 animate-pulse rounded-lg border bg-background" />;
+  }
+  if (state.status === 'error') {
+    return <p className="text-sm text-destructive">Adresses : {state.message}</p>;
+  }
+  if (state.status === 'unauthenticated') return null; // handled at the page level
+
+  if (state.addresses.length === 0) {
+    return (
+      <div className="rounded-lg border bg-background p-3 text-sm">
+        <p className="font-semibold">Aucune adresse enregistrée</p>
+        <p className="mt-1 text-muted-foreground">
+          Ajoute une adresse depuis ton profil pour passer la commande.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <section>
+      <h2 className="mb-2 text-sm font-semibold">Adresse de livraison</h2>
+      <ul className="space-y-2">
+        {state.addresses.map((addr) => (
+          <li key={addr.id}>
+            <label
+              className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 ${
+                selectedAddressId === addr.id ? 'border-chop-orange bg-background' : 'bg-background'
+              }`}
+            >
+              <input
+                type="radio"
+                name="address"
+                value={addr.id}
+                checked={selectedAddressId === addr.id}
+                onChange={() => onSelect(addr.id)}
+                className="mt-1"
+              />
+              <AddressDisplay addr={addr} />
+            </label>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+function AddressDisplay({ addr }: { addr: SavedAddress }) {
+  return (
+    <span className="min-w-0">
+      <p className="font-semibold">
+        {addr.label ?? 'Adresse'}
+        {addr.isDefault ? (
+          <span className="ml-2 text-xs text-muted-foreground">(par défaut)</span>
+        ) : null}
+      </p>
+      {addr.description ? (
+        <p className="line-clamp-2 text-xs text-muted-foreground">{addr.description}</p>
+      ) : null}
+      {addr.quartier ? <p className="text-xs text-muted-foreground">📍 {addr.quartier}</p> : null}
+    </span>
+  );
+}
+
+function AuthRequired() {
+  // Mark logout-state so the next view of /login redirects back to /cart on success.
+  React.useEffect(() => {
+    auth.clear();
+  }, []);
+  return (
+    <main className="container py-16 text-center">
+      <h1 className="text-xl font-bold">Connexion requise</h1>
+      <p className="mt-2 text-sm text-muted-foreground">Connecte-toi pour passer ta commande.</p>
+      <Button asChild className="mt-6">
+        <Link href="/login?next=/cart">Se connecter</Link>
+      </Button>
+    </main>
+  );
+}
