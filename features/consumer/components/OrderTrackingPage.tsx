@@ -6,6 +6,9 @@ import { Button } from '@/components/ui/button';
 import { apiRaw, ApiClientError } from '@/lib/api/api-client';
 import { useOrder, type OrderView } from '../hooks/useOrder';
 import { OrderTimeline } from './OrderTimeline';
+import { RatingForm } from './RatingForm';
+
+const RATING_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 const formatXAF = (n: number) => `${n.toLocaleString('fr-FR')} FCFA`;
 
@@ -80,6 +83,8 @@ function OrderContent({ order, onReload }: { order: OrderView; onReload: () => v
         <OrderTimeline order={order} />
       </section>
 
+      <RatingSection order={order} onSubmitted={onReload} />
+
       <section className="container mt-8 space-y-4">
         <h2 className="text-lg font-bold">Détails</h2>
 
@@ -138,6 +143,39 @@ function OrderContent({ order, onReload }: { order: OrderView; onReload: () => v
         ) : null}
       </section>
     </main>
+  );
+}
+
+function RatingSection({ order, onSubmitted }: { order: OrderView; onSubmitted: () => void }) {
+  // Capture "now" at first render to satisfy React 19's purity rule on Date.now.
+  // If the user lingers past 24h with the page open, the backend still rejects
+  // the submit with rating_window_expired and we surface that.
+  const [nowAtMount] = React.useState(() => Date.now());
+
+  if (order.status !== 'DELIVERED') return null;
+
+  if (order.rating) {
+    return (
+      <section className="container mt-6">
+        <div className="bg-card rounded-lg border p-4 text-sm">
+          <p className="font-semibold">⭐ Tu as déjà noté cette commande</p>
+          <p className="mt-1 text-muted-foreground">
+            Vendeur : {order.rating.vendorScore}/5 · Livreur : {order.rating.riderScore}/5
+          </p>
+        </div>
+      </section>
+    );
+  }
+
+  if (order.deliveredAt) {
+    const elapsedMs = nowAtMount - new Date(order.deliveredAt).getTime();
+    if (elapsedMs > RATING_WINDOW_MS) return null;
+  }
+
+  return (
+    <section className="container mt-6">
+      <RatingForm orderId={order.id} vendorName={order.vendor.name} onSubmitted={onSubmitted} />
+    </section>
   );
 }
 
