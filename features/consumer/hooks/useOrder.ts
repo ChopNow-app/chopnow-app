@@ -56,6 +56,10 @@ export interface OrderView {
   vendor: { id: string; name: string; userId?: string };
   items: OrderItem[];
   rating: { id: string; vendorScore: number; riderScore: number; comment: string | null } | null;
+  // Story 4.13 — scoped by role. Consumer sees deliveryCode, vendor sees
+  // pickupCode; backend omits the field the viewer shouldn't see.
+  pickupCode?: string;
+  deliveryCode?: string;
 }
 
 export type OrderState =

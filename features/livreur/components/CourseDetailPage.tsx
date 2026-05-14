@@ -55,12 +55,21 @@ function CourseContent({
 }) {
   const [busy, setBusy] = React.useState<null | 'pickup' | 'deliver' | 'call'>(null);
   const [error, setError] = React.useState<string | null>(null);
+  // Story 4.13 — rider types the 4-digit code they got from the vendor /
+  // consumer in person. The two codes are independent — rider may know the
+  // pickup code already (vendor showed at pickup) but the delivery code
+  // only at drop-off, so we keep them in separate state.
+  const [pickupCodeInput, setPickupCodeInput] = React.useState('');
+  const [deliveryCodeInput, setDeliveryCodeInput] = React.useState('');
 
   const pickup = async () => {
     setBusy('pickup');
     setError(null);
     try {
-      await apiRaw.patch(`/api/riders/me/courses/${course.id}/picked-up`, {});
+      await apiRaw.patch(`/api/riders/me/courses/${course.id}/picked-up`, {
+        code: pickupCodeInput,
+      });
+      setPickupCodeInput('');
       onAdvance();
     } catch (err) {
       setError(extract(err) ?? 'Impossible de marquer comme récupérée');
@@ -73,7 +82,9 @@ function CourseContent({
     setBusy('deliver');
     setError(null);
     try {
-      await apiRaw.patch(`/api/riders/me/courses/${course.id}/delivered`, {});
+      await apiRaw.patch(`/api/riders/me/courses/${course.id}/delivered`, {
+        code: deliveryCodeInput,
+      });
       router.replace('/livreur');
     } catch (err) {
       setError(extract(err) ?? 'Impossible de marquer comme livrée');
@@ -157,13 +168,61 @@ function CourseContent({
 
       <div className="space-y-3">
         {!isPickedUp ? (
-          <Button type="button" disabled={busy === 'pickup'} onClick={pickup} className="w-full">
-            {busy === 'pickup' ? '…' : "📦 J'ai récupéré la commande"}
-          </Button>
+          <div className="space-y-2 rounded-lg border border-white/10 p-3">
+            <label
+              htmlFor="pickupCode"
+              className="block text-xs uppercase tracking-widest text-white/60"
+            >
+              Code de retrait (donné par le vendeur)
+            </label>
+            <input
+              id="pickupCode"
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              maxLength={4}
+              placeholder="••••"
+              value={pickupCodeInput}
+              onChange={(e) => setPickupCodeInput(e.target.value.replace(/\D/g, ''))}
+              className="w-full rounded border border-white/10 bg-white/5 p-3 text-center font-mono text-2xl tracking-widest"
+            />
+            <Button
+              type="button"
+              disabled={busy === 'pickup' || pickupCodeInput.length !== 4}
+              onClick={pickup}
+              className="w-full"
+            >
+              {busy === 'pickup' ? '…' : "📦 J'ai récupéré la commande"}
+            </Button>
+          </div>
         ) : (
-          <Button type="button" disabled={busy === 'deliver'} onClick={deliver} className="w-full">
-            {busy === 'deliver' ? '…' : '🎉 Livré !'}
-          </Button>
+          <div className="space-y-2 rounded-lg border border-white/10 p-3">
+            <label
+              htmlFor="deliveryCode"
+              className="block text-xs uppercase tracking-widest text-white/60"
+            >
+              Code de livraison (donné par le client)
+            </label>
+            <input
+              id="deliveryCode"
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              maxLength={4}
+              placeholder="••••"
+              value={deliveryCodeInput}
+              onChange={(e) => setDeliveryCodeInput(e.target.value.replace(/\D/g, ''))}
+              className="w-full rounded border border-white/10 bg-white/5 p-3 text-center font-mono text-2xl tracking-widest"
+            />
+            <Button
+              type="button"
+              disabled={busy === 'deliver' || deliveryCodeInput.length !== 4}
+              onClick={deliver}
+              className="w-full"
+            >
+              {busy === 'deliver' ? '…' : '🎉 Livré !'}
+            </Button>
+          </div>
         )}
         <Button
           type="button"
@@ -181,7 +240,12 @@ function CourseContent({
 
 function extract(err: unknown): string | null {
   if (err instanceof ApiClientError) {
-    const body = err.body as { message?: string } | undefined;
+    const body = err.body as { code?: string; message?: string } | undefined;
+    // Story 4.13 — surface specific code-mismatch errors as actionable French.
+    if (body?.code === 'wrong_pickup_code')
+      return 'Code de retrait incorrect. Demande-le au vendeur.';
+    if (body?.code === 'wrong_delivery_code')
+      return 'Code de livraison incorrect. Demande-le au client.';
     return body?.message ?? `Erreur ${err.status}`;
   }
   return (err as Error)?.message ?? null;
