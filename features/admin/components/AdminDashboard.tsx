@@ -60,9 +60,17 @@ export function AdminDashboard() {
             </p>
           ) : null}
         </div>
-        <Button type="button" variant="outline" size="sm" onClick={onLogout}>
-          Déconnexion
-        </Button>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/admin/metrics"
+            className="rounded-md border px-3 py-1.5 text-xs font-semibold hover:bg-accent"
+          >
+            Métriques pilote
+          </Link>
+          <Button type="button" variant="outline" size="sm" onClick={onLogout}>
+            Déconnexion
+          </Button>
+        </div>
       </header>
 
       <section>
