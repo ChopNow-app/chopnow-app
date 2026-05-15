@@ -16,7 +16,7 @@ export function CourseDetailPage({ orderId }: { orderId: string }) {
 
   if (courses.status === 'unauthenticated') {
     return (
-      <div className="rounded-lg border border-white/10 p-6 text-center">
+      <div className="rounded-2xl border border-chop-dark-border p-6 text-center">
         <h2 className="text-lg font-semibold">Connexion requise</h2>
         <Button asChild variant="outline" className="mt-4">
           <Link href={`/login?next=/livreur/courses/${orderId}`}>Se connecter</Link>
@@ -119,7 +119,7 @@ function CourseContent({
       </header>
 
       {/* Pickup card */}
-      <section className="rounded-lg border border-white/10 bg-white/5 p-4">
+      <section className="rounded-2xl border border-chop-dark-border bg-chop-dark-surface p-4">
         <p className="text-xs uppercase tracking-widest text-white/50">Point de retrait</p>
         <p className="mt-1 text-lg font-bold">{course.vendor.name}</p>
         <p className="text-sm text-white/70">📍 {course.vendor.quartier}</p>
@@ -127,7 +127,7 @@ function CourseContent({
 
       {/* Drop-off card — Story 4.2 / 4.4: landmark in big, description below,
           Mapbox static map + Maps deep-link for orientation. */}
-      <section className="space-y-3 rounded-lg border border-white/10 bg-white/5 p-4">
+      <section className="space-y-3 rounded-2xl border border-chop-dark-border bg-chop-dark-surface p-4">
         <div>
           <p className="text-xs uppercase tracking-widest text-white/50">Livraison</p>
           <p className="mt-1 text-lg font-bold">
@@ -145,7 +145,7 @@ function CourseContent({
       </section>
 
       {/* Order content */}
-      <section className="rounded-lg border border-white/10 p-3">
+      <section className="rounded-2xl border border-chop-dark-border p-3">
         <p className="text-xs uppercase tracking-widest text-white/50">À récupérer</p>
         <ul className="mt-2 space-y-1 text-sm">
           {course.items.map((line) => (
@@ -168,7 +168,7 @@ function CourseContent({
 
       <div className="space-y-3">
         {!isPickedUp ? (
-          <div className="space-y-2 rounded-lg border border-white/10 p-3">
+          <div className="space-y-2 rounded-2xl border border-chop-dark-border p-3">
             <label
               htmlFor="pickupCode"
               className="block text-xs uppercase tracking-widest text-white/60"
@@ -184,10 +184,11 @@ function CourseContent({
               placeholder="••••"
               value={pickupCodeInput}
               onChange={(e) => setPickupCodeInput(e.target.value.replace(/\D/g, ''))}
-              className="w-full rounded border border-white/10 bg-white/5 p-3 text-center font-mono text-2xl tracking-widest"
+              className="w-full rounded-xl border border-chop-dark-border bg-chop-dark-elevated p-3 text-center font-mono text-2xl tracking-widest"
             />
             <Button
               type="button"
+              size="jumbo"
               disabled={busy === 'pickup' || pickupCodeInput.length !== 4}
               onClick={pickup}
               className="w-full"
@@ -196,7 +197,7 @@ function CourseContent({
             </Button>
           </div>
         ) : (
-          <div className="space-y-2 rounded-lg border border-white/10 p-3">
+          <div className="space-y-2 rounded-2xl border border-chop-dark-border p-3">
             <label
               htmlFor="deliveryCode"
               className="block text-xs uppercase tracking-widest text-white/60"
@@ -212,10 +213,11 @@ function CourseContent({
               placeholder="••••"
               value={deliveryCodeInput}
               onChange={(e) => setDeliveryCodeInput(e.target.value.replace(/\D/g, ''))}
-              className="w-full rounded border border-white/10 bg-white/5 p-3 text-center font-mono text-2xl tracking-widest"
+              className="w-full rounded-xl border border-chop-dark-border bg-chop-dark-elevated p-3 text-center font-mono text-2xl tracking-widest"
             />
             <Button
               type="button"
+              size="jumbo"
               disabled={busy === 'deliver' || deliveryCodeInput.length !== 4}
               onClick={deliver}
               className="w-full"
@@ -254,9 +256,9 @@ function extract(err: unknown): string | null {
 function Skeleton() {
   return (
     <div className="space-y-3">
-      <div className="h-10 animate-pulse rounded-lg border border-white/10 bg-white/5" />
-      <div className="h-32 animate-pulse rounded-lg border border-white/10 bg-white/5" />
-      <div className="h-32 animate-pulse rounded-lg border border-white/10 bg-white/5" />
+      <div className="h-10 animate-pulse rounded-2xl border border-chop-dark-border bg-chop-dark-surface" />
+      <div className="h-32 animate-pulse rounded-2xl border border-chop-dark-border bg-chop-dark-surface" />
+      <div className="h-32 animate-pulse rounded-2xl border border-chop-dark-border bg-chop-dark-surface" />
     </div>
   );
 }
