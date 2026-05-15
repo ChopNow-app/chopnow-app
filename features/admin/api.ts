@@ -83,3 +83,22 @@ export const adminApi = {
     apiRaw.post(`/api/admin/riders/${id}/suspend`, { reason }),
   unsuspendRider: (id: string) => apiRaw.post(`/api/admin/riders/${id}/unsuspend`, {}),
 };
+
+export interface PilotMetrics {
+  window: { from: string; to: string };
+  reorderRate: { reorderers: number; uniqueCustomers: number; percent: number };
+  completionRate: { delivered: number; total: number; percent: number };
+  avgDeliveryTimeMs: number | null;
+  avgVendorAcceptTimeMs: number | null;
+}
+
+export async function getPilotMetrics(params?: {
+  from?: string;
+  to?: string;
+}): Promise<PilotMetrics> {
+  const qs = new URLSearchParams();
+  if (params?.from) qs.set('from', params.from);
+  if (params?.to) qs.set('to', params.to);
+  const suffix = qs.toString() ? `?${qs}` : '';
+  return apiRaw.get<PilotMetrics>(`/api/admin/metrics${suffix}`);
+}
