@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { apiRaw, ApiClientError } from '@/lib/api/api-client';
+import { apiRaw } from '@/lib/api/api-client';
 import { auth } from '@/lib/auth';
 import { useCart } from '../store';
 import { useAddresses, type SavedAddress } from '../hooks/useAddresses';
