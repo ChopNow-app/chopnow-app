@@ -22,12 +22,12 @@ export function LivreurDashboard() {
 
   if (courses.status === 'unauthenticated') {
     return (
-      <div className="rounded-lg border border-white/10 p-6 text-center">
-        <h2 className="text-lg font-semibold">Connexion requise</h2>
+      <div className="rounded-2xl border border-chop-dark-border bg-chop-dark-surface p-6 text-center shadow-rider">
+        <h2 className="text-xl font-extrabold">Connexion requise</h2>
         <p className="mt-2 text-sm text-white/70">
           Connecte-toi avec ton numéro de téléphone livreur.
         </p>
-        <Button asChild variant="outline" className="mt-4">
+        <Button asChild size="jumbo" className="mt-6 w-full">
           <Link href="/login?next=/livreur">Se connecter</Link>
         </Button>
       </div>
@@ -38,16 +38,17 @@ export function LivreurDashboard() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-lg border border-white/10 bg-white/5 p-4">
+      <section className="rounded-2xl border border-chop-dark-border bg-chop-dark-surface p-4 shadow-rider">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-xs uppercase tracking-widest text-white/50">Statut</p>
-            <p className="text-xl font-bold">
+            <p className="text-xs uppercase tracking-widest text-white/60">Statut</p>
+            <p className="mt-1 text-2xl font-extrabold">
               {availability.isOnline ? '🟢 En ligne' : '⚪ Hors ligne'}
             </p>
           </div>
           <Button
             type="button"
+            size="jumbo"
             disabled={availability.setting}
             onClick={onToggle}
             variant={availability.isOnline ? 'outline' : 'default'}
@@ -130,23 +131,25 @@ function CourseSummaryCard({ course }: { course: RiderCourse }) {
   return (
     <Link
       href={`/livreur/courses/${course.id}`}
-      className="block rounded-lg border border-white/10 bg-white/5 p-4 transition hover:bg-white/10"
+      className="block rounded-2xl border border-chop-dark-border bg-chop-dark-surface p-4 shadow-rider transition-transform active:scale-[0.99]"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="font-mono text-sm text-white/60">{course.code}</p>
-          <p className="mt-0.5 truncate font-semibold">{course.vendor.name}</p>
-          <p className="text-xs text-white/60">
+          <p className="font-mono text-xs text-white/60">{course.code}</p>
+          <p className="mt-1 truncate text-lg font-extrabold">{course.vendor.name}</p>
+          <p className="mt-0.5 text-sm text-white/70">
             {course.vendor.quartier} → {course.deliveryQuartier}
           </p>
         </div>
-        <span className="shrink-0 rounded-full bg-chop-orange/20 px-2 py-1 text-xs">
+        <span className="shrink-0 rounded-full bg-chop-orange px-3 py-1 text-xs font-bold text-white">
           {stepLabel}
         </span>
       </div>
-      <div className="mt-2 flex items-center justify-between text-xs text-white/60">
+      <div className="mt-3 flex items-center justify-between text-sm text-white/70">
         <span>{course.items?.length ?? 0} plat(s)</span>
-        <span className="font-mono">{course.totalXAF.toLocaleString('fr-FR')} FCFA</span>
+        <span className="font-mono font-semibold">
+          {course.totalXAF.toLocaleString('fr-FR')} FCFA
+        </span>
       </div>
     </Link>
   );
@@ -169,7 +172,10 @@ function SkeletonList() {
   return (
     <div className="space-y-3">
       {[1, 2].map((i) => (
-        <div key={i} className="h-20 animate-pulse rounded-lg border border-white/10 bg-white/5" />
+        <div
+          key={i}
+          className="h-24 animate-pulse rounded-2xl border border-chop-dark-border bg-chop-dark-surface"
+        />
       ))}
     </div>
   );
