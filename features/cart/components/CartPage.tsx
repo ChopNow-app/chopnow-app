@@ -40,11 +40,21 @@ function useUserPhone(): string | null {
 const MIN_ORDER_XAF = 1200;
 const formatXAF = (n: number) => `${n.toLocaleString('fr-FR')} FCFA`;
 
-const PAYMENT_OPTIONS: Array<{ id: PaymentMethod; label: string; sublabel: string }> = [
+// Pilot mode (Week 1 micro-zone validation, 2026-05-15): hide MoMo options.
+// Cash-on-delivery only until we register RCCM and switch on Campay live.
+const PILOT_COD_ONLY = process.env.NEXT_PUBLIC_PILOT_COD_ONLY === 'true';
+
+const ALL_PAYMENT_OPTIONS: Array<{ id: PaymentMethod; label: string; sublabel: string }> = [
   { id: 'MTN_MOMO', label: 'MTN MoMo', sublabel: 'Prompt USSD envoyé sur votre téléphone' },
   { id: 'ORANGE_MONEY', label: 'Orange Money', sublabel: 'Prompt USSD envoyé sur votre téléphone' },
   { id: 'CASH', label: 'Cash à la livraison', sublabel: "Préparez l'appoint exact" },
 ];
+
+const PAYMENT_OPTIONS = PILOT_COD_ONLY
+  ? ALL_PAYMENT_OPTIONS.filter((o) => o.id === 'CASH')
+  : ALL_PAYMENT_OPTIONS;
+
+const DEFAULT_PAYMENT_METHOD: PaymentMethod = PILOT_COD_ONLY ? 'CASH' : 'MTN_MOMO';
 
 export function CartPage() {
   const cart = useCart();
@@ -52,7 +62,7 @@ export function CartPage() {
   const addresses = useAddresses();
   const userPhone = useUserPhone();
 
-  const [paymentMethod, setPaymentMethod] = React.useState<PaymentMethod>('MTN_MOMO');
+  const [paymentMethod, setPaymentMethod] = React.useState<PaymentMethod>(DEFAULT_PAYMENT_METHOD);
   const [noteForVendor, setNoteForVendor] = React.useState('');
   const [payerPhone, setPayerPhone] = React.useState('');
   const [userPickedAddressId, setUserPickedAddressId] = React.useState<string | null>(null);
@@ -218,6 +228,12 @@ export function CartPage() {
 
         <section>
           <h2 className="mb-2 text-sm font-semibold">Mode de paiement</h2>
+          {PILOT_COD_ONLY ? (
+            <p className="mb-2 rounded-md border border-chop-orange/40 bg-chop-orange/10 px-3 py-2 text-xs text-foreground">
+              Phase bêta — seul le paiement à la livraison est disponible pour l&apos;instant. MoMo
+              et Orange Money arrivent bientôt.
+            </p>
+          ) : null}
           <ul className="space-y-2">
             {PAYMENT_OPTIONS.map((opt) => (
               <li key={opt.id}>
