@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Plus_Jakarta_Sans } from 'next/font/google';
 import { NextIntlClientProvider } from 'next-intl';
 import { getLocale, getMessages } from 'next-intl/server';
+import { PilotBanner } from '@/components/PilotBanner';
 import { RegisterServiceWorker } from '@/components/RegisterServiceWorker';
 import './globals.css';
 
@@ -44,6 +45,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang={locale} className={jakarta.variable}>
       <body>
         <NextIntlClientProvider locale={locale} messages={messages}>
+          <PilotBanner />
           {children}
         </NextIntlClientProvider>
         <RegisterServiceWorker />
