@@ -50,19 +50,26 @@ export function VendorDashboard() {
       : [];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4">
       <AvailabilitySection state={availability} />
 
       <section>
-        <header className="mb-3 flex items-center justify-between">
-          <h2 className="text-lg font-bold">À décider ({pendingDecision.length})</h2>
+        <header className="mb-2 flex items-center justify-between">
+          <h2 className="flex items-center gap-2 text-base font-extrabold">
+            À décider
+            {pendingDecision.length > 0 ? (
+              <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-chop-orange px-1.5 text-xs font-bold text-white">
+                {pendingDecision.length}
+              </span>
+            ) : null}
+          </h2>
           {orders.status === 'ready' ? (
             <button
               type="button"
               onClick={orders.reload}
-              className="text-xs text-muted-foreground underline"
+              className="text-xs font-semibold text-chop-orange hover:underline"
             >
-              Actualiser
+              ↻ Actualiser
             </button>
           ) : null}
         </header>
@@ -73,7 +80,7 @@ export function VendorDashboard() {
             {orders.message}
           </p>
         ) : pendingDecision.length === 0 ? (
-          <p className="bg-card rounded-lg border p-4 text-sm text-muted-foreground">
+          <p className="rounded-xl bg-chop-card-white p-4 text-sm text-muted-foreground shadow-card">
             Aucune commande en attente. Tu seras notifié(e) à la prochaine.
           </p>
         ) : (
@@ -89,7 +96,12 @@ export function VendorDashboard() {
 
       {inFlight.length > 0 ? (
         <section>
-          <h2 className="mb-3 text-lg font-bold">En cours ({inFlight.length})</h2>
+          <h2 className="mb-2 flex items-center gap-2 text-base font-extrabold">
+            En cours
+            <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-chop-mboue px-1.5 text-xs font-bold text-white">
+              {inFlight.length}
+            </span>
+          </h2>
           <ul className="space-y-3">
             {inFlight.map((o) => (
               <li key={o.id}>
@@ -236,17 +248,25 @@ function OrderInboxCard({ order, onChanged }: { order: VendorOrder; onChanged: (
   };
 
   return (
-    <div className="bg-card rounded-lg border p-4">
+    <div className="rounded-xl bg-chop-card-white p-4 shadow-card">
       <header className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="font-mono text-xs text-muted-foreground">{order.code}</p>
-          <p className="font-semibold">
-            {formatXAF(order.subtotalXAF)} · {labelForPayment(order.paymentMethod)}
+          <p className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
+            {order.code}
           </p>
-          <p className="text-xs text-muted-foreground">📍 {order.deliveryQuartier}</p>
+          <p className="mt-0.5 text-lg font-extrabold">{formatXAF(order.subtotalXAF)}</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            {labelForPayment(order.paymentMethod)} · 📍 {order.deliveryQuartier}
+          </p>
         </div>
-        <span className="shrink-0 rounded-full bg-chop-orange/20 px-2 py-1 text-xs">
-          {order.status === 'PENDING' ? 'Cash · à confirmer' : 'Payé · à accepter'}
+        <span
+          className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider ${
+            order.status === 'PENDING'
+              ? 'bg-cash-light text-cash'
+              : 'bg-chop-mboue-light text-chop-mboue'
+          }`}
+        >
+          {order.status === 'PENDING' ? 'Cash' : 'Payé'}
         </span>
       </header>
 
@@ -303,15 +323,22 @@ function OrderInboxCard({ order, onChanged }: { order: VendorOrder; onChanged: (
         </div>
       ) : (
         <div className="mt-3 flex gap-2">
-          <Button type="button" disabled={busy === 'accept'} onClick={accept} className="flex-1">
+          <Button
+            type="button"
+            size="lg"
+            disabled={busy === 'accept'}
+            onClick={accept}
+            className="flex-[2] bg-chop-mboue hover:bg-chop-mboue/90"
+          >
             {busy === 'accept' ? '…' : '✅ Accepter'}
           </Button>
           <Button
             type="button"
             variant="outline"
+            size="lg"
             disabled={busy !== null}
             onClick={() => setRefusing(true)}
-            className="flex-1"
+            className="flex-1 border-chop-danger text-chop-danger hover:bg-chop-danger-light"
           >
             ❌ Refuser
           </Button>
@@ -451,7 +478,7 @@ function SkeletonList() {
   return (
     <div className="space-y-2">
       {[1, 2].map((i) => (
-        <div key={i} className="bg-card h-20 animate-pulse rounded-lg border" />
+        <div key={i} className="h-24 animate-pulse rounded-xl bg-chop-card-white shadow-card" />
       ))}
     </div>
   );
