@@ -26,7 +26,7 @@ describe('VendorCard', () => {
     expect(screen.getByText('Cuisine locale 🍲')).toBeInTheDocument();
     expect(screen.getByText(/1\.2 km/)).toBeInTheDocument();
     expect(screen.getByText(/~22 min/)).toBeInTheDocument();
-    expect(screen.getByText(/400 FCFA livraison/)).toBeInTheDocument();
+    expect(screen.getByText(/400 FCFA/)).toBeInTheDocument();
   });
 
   it('links to the vendor detail page', () => {

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Plus_Jakarta_Sans } from 'next/font/google';
 import { NextIntlClientProvider } from 'next-intl';
 import { getLocale, getMessages } from 'next-intl/server';
+import { ConsumerBottomNav } from '@/components/ConsumerBottomNav';
 import { PilotBanner } from '@/components/PilotBanner';
 import { RegisterServiceWorker } from '@/components/RegisterServiceWorker';
 import './globals.css';
@@ -50,7 +51,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body>
         <NextIntlClientProvider locale={locale} messages={messages}>
           <PilotBanner />
-          {children}
+          {/* pb-20 = 80px reserve for bottom nav (64px + safe-area-inset). */}
+          {/* ConsumerBottomNav hides itself on admin/livreur/vendor routes. */}
+          <div className="min-h-dvh pb-20">{children}</div>
+          <ConsumerBottomNav />
         </NextIntlClientProvider>
         <RegisterServiceWorker />
       </body>

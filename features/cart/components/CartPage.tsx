@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PaymentChip } from '@/components/PaymentChip';
+import { Skeleton } from '@/components/ui/skeleton';
 import { apiRaw } from '@/lib/api/api-client';
 import { auth } from '@/lib/auth';
 import { useCart } from '../store';
@@ -151,7 +153,7 @@ export function CartPage() {
   };
 
   return (
-    <main className="min-h-dvh bg-chop-warm pb-16 text-chop-ink">
+    <main className="min-h-dvh bg-chop-warm pb-40 text-chop-ink">
       <header className="container py-4">
         <Link
           href={cart.vendorId ? `/vendors/${cart.vendorId}` : '/restaurants'}
@@ -226,32 +228,18 @@ export function CartPage() {
           onSelect={setSelectedAddressId}
         />
 
-        <section>
+        <section role="radiogroup" aria-label="Mode de paiement">
           <h2 className="mb-2 text-sm font-semibold">Mode de paiement</h2>
-          <ul className="space-y-2">
+          <div className="space-y-2">
             {PAYMENT_OPTIONS.map((opt) => (
-              <li key={opt.id}>
-                <label
-                  className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 ${
-                    paymentMethod === opt.id ? 'border-chop-orange bg-background' : 'bg-background'
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="payment"
-                    value={opt.id}
-                    checked={paymentMethod === opt.id}
-                    onChange={() => setPaymentMethod(opt.id)}
-                    className="mt-1"
-                  />
-                  <span className="min-w-0">
-                    <p className="font-semibold">{opt.label}</p>
-                    <p className="text-xs text-muted-foreground">{opt.sublabel}</p>
-                  </span>
-                </label>
-              </li>
+              <PaymentChip
+                key={opt.id}
+                kind={opt.id}
+                selected={paymentMethod === opt.id}
+                onSelect={() => setPaymentMethod(opt.id)}
+              />
             ))}
-          </ul>
+          </div>
         </section>
 
         {needsPayerPhone ? (
@@ -290,15 +278,38 @@ export function CartPage() {
         </div>
 
         {submitError ? <p className="text-sm text-destructive">{submitError}</p> : null}
-
-        <Button type="button" disabled={!canSubmit} onClick={onSubmit} className="w-full">
-          {submitting
-            ? 'Création de la commande…'
-            : paymentMethod === 'CASH'
-              ? 'Passer la commande (cash)'
-              : 'Passer la commande & payer'}
-        </Button>
       </section>
+
+      {/* Sticky checkout CTA — sits above the consumer bottom nav (z-40) so it's
+          always reachable while the form is long. Includes total recap so the
+          user knows what they're paying before tapping. */}
+      <div
+        className="fixed inset-x-0 bottom-16 z-30 border-t border-divider bg-background/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/80"
+        style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 0.75rem)' }}
+      >
+        <div className="mx-auto flex max-w-md items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="truncate text-xs text-muted-foreground">
+              {cart.lines.length} article{cart.lines.length > 1 ? 's' : ''} ·{' '}
+              {paymentMethod === 'CASH' ? 'Cash' : paymentMethod === 'MTN_MOMO' ? 'MTN' : 'Orange'}
+            </p>
+            <p className="text-base font-extrabold">{formatXAF(cart.subtotalXAF)}</p>
+          </div>
+          <Button
+            type="button"
+            size="lg"
+            disabled={!canSubmit}
+            onClick={onSubmit}
+            className="max-w-[60%] flex-1"
+          >
+            {submitting
+              ? 'Envoi…'
+              : paymentMethod === 'CASH'
+                ? 'Commander (cash)'
+                : 'Commander & payer'}
+          </Button>
+        </div>
+      </div>
     </main>
   );
 }
@@ -313,7 +324,7 @@ function AddressPicker({
   onSelect: (id: string) => void;
 }) {
   if (state.status === 'loading' || state.status === 'idle') {
-    return <div className="h-20 animate-pulse rounded-lg border bg-background" />;
+    return <Skeleton className="h-20 rounded-lg" />;
   }
   if (state.status === 'error') {
     return <p className="text-sm text-destructive">Adresses : {state.message}</p>;
