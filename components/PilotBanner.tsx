@@ -5,8 +5,8 @@
 export function PilotBanner() {
   if (process.env.NEXT_PUBLIC_PILOT_COD_ONLY !== 'true') return null;
   return (
-    <div className="sticky top-0 z-50 border-b border-chop-orange/40 bg-chop-orange/10 px-4 py-2 text-center text-xs font-semibold text-foreground">
-      <span aria-label="Beta">🟠</span> Bêta — paiement à la livraison uniquement
+    <div className="sticky top-0 z-50 border-b border-chop-orange bg-chop-orange px-4 py-2 text-center text-xs font-semibold text-white shadow-sm">
+      Bêta · paiement à la livraison uniquement
     </div>
   );
 }
