@@ -8,7 +8,8 @@ import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ApiClientError } from '@/lib/api/api-client';
-import type { MenuItem, MenuItemInput } from '../hooks/useMenuItems';
+import { cn } from '@/lib/utils';
+import type { ItemKind, MenuItem, MenuItemInput, StockLevel } from '../hooks/useMenuItems';
 
 const schema = z.object({
   name: z.string().min(2, '2 caractères minimum').max(80),
@@ -48,6 +49,10 @@ export function MenuItemEditor({ initial, onSave, onUploadPhoto, onClose }: Menu
   const [photoUploading, setPhotoUploading] = React.useState(false);
   const [photoError, setPhotoError] = React.useState<string | null>(null);
   const [currentItem, setCurrentItem] = React.useState<MenuItem | undefined>(initial);
+  // kind + stockLevel live outside react-hook-form because they're toggles,
+  // not text inputs, and we want the radio-style UX (immediate feedback).
+  const [kind, setKind] = React.useState<ItemKind>(initial?.kind ?? 'FOOD');
+  const [stockLevel, setStockLevel] = React.useState<StockLevel>(initial?.stockLevel ?? 'IN_STOCK');
 
   const {
     register,
@@ -77,6 +82,8 @@ export function MenuItemEditor({ initial, onSave, onUploadPhoto, onClose }: Menu
             : undefined,
         priceXAF: Number(values.priceXAF),
         preparationMinutes: prep,
+        kind,
+        stockLevel,
       };
       const saved = await onSave(input);
       setCurrentItem(saved);
@@ -183,6 +190,36 @@ export function MenuItemEditor({ initial, onSave, onUploadPhoto, onClose }: Menu
             </div>
           </div>
 
+          <div>
+            <p className="mb-1 text-sm font-semibold">Catégorie</p>
+            <div className="flex gap-2">
+              <Pill active={kind === 'FOOD'} onClick={() => setKind('FOOD')}>
+                🍽️ Plat
+              </Pill>
+              <Pill active={kind === 'DRINK'} onClick={() => setKind('DRINK')}>
+                🥤 Boisson
+              </Pill>
+            </div>
+          </div>
+
+          <div>
+            <p className="mb-1 text-sm font-semibold">Stock</p>
+            <div className="flex flex-wrap gap-2">
+              <Pill active={stockLevel === 'IN_STOCK'} onClick={() => setStockLevel('IN_STOCK')}>
+                ✓ En stock
+              </Pill>
+              <Pill active={stockLevel === 'LOW_STOCK'} onClick={() => setStockLevel('LOW_STOCK')}>
+                ⚠️ Stock faible
+              </Pill>
+              <Pill
+                active={stockLevel === 'OUT_OF_STOCK'}
+                onClick={() => setStockLevel('OUT_OF_STOCK')}
+              >
+                ⛔ Rupture
+              </Pill>
+            </div>
+          </div>
+
           {serverError ? <p className="text-sm text-destructive">{serverError}</p> : null}
 
           <Button type="submit" disabled={saving} className="w-full">
@@ -195,7 +232,7 @@ export function MenuItemEditor({ initial, onSave, onUploadPhoto, onClose }: Menu
             <p className="mb-2 text-sm font-semibold">Photo du plat</p>
             {currentItem.photoUrl ? (
               <img
-                src={currentItem.photoUrl}
+                src={`/r2/${currentItem.photoUrl}`}
                 alt={currentItem.name}
                 className="mb-2 h-32 w-full rounded-lg border object-cover"
               />
@@ -233,6 +270,32 @@ export function MenuItemEditor({ initial, onSave, onUploadPhoto, onClose }: Menu
         ) : null}
       </div>
     </div>
+  );
+}
+
+function Pill({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={cn(
+        'rounded-full border-2 px-3 py-1.5 text-xs font-bold transition-colors',
+        active
+          ? 'border-chop-ink bg-chop-ink text-white'
+          : 'border-divider bg-background text-chop-ink hover:border-chop-ink/40',
+      )}
+    >
+      {children}
+    </button>
   );
 }
 
