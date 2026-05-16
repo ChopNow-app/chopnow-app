@@ -6,15 +6,20 @@ import { useRouter, useSearchParams } from 'next/navigation';
 
 import { OtpRequestForm } from '@/features/auth/components/OtpRequestForm';
 import { OtpVerifyForm } from '@/features/auth/components/OtpVerifyForm';
+import { apiRaw } from '@/lib/api/api-client';
 import { auth } from '@/lib/auth';
+import { redirectPathForRole, type UserRole } from '@/lib/auth/role-redirect';
 
 /**
  * Story 1.1 — full OTP login flow.
  *
  * Two screens stacked in one route: request a code (phone in), verify it
- * (6-digit code in). On success we redirect to the `?next=` path or
- * `/restaurants` by default — Story 1.2 already keeps the user signed in
- * across reloads via the refresh-token rotation wired into the API client.
+ * (6-digit code in). On success we redirect to:
+ *   - the `?next=` path if provided (e.g. checkout came here to authenticate
+ *     and wants its caller back)
+ *   - otherwise the role-specific surface (vendor → /vendor, rider →
+ *     /livreur, consumer → /restaurants) so a vendor opening a fresh tab
+ *     never sees the consumer marketing splash again
  *
  * Next 16 build-time prerender bails out of CSR pages that read
  * `useSearchParams()` without a Suspense boundary — we provide one here.
@@ -22,12 +27,25 @@ import { auth } from '@/lib/auth';
 function LoginScreen() {
   const router = useRouter();
   const params = useSearchParams();
-  const next = params.get('next') || '/restaurants';
+  const explicitNext = params.get('next');
 
   const [phone, setPhone] = React.useState<string | null>(null);
 
-  const onVerified = () => {
-    router.replace(next);
+  const onVerified = async () => {
+    // If the caller demanded a specific landing (e.g. /checkout after auth-gate),
+    // honor it. Otherwise route by role.
+    if (explicitNext) {
+      router.replace(explicitNext);
+      return;
+    }
+    try {
+      const me = await apiRaw.get<{ role: UserRole }>('/api/users/me');
+      router.replace(redirectPathForRole(me.role));
+    } catch {
+      // /users/me failed (network blip just after login). Fall back to the
+      // consumer surface — it's the safest universal landing.
+      router.replace('/restaurants');
+    }
   };
 
   const resend = async () => {

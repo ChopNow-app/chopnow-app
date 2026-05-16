@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { PwaInstallPrompt } from '@/components/PwaInstallPrompt';
+import { RoleRedirector } from '@/features/auth/components/RoleRedirector';
 
 // Marketing splash at /. Editorial counterpart to /restaurants — same
 // "Hot Plate" aesthetic, but on desktop the hero opens into a 2-column
@@ -27,6 +28,12 @@ const STEPS = [
 export default function HomePage() {
   return (
     <main className="relative min-h-dvh overflow-hidden bg-chop-warm text-chop-ink">
+      {/* Role-aware redirect: logged-in users are sent to their surface
+          (vendor → /vendor, rider → /livreur, consumer → /restaurants).
+          Anonymous visitors see the splash below. Renders an overlay while
+          fetching /users/me to hide the splash-flicker. */}
+      <RoleRedirector />
+
       {/* paper grain — 3% noise overlay for editorial feel */}
       <div
         aria-hidden
@@ -128,19 +135,41 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── Role redirects — text strip on mobile, 3-col grid on md+ ── */}
+      {/* ── Role picker — promoted from "Autres espaces" footer to a proper
+          3-card section. After the consumer-led hero, this is where a
+          vendor or rider finds their path. The "Je commande" card mirrors
+          the hero CTA to make the parallel structure obvious. ─────── */}
       <section className="relative z-10 mx-auto max-w-7xl px-5 pb-16 pt-16 md:px-8 md:pt-24 lg:px-12 lg:pt-32">
-        <nav aria-label="Espaces" className="border-t border-divider pt-6 md:pt-8">
-          <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-chop-ink-secondary md:text-[11px]">
-            Autres espaces
+        <div className="border-t border-divider pt-8 md:pt-12">
+          <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-chop-ink-secondary md:text-[12px]">
+            Tu es ?
           </p>
           {/* Admin is intentionally NOT here — staff-only entry point, not a
               public role. Reach it directly at /admin/login. */}
-          <ul className="mt-4 grid grid-cols-1 divide-y divide-divider md:mt-6 md:grid-cols-2 md:gap-4 md:divide-y-0">
-            <RoleLink href="/livreur" label="Espace livreur" sub="Recevoir des courses" />
-            <RoleLink href="/vendor" label="Espace vendeur" sub="Gérer le catalogue" />
+          <ul className="mt-5 grid grid-cols-1 gap-3 md:mt-7 md:grid-cols-3">
+            <RoleCard
+              href="/restaurants"
+              eyebrow="01"
+              label="Je commande"
+              sub="Mange chaud, livré en 30 min."
+              tone="primary"
+            />
+            <RoleCard
+              href="/vendre"
+              eyebrow="02"
+              label="Je vends mes plats"
+              sub="Devenir vendeur TChopNow."
+              tone="default"
+            />
+            <RoleCard
+              href="/livrer"
+              eyebrow="03"
+              label="Je livre à moto"
+              sub="Gagner en livrant dans ton quartier."
+              tone="default"
+            />
           </ul>
-        </nav>
+        </div>
 
         <footer className="mt-10 text-center text-[11px] font-medium text-chop-ink-secondary md:mt-14 md:text-[12px]">
           Pilote COD · Bonamoussadi & Makepe · 2026
@@ -150,24 +179,54 @@ export default function HomePage() {
   );
 }
 
-function RoleLink({ href, label, sub }: { href: string; label: string; sub: string }) {
+function RoleCard({
+  href,
+  eyebrow,
+  label,
+  sub,
+  tone,
+}: {
+  href: string;
+  eyebrow: string;
+  label: string;
+  sub: string;
+  tone: 'primary' | 'default';
+}) {
+  const isPrimary = tone === 'primary';
   return (
     <li>
       <Link
         href={href}
-        className="group flex items-center justify-between gap-4 py-3 transition-colors hover:text-chop-red md:rounded-2xl md:border md:border-divider md:px-4 md:py-4 md:hover:border-chop-red md:hover:bg-chop-card-white"
+        className={
+          isPrimary
+            ? 'group relative flex h-full flex-col justify-between gap-6 overflow-hidden rounded-2xl bg-chop-red p-5 text-white shadow-card transition-shadow hover:shadow-elevated md:p-6'
+            : 'group relative flex h-full flex-col justify-between gap-6 overflow-hidden rounded-2xl border-2 border-chop-ink/10 bg-chop-card-white p-5 text-chop-ink transition-colors hover:border-chop-ink hover:bg-chop-warm md:p-6'
+        }
       >
-        <span>
-          <span className="block text-[14px] font-semibold text-chop-ink group-hover:text-chop-red md:text-[15px]">
-            {label}
-          </span>
-          <span className="block text-[12px] font-medium text-chop-ink-secondary md:text-[13px]">
-            {sub}
-          </span>
+        <span
+          className={`font-mono text-[12px] font-bold tabular-nums ${
+            isPrimary ? 'text-white/60' : 'text-chop-ink-secondary'
+          }`}
+        >
+          {eyebrow}.
         </span>
+        <div>
+          <p className="text-[18px] font-extrabold leading-tight tracking-tight md:text-[20px]">
+            {label}
+          </p>
+          <p
+            className={`mt-1 text-[13px] font-medium ${
+              isPrimary ? 'text-white/80' : 'text-chop-ink-secondary'
+            } md:text-[14px]`}
+          >
+            {sub}
+          </p>
+        </div>
         <span
           aria-hidden
-          className="text-[15px] font-bold text-chop-ink-secondary transition-transform group-hover:translate-x-0.5 group-hover:text-chop-red md:text-[16px]"
+          className={`text-[18px] font-bold transition-transform group-hover:translate-x-1 ${
+            isPrimary ? 'text-white' : 'text-chop-ink'
+          }`}
         >
           →
         </span>
