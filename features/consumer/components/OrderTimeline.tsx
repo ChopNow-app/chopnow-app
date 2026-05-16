@@ -74,15 +74,22 @@ export function OrderTimeline({ order }: { order: OrderView }) {
     );
   }
   if (order.status === 'REFUSED' || order.status === 'EXPIRED') {
+    // The backend stores raw refusal codes (enum value, or "EXPIRED_NO_VENDOR_RESPONSE"
+    // from the auto-refuse cron). The consumer should never see those raw codes —
+    // they need a French sentence they can act on.
+    const friendlyReason = humanizeRefusal(order.refusalReason ?? null);
+    const isAutoExpire = order.refusalReason === 'EXPIRED_NO_VENDOR_RESPONSE';
     return (
       <div className="rounded-lg border bg-background p-4">
         <p className="text-base font-semibold text-destructive">
-          {order.status === 'REFUSED'
-            ? 'Vendeur a refusé la commande'
-            : "Vendeur n'a pas répondu à temps"}
+          {isAutoExpire
+            ? "Le restaurant n'a pas répondu à temps"
+            : order.status === 'REFUSED'
+              ? 'Le restaurant a refusé la commande'
+              : "Le restaurant n'a pas répondu à temps"}
         </p>
-        {order.refusalReason ? (
-          <p className="mt-1 text-sm text-muted-foreground">{order.refusalReason}</p>
+        {friendlyReason ? (
+          <p className="mt-1 text-sm text-muted-foreground">{friendlyReason}</p>
         ) : null}
         <p className="mt-2 text-xs text-muted-foreground">
           {order.paymentStatus === 'PAID'
@@ -134,4 +141,27 @@ function isCurrentStep(stepKey: string, order: OrderView): boolean {
     default:
       return false;
   }
+}
+
+// Map raw refusal codes (vendor enum + auto-cron sentinel) to a French sentence
+// the consumer can understand. Stays as a lookup rather than i18n keys because
+// the codebase is French-only for now.
+function humanizeRefusal(reason: string | null): string | null {
+  if (!reason) return null;
+  // The vendor refuse DTO can append a free-text note ("OTHER: too far"). The
+  // enum value is everything before the first colon; the note (if any) is
+  // shown verbatim after.
+  const [code, ...rest] = reason.split(':');
+  const note = rest.join(':').trim();
+  const map: Record<string, string> = {
+    ITEM_OUT_OF_STOCK: 'Plat épuisé.',
+    CLOSED: 'Restaurant fermé.',
+    TOO_MANY_ORDERS: 'Restaurant trop chargé pour le moment.',
+    POWER_OUTAGE: 'Coupure de courant chez le restaurant.',
+    OTHER: 'Autre motif.',
+    EXPIRED_NO_VENDOR_RESPONSE:
+      'Aucune réponse du restaurant dans le temps imparti — il était probablement occupé.',
+  };
+  const label = map[code.trim()] ?? code.trim();
+  return note ? `${label} (${note})` : label;
 }

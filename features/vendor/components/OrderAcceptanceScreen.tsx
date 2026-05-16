@@ -1,0 +1,395 @@
+'use client';
+
+import * as React from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { Bell, ChevronLeft, MapPin, Check, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { apiRaw, ApiClientError } from '@/lib/api/api-client';
+import { cn } from '@/lib/utils';
+import { useVendorOrder } from '../hooks/useVendorOrder';
+import type { VendorOrder } from '../hooks/useVendorOrders';
+import { CountdownCircle } from './CountdownCircle';
+
+const ACCEPTANCE_TTL_SECONDS = 60; // mirrors chopnow-api/src/modules/orders/orders.service.ts
+
+const formatXAF = (n: number) => `${n.toLocaleString('fr-FR')} FCFA`;
+
+const REFUSAL_REASONS = [
+  { value: 'ITEM_OUT_OF_STOCK', label: 'Plat épuisé' },
+  { value: 'CLOSED', label: 'Fermé' },
+  { value: 'TOO_MANY_ORDERS', label: 'Trop de commandes' },
+  { value: 'POWER_OUTAGE', label: 'Coupure de courant (non pénalisant)' },
+  { value: 'OTHER', label: 'Autre' },
+] as const;
+
+interface Props {
+  orderId: string;
+}
+
+export function OrderAcceptanceScreen({ orderId }: Props) {
+  const orderState = useVendorOrder(orderId);
+
+  if (orderState.status === 'loading' || orderState.status === 'idle') {
+    return (
+      <Shell>
+        <div className="mt-16 flex flex-col items-center gap-3">
+          <div className="h-36 w-36 animate-pulse rounded-full bg-chop-surface-gray" />
+          <div className="h-3 w-32 animate-pulse rounded bg-chop-surface-gray" />
+        </div>
+      </Shell>
+    );
+  }
+
+  if (orderState.status === 'unauthenticated') {
+    return (
+      <Shell>
+        <EmptyState
+          title="Connexion requise"
+          message="Connecte-toi pour voir cette commande."
+          ctaHref="/login?next=/vendor"
+          ctaLabel="Se connecter"
+        />
+      </Shell>
+    );
+  }
+
+  if (orderState.status === 'not_found') {
+    return (
+      <Shell>
+        <EmptyState
+          title="Commande introuvable"
+          message="Elle a peut-être été annulée ou n'existe plus."
+          ctaHref="/vendor"
+          ctaLabel="Retour au dashboard"
+        />
+      </Shell>
+    );
+  }
+
+  if (orderState.status === 'error') {
+    return (
+      <Shell>
+        <EmptyState
+          title="Erreur de chargement"
+          message={orderState.message}
+          ctaHref="/vendor"
+          ctaLabel="Retour au dashboard"
+        />
+      </Shell>
+    );
+  }
+
+  return <DecisionView order={orderState.order} />;
+}
+
+function DecisionView({ order }: { order: VendorOrder }) {
+  const router = useRouter();
+  const decidable = order.status === 'PENDING' || order.status === 'CONFIRMED';
+
+  if (!decidable) {
+    return <TerminalView order={order} />;
+  }
+
+  return (
+    <Shell>
+      <div className="flex flex-col items-center text-center">
+        <div className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-full bg-chop-red-light text-chop-red shadow-card">
+          <Bell className="h-7 w-7" strokeWidth={2.4} aria-hidden />
+        </div>
+        <h1 className="text-2xl font-extrabold tracking-tight">Nouvelle commande !</h1>
+        <p className="mt-1.5 max-w-xs text-sm text-muted-foreground">
+          Accepte ou refuse avant la fin du compte à rebours. Sinon elle sera refusée
+          automatiquement.
+        </p>
+
+        {order.acceptanceDeadlineAt ? (
+          <CountdownCircle
+            className="mt-6"
+            deadlineAt={order.acceptanceDeadlineAt}
+            ttlSeconds={ACCEPTANCE_TTL_SECONDS}
+          />
+        ) : (
+          <p className="mt-8 text-sm text-amber-700">Pas de délai défini — décide quand tu veux.</p>
+        )}
+      </div>
+
+      <OrderSummaryCard order={order} />
+      <DeliveryCard order={order} />
+
+      <DecisionButtons
+        orderId={order.id}
+        onDone={() => router.push('/vendor')}
+        onError={(msg) => window.alert(msg)}
+      />
+
+      <Link
+        href="/vendor"
+        className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-full border border-divider bg-chop-card-white px-4 py-3 text-sm font-semibold text-muted-foreground transition-colors hover:bg-chop-surface-gray"
+      >
+        <ChevronLeft className="h-4 w-4" aria-hidden />
+        Retour au dashboard
+      </Link>
+    </Shell>
+  );
+}
+
+function TerminalView({ order }: { order: VendorOrder }) {
+  const label =
+    order.status === 'ACCEPTED' || order.status === 'IN_PREP' || order.status === 'READY_PICKUP'
+      ? 'Acceptée ✓'
+      : order.status === 'REFUSED'
+        ? 'Refusée'
+        : order.status === 'CANCELLED'
+          ? 'Annulée'
+          : order.status;
+  const isPositive =
+    order.status === 'ACCEPTED' || order.status === 'IN_PREP' || order.status === 'READY_PICKUP';
+
+  return (
+    <Shell>
+      <div className="flex flex-col items-center text-center">
+        <div
+          className={cn(
+            'mb-4 inline-flex h-16 w-16 items-center justify-center rounded-full shadow-card',
+            isPositive
+              ? 'bg-chop-mboue-light text-chop-mboue'
+              : 'bg-chop-surface-gray text-muted-foreground',
+          )}
+        >
+          {isPositive ? (
+            <Check className="h-7 w-7" strokeWidth={2.4} />
+          ) : (
+            <X className="h-7 w-7" strokeWidth={2.4} />
+          )}
+        </div>
+        <h1 className="text-2xl font-extrabold tracking-tight">{label}</h1>
+        <p className="mt-1.5 max-w-xs text-sm text-muted-foreground">
+          Cette commande n&apos;attend plus de décision.
+        </p>
+      </div>
+
+      <OrderSummaryCard order={order} />
+
+      <Link
+        href="/vendor"
+        className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-full bg-chop-ink px-4 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-chop-ink/90"
+      >
+        Retour au dashboard
+      </Link>
+    </Shell>
+  );
+}
+
+function OrderSummaryCard({ order }: { order: VendorOrder }) {
+  return (
+    <section className="mt-6 rounded-2xl bg-chop-card-white p-4 shadow-card">
+      <header className="flex items-baseline justify-between border-b border-divider pb-3">
+        <div>
+          <p className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
+            Commande
+          </p>
+          <p className="mt-0.5 text-base font-extrabold tracking-wide">{order.code}</p>
+        </div>
+        <p className="text-right text-sm text-muted-foreground">
+          {labelForPayment(order.paymentMethod)}
+        </p>
+      </header>
+      <ul className="mt-3 space-y-2">
+        {order.items.map((line) => (
+          <li key={line.id} className="flex items-start justify-between gap-3 text-sm">
+            <span className="flex min-w-0 items-start gap-2">
+              <span className="mt-0.5 inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-md bg-chop-red-light px-1 text-[11px] font-bold text-chop-red">
+                ×{line.quantity}
+              </span>
+              <span className="truncate">{line.nameSnapshot}</span>
+            </span>
+            <span className="shrink-0 font-mono tabular-nums text-muted-foreground">
+              {formatXAF(line.lineXAF)}
+            </span>
+          </li>
+        ))}
+      </ul>
+      <footer className="mt-3 flex items-center justify-between border-t border-divider pt-3">
+        <span className="text-sm font-semibold">Total commande</span>
+        <span className="text-lg font-extrabold text-chop-red">{formatXAF(order.totalXAF)}</span>
+      </footer>
+      {order.noteForVendor ? (
+        <p className="mt-3 rounded-lg bg-chop-warm p-2.5 text-xs">📝 {order.noteForVendor}</p>
+      ) : null}
+    </section>
+  );
+}
+
+function DeliveryCard({ order }: { order: VendorOrder }) {
+  return (
+    <section className="mt-3 flex items-start gap-3 rounded-2xl bg-chop-card-white p-4 shadow-card">
+      <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-chop-red-light text-chop-red">
+        <MapPin className="h-4.5 w-4.5" aria-hidden />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-bold">
+          Livraison · {order.deliveryQuartier}
+          {order.deliveryLandmark ? `, ${order.deliveryLandmark}` : ''}
+        </p>
+        <p className="mt-0.5 text-xs text-muted-foreground">
+          Livreur assigné automatiquement après acceptation
+        </p>
+      </div>
+    </section>
+  );
+}
+
+function DecisionButtons({
+  orderId,
+  onDone,
+  onError,
+}: {
+  orderId: string;
+  onDone: () => void;
+  onError: (msg: string) => void;
+}) {
+  const [busy, setBusy] = React.useState<null | 'accept' | 'refuse'>(null);
+  const [refusing, setRefusing] = React.useState(false);
+  const [reason, setReason] =
+    React.useState<(typeof REFUSAL_REASONS)[number]['value']>('ITEM_OUT_OF_STOCK');
+
+  const accept = async () => {
+    setBusy('accept');
+    try {
+      await apiRaw.patch(`/api/orders/${orderId}/accept`, {});
+      onDone();
+    } catch (err) {
+      onError(extract(err) ?? 'Acceptation échouée');
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const submitRefuse = async () => {
+    setBusy('refuse');
+    try {
+      await apiRaw.patch(`/api/orders/${orderId}/refuse`, { reason });
+      onDone();
+    } catch (err) {
+      onError(extract(err) ?? 'Refus échoué');
+    } finally {
+      setBusy(null);
+      setRefusing(false);
+    }
+  };
+
+  if (refusing) {
+    return (
+      <section className="mt-6 space-y-3 rounded-2xl bg-chop-card-white p-4 shadow-card">
+        <p className="text-sm font-semibold">Motif du refus</p>
+        <select
+          value={reason}
+          onChange={(e) => setReason(e.target.value as typeof reason)}
+          className="w-full rounded-xl border border-divider bg-background px-3 py-2.5 text-sm focus:border-chop-red focus:outline-none focus:ring-2 focus:ring-chop-red/30"
+        >
+          {REFUSAL_REASONS.map((r) => (
+            <option key={r.value} value={r.value}>
+              {r.label}
+            </option>
+          ))}
+        </select>
+        <div className="flex gap-2">
+          <Button
+            type="button"
+            variant="destructive"
+            disabled={busy === 'refuse'}
+            onClick={submitRefuse}
+            className="flex-1"
+          >
+            {busy === 'refuse' ? '…' : 'Confirmer le refus'}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setRefusing(false)}
+            disabled={busy !== null}
+          >
+            Annuler
+          </Button>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="mt-6 flex flex-col gap-3 sm:flex-row">
+      <Button
+        type="button"
+        size="lg"
+        disabled={busy === 'accept'}
+        onClick={accept}
+        className="flex-[2] gap-2 bg-chop-red text-base shadow-card hover:bg-chop-red/90"
+      >
+        <Check className="h-5 w-5" aria-hidden />
+        {busy === 'accept' ? '…' : 'Accepter'}
+      </Button>
+      <Button
+        type="button"
+        variant="outline"
+        size="lg"
+        disabled={busy !== null}
+        onClick={() => setRefusing(true)}
+        className="flex-1 gap-2 border-chop-danger text-chop-danger hover:bg-chop-danger-light"
+      >
+        <X className="h-5 w-5" aria-hidden />
+        Refuser
+      </Button>
+    </section>
+  );
+}
+
+function Shell({ children }: { children: React.ReactNode }) {
+  // Full-screen takeover — the countdown screen is a decision moment that
+  // shouldn't compete with the vendor layout's chrome. We render fixed,
+  // covering inset-0 with the surface-gray background, and the inner
+  // content is a scrollable max-w-md column so it still works on tablet.
+  return (
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-chop-surface-gray">
+      <div className="mx-auto flex min-h-full w-full max-w-md flex-col px-5 pb-12 pt-8">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function EmptyState({
+  title,
+  message,
+  ctaHref,
+  ctaLabel,
+}: {
+  title: string;
+  message: string;
+  ctaHref: string;
+  ctaLabel: string;
+}) {
+  return (
+    <div className="mt-20 flex flex-col items-center text-center">
+      <h2 className="text-xl font-bold">{title}</h2>
+      <p className="mt-1 max-w-xs text-sm text-muted-foreground">{message}</p>
+      <Button asChild className="mt-5">
+        <Link href={ctaHref}>{ctaLabel}</Link>
+      </Button>
+    </div>
+  );
+}
+
+function labelForPayment(m: VendorOrder['paymentMethod']): string {
+  if (m === 'CASH') return 'Cash à la livraison';
+  if (m === 'MTN_MOMO') return 'MTN MoMo';
+  return 'Orange Money';
+}
+
+function extract(err: unknown): string | null {
+  if (err instanceof ApiClientError) {
+    const body = err.body as { message?: string } | undefined;
+    return body?.message ?? `Erreur ${err.status}`;
+  }
+  return (err as Error)?.message ?? null;
+}
