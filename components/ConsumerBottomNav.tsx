@@ -63,7 +63,7 @@ export function ConsumerBottomNav() {
   return (
     <nav
       aria-label="Navigation principale"
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-divider bg-background"
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-divider bg-background lg:hidden"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
       <ul className="mx-auto flex h-16 max-w-md items-stretch justify-around">
