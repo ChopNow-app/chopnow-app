@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "license": "UNLICENSED",
-  "description": "ChopNow frontend — Next.js 16 PWA (consumer / livreur / vendeur / admin)",
+  "description": "TChopNow frontend — Next.js 16 PWA (consumer / livreur / vendeur / admin)",
   "engines": {
     "node": ">=22.0.0",
     "npm": ">=10.0.0"

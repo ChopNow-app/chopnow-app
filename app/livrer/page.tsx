@@ -2,9 +2,9 @@ import Link from 'next/link';
 import { RiderOnboardingForm } from '@/features/rider-onboarding/components/RiderOnboardingForm';
 
 export const metadata = {
-  title: 'Devenir livreur — ChopNow',
+  title: 'Devenir livreur — TChopNow',
   description:
-    'Livre pour ChopNow à Douala. Validation sous 4h. Paie quotidienne via MoMo. Tu choisis tes heures.',
+    'Livre pour TChopNow à Douala. Validation sous 4h. Paie quotidienne via MoMo. Tu choisis tes heures.',
 };
 
 // Story 1.4 — rider onboarding landing. Same Hot Plate aesthetic as /vendre.
@@ -23,7 +23,7 @@ export default function LivrerPage() {
       <header className="relative z-10 border-b border-divider/50">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-5 py-4 md:px-8">
           <Link href="/" className="text-[15px] font-extrabold uppercase tracking-[0.18em]">
-            Chop<span className="text-chop-red">Now.</span>
+            TChop<span className="text-chop-red">Now.</span>
           </Link>
           <Link
             href="/"
@@ -41,7 +41,7 @@ export default function LivrerPage() {
         <h1 className="mt-3 text-[40px] font-extrabold leading-[0.95] tracking-[-0.03em] md:text-[56px]">
           Roule avec
           <br />
-          <span className="text-chop-red">ChopNow.</span>
+          <span className="text-chop-red">TChopNow.</span>
         </h1>
         <p className="mt-5 max-w-[44ch] text-[15px] font-medium leading-[1.55] text-chop-ink-secondary md:text-[17px]">
           Paie quotidienne via MoMo. Tu choisis tes heures. Validation sous 4h. Pas de frais

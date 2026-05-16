@@ -1,4 +1,4 @@
-export const metadata = { title: 'ChopNow — Livreur' };
+export const metadata = { title: 'TChopNow — Livreur' };
 
 // Per DESIGN.md §2 surfaces: rider app is dark-by-default for outdoor
 // readability under Cameroon sun + protects driver night-vision. Deep ink
@@ -11,7 +11,7 @@ export default function LivreurLayout({ children }: { children: React.ReactNode 
         style={{ paddingTop: 'calc(env(safe-area-inset-top) + 0.75rem)' }}
       >
         <span className="text-sm font-extrabold uppercase tracking-widest text-chop-red">
-          ChopNow · Livreur
+          TChopNow · Livreur
         </span>
       </header>
       <div className="container max-w-md px-4 py-6">{children}</div>
