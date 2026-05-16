@@ -10,7 +10,7 @@ export default function LivreurLayout({ children }: { children: React.ReactNode 
         className="sticky top-0 z-30 border-b border-chop-dark-border bg-chop-deep-ink/95 px-4 py-3 backdrop-blur"
         style={{ paddingTop: 'calc(env(safe-area-inset-top) + 0.75rem)' }}
       >
-        <span className="text-sm font-extrabold uppercase tracking-widest text-chop-orange">
+        <span className="text-sm font-extrabold uppercase tracking-widest text-chop-red">
           ChopNow · Livreur
         </span>
       </header>

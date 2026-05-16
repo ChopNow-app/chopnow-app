@@ -58,7 +58,7 @@ export function VendorDashboard() {
           <h2 className="flex items-center gap-2 text-base font-extrabold">
             À décider
             {pendingDecision.length > 0 ? (
-              <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-chop-orange px-1.5 text-xs font-bold text-white">
+              <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-chop-red px-1.5 text-xs font-bold text-white">
                 {pendingDecision.length}
               </span>
             ) : null}
@@ -67,7 +67,7 @@ export function VendorDashboard() {
             <button
               type="button"
               onClick={orders.reload}
-              className="text-xs font-semibold text-chop-orange hover:underline"
+              className="text-xs font-semibold text-chop-red hover:underline"
             >
               ↻ Actualiser
             </button>
@@ -372,11 +372,11 @@ function ActiveOrderCard({ order }: { order: VendorOrder }) {
         </span>
       </div>
       {showCode ? (
-        <div className="mt-3 rounded border-2 border-chop-orange bg-background p-2 text-center">
+        <div className="mt-3 rounded border-2 border-chop-red bg-background p-2 text-center">
           <p className="text-xs uppercase tracking-widest text-muted-foreground">
             Code à donner au livreur
           </p>
-          <p className="font-mono text-3xl font-extrabold tracking-widest text-chop-orange">
+          <p className="font-mono text-3xl font-extrabold tracking-widest text-chop-red">
             {order.pickupCode}
           </p>
         </div>

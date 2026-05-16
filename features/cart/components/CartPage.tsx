@@ -351,7 +351,7 @@ function AddressPicker({
           <li key={addr.id}>
             <label
               className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 ${
-                selectedAddressId === addr.id ? 'border-chop-orange bg-background' : 'bg-background'
+                selectedAddressId === addr.id ? 'border-chop-red bg-background' : 'bg-background'
               }`}
             >
               <input

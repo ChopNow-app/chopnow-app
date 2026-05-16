@@ -70,7 +70,7 @@ function buildMapboxStatic(
 ): string {
   // Tile resolution chosen to fit a 360-400 viewport phone in landscape-letterbox
   // form factor; 2x DPI for sharp Retina rendering. Marker color matches the
-  // chop-orange brand token.
+  // chop-red brand token.
   const pinColor = 'e8570a';
   const deliveryPin = `pin-l-d+${pinColor}(${pts.lng},${pts.lat})`;
   const pickupPin =

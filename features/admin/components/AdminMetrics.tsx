@@ -70,7 +70,7 @@ export function AdminMetrics() {
         </p>
         <Link
           href="/admin/login"
-          className="mt-3 inline-block rounded-md bg-chop-orange px-4 py-2 text-sm font-semibold text-white"
+          className="mt-3 inline-block rounded-md bg-chop-red px-4 py-2 text-sm font-semibold text-white"
         >
           Se connecter
         </Link>

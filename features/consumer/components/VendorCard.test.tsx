@@ -38,11 +38,22 @@ describe('VendorCard', () => {
   it('shows the Fermé badge and dims the card when isOpenNow=false', () => {
     render(<VendorCard vendor={{ ...baseVendor, isOpenNow: false }} />);
     expect(screen.getByText('Fermé')).toBeInTheDocument();
-    expect(screen.getByRole('link').className).toContain('opacity-60');
+    expect(screen.getByRole('link').className).toContain('opacity-65');
   });
 
-  it('falls back to the 🍲 placeholder when no profile photo is set', () => {
+  it('renders a deterministic cuisine emoji fallback when no profile photo is set', () => {
+    // baseVendor's badge "Cuisine locale 🍲" matches the `local` keyword,
+    // so the placeholder picks the 🥘 (local cuisine) emoji.
     render(<VendorCard vendor={{ ...baseVendor, profilePhotoUrl: null }} />);
-    expect(screen.getByText('🍲')).toBeInTheDocument();
+    expect(screen.getAllByText('🥘').length).toBeGreaterThan(0);
+  });
+
+  it('falls back to the generic 🍲 emoji when name + badge match no cuisine keyword', () => {
+    render(
+      <VendorCard
+        vendor={{ ...baseVendor, name: 'Vendeur Test', badge: null, profilePhotoUrl: null }}
+      />,
+    );
+    expect(screen.getAllByText('🍲').length).toBeGreaterThan(0);
   });
 });

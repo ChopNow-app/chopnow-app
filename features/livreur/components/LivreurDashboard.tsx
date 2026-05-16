@@ -141,7 +141,7 @@ function CourseSummaryCard({ course }: { course: RiderCourse }) {
             {course.vendor.quartier} → {course.deliveryQuartier}
           </p>
         </div>
-        <span className="shrink-0 rounded-full bg-chop-orange px-3 py-1 text-xs font-bold text-white">
+        <span className="shrink-0 rounded-full bg-chop-red px-3 py-1 text-xs font-bold text-white">
           {stepLabel}
         </span>
       </div>

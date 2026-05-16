@@ -6,26 +6,39 @@ import { useCatalogue } from '../hooks/useCatalogue';
 import { DOUALA_FALLBACK, useGeolocation } from '../hooks/useGeolocation';
 import { VendorCard } from './VendorCard';
 import { GpsHelpDialog } from './GpsHelpDialog';
+import { HomeHeader } from './HomeHeader';
+import { SearchBar } from './SearchBar';
+import { CategoryRail, CATEGORIES, type CategoryId } from './CategoryRail';
+import { PromoCard } from './PromoCard';
+import { SectionHeader } from './SectionHeader';
 import type { VendorCard as VendorCardType } from '../types';
 
 /**
- * Story 2.5 — /restaurants screen.
+ * Story 2.5 — consumer home feed at /restaurants.
  *
- * 1. Request browser geolocation on mount.
- * 2. Fall back to Douala center if denied / unsupported.
- * 3. Fetch /api/catalogue + render three plan-tier sections.
+ * Editorial composition (Phase 2 redesign — Sugar Art Palier 4 brand):
+ *   1. HomeHeader: location pill + oversized greeting + bell
+ *   2. SearchBar: client-side filter on name/badge
+ *   3. CategoryRail: 6 chips, also a name/badge substring filter
+ *   4. PromoCard: time-of-day editorial card
+ *   5. SectionHeader + vendor cards: "Près de toi", "Un peu plus loin",
+ *      and (collapsed by default) "Tout Douala".
  *
- * The catalogue endpoint already filters to ACTIVE + isOpen vendors; we
- * only group + render here.
+ * Geolocation flow:
+ *   - Request once on mount.
+ *   - Fall back to Douala center if denied / unsupported (Story 3.15).
+ *   - Catalogue refetches when coords change.
  */
 const PLAN_LABEL: Record<1 | 2 | 3, { title: string; subtitle: string }> = {
-  1: { title: 'Près de toi', subtitle: 'Moins de 2 km — livraison la plus rapide' },
+  1: { title: 'Près de toi', subtitle: 'Moins de 2 km · livraison express' },
   2: { title: 'Un peu plus loin', subtitle: 'Entre 2 et 5 km' },
-  3: { title: 'Tout Douala', subtitle: 'Plus de 5 km — frais plus élevés' },
+  3: { title: 'Tout Douala', subtitle: 'Plus de 5 km · frais plus élevés' },
 };
 
 export function CataloguePage() {
   const geo = useGeolocation();
+  const [query, setQuery] = React.useState('');
+  const [category, setCategory] = React.useState<CategoryId>('all');
   const [showPlan3, setShowPlan3] = React.useState(false);
   const [showGpsHelp, setShowGpsHelp] = React.useState(false);
 
@@ -33,8 +46,6 @@ export function CataloguePage() {
     if (geo.status === 'idle') geo.request();
   }, [geo]);
 
-  // Coords feed the catalogue fetch. Until we have a fix or a fallback,
-  // we keep the hook idle.
   const coords = React.useMemo(() => {
     if (geo.status === 'ready') return { lat: geo.lat, lng: geo.lng };
     if (geo.status === 'denied' || geo.status === 'unsupported') return DOUALA_FALLBACK;
@@ -43,46 +54,93 @@ export function CataloguePage() {
 
   const catalogue = useCatalogue(coords);
 
+  // Pre-bucket by plan, then apply client-side category + query filters on
+  // each bucket. Filtering at the bucket level (not before) keeps the empty
+  // section copy ("aucun vendeur ouvert dans ton quartier") meaningful.
   const buckets = React.useMemo(() => {
     if (catalogue.status !== 'ready') {
       return { 1: [] as VendorCardType[], 2: [] as VendorCardType[], 3: [] as VendorCardType[] };
     }
+    const cat = CATEGORIES.find((c) => c.id === category);
+    const q = query.trim().toLowerCase();
+    const matches = (v: VendorCardType) => {
+      if (q) {
+        const hay = `${v.name} ${v.badge ?? ''}`.toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      if (cat && cat.match.length > 0) {
+        const hay = `${v.name} ${v.badge ?? ''}`.toLowerCase();
+        if (!cat.match.some((m) => hay.includes(m))) return false;
+      }
+      return true;
+    };
     const out = { 1: [] as VendorCardType[], 2: [] as VendorCardType[], 3: [] as VendorCardType[] };
-    for (const v of catalogue.vendors) out[v.plan].push(v);
+    for (const v of catalogue.vendors) {
+      if (matches(v)) out[v.plan].push(v);
+    }
     return out;
-  }, [catalogue]);
+  }, [catalogue, query, category]);
+
+  const totalShown = buckets[1].length + buckets[2].length + (showPlan3 ? buckets[3].length : 0);
+  const totalAll = buckets[1].length + buckets[2].length + buckets[3].length;
 
   return (
-    <main className="min-h-dvh bg-chop-warm pb-16 text-chop-ink">
-      <header className="container py-6">
-        <h1 className="text-2xl font-bold">Restaurants</h1>
-        <p className="text-sm text-muted-foreground">
-          {geo.status === 'denied' || geo.status === 'unsupported' ? (
-            <>
-              Position approximative (centre de Douala).{' '}
-              {geo.status === 'denied' ? (
-                <button type="button" className="underline" onClick={() => setShowGpsHelp(true)}>
-                  Activer la localisation
-                </button>
-              ) : (
-                'Géolocalisation non supportée par ce navigateur.'
-              )}
-            </>
-          ) : (
-            'Vendeurs ouverts autour de toi.'
-          )}
-        </p>
-      </header>
+    <main className="relative min-h-dvh bg-chop-warm text-chop-ink">
+      {/* paper grain — 3% noise overlay for editorial feel */}
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-0 z-0 opacity-[0.035] mix-blend-overlay"
+        style={{
+          backgroundImage:
+            "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")",
+        }}
+      />
 
-      <div className="container space-y-8">
-        {catalogue.status === 'loading' || geo.status === 'requesting' ? <SectionSkeleton /> : null}
+      <div className="relative z-10 mx-auto max-w-md pb-8">
+        <HomeHeader
+          geo={geo}
+          firstName={null}
+          onLocationClick={() => {
+            if (geo.status === 'denied' || geo.status === 'unsupported') setShowGpsHelp(true);
+            else geo.request();
+          }}
+        />
+
+        <SearchBar value={query} onChange={setQuery} />
+
+        <CategoryRail selected={category} onChange={setCategory} />
+
+        <PromoCard />
+
+        {/* Loading + error states keep the editorial frame; we don't blow the
+            page away to a centered spinner. */}
+        {catalogue.status === 'loading' || geo.status === 'requesting' ? (
+          <SectionHeaderSkeleton />
+        ) : null}
 
         {catalogue.status === 'error' ? (
-          <div className="rounded-lg border bg-background p-4 text-sm">
-            <p className="text-destructive">{catalogue.message}</p>
+          <div className="mx-5 mt-6 rounded-2xl border border-divider bg-chop-card-white p-4 text-sm">
+            <p className="font-semibold text-chop-danger">{catalogue.message}</p>
             <Button variant="outline" size="sm" className="mt-3" onClick={() => geo.request()}>
               Réessayer
             </Button>
+          </div>
+        ) : null}
+
+        {geo.status === 'denied' || geo.status === 'unsupported' ? (
+          <div className="mx-5 mt-4 rounded-2xl bg-chop-surface-gray px-4 py-3 text-[12px] font-medium text-chop-ink-secondary">
+            Position approximative — centre de Douala.{' '}
+            {geo.status === 'denied' ? (
+              <button
+                type="button"
+                className="font-semibold text-chop-red underline-offset-2 hover:underline"
+                onClick={() => setShowGpsHelp(true)}
+              >
+                Activer la localisation
+              </button>
+            ) : (
+              <span>Géolocalisation non supportée par ce navigateur.</span>
+            )}
           </div>
         ) : null}
 
@@ -109,20 +167,26 @@ export function CataloguePage() {
                 emptyMessage="Aucun vendeur disponible plus loin."
               />
             ) : buckets[3].length > 0 ? (
-              <div className="text-center">
-                <Button variant="outline" onClick={() => setShowPlan3(true)}>
-                  Voir tous les vendeurs disponibles ({buckets[3].length})
+              <div className="px-5 pt-6">
+                <Button variant="outline" className="w-full" onClick={() => setShowPlan3(true)}>
+                  Voir tout Douala ({buckets[3].length})
                 </Button>
               </div>
             ) : null}
 
-            {buckets[1].length + buckets[2].length === 0 && buckets[3].length === 0 ? (
-              <div className="rounded-lg border bg-background p-6 text-center">
-                <p className="text-sm">
-                  Aucun vendeur ouvert dans ta zone pour le moment.
-                  <br />
-                  Reviens dans quelques heures !
-                </p>
+            {totalAll === 0 ? (
+              <EmptyAll
+                hasQueryOrCategory={query.length > 0 || category !== 'all'}
+                onClear={() => {
+                  setQuery('');
+                  setCategory('all');
+                }}
+              />
+            ) : null}
+
+            {totalShown === 0 && totalAll > 0 && !showPlan3 ? (
+              <div className="px-5 pt-3 text-center text-[12px] font-medium text-chop-ink-secondary">
+                Aucun résultat à proximité — élargis la recherche.
               </div>
             ) : null}
           </>
@@ -147,16 +211,13 @@ function Section({
 }) {
   return (
     <section>
-      <header className="mb-3">
-        <h2 className="text-lg font-bold">{title}</h2>
-        <p className="text-xs text-muted-foreground">{subtitle}</p>
-      </header>
+      <SectionHeader title={title} subtitle={subtitle} />
       {vendors.length === 0 ? (
-        <p className="rounded-lg border bg-background p-4 text-sm text-muted-foreground">
+        <p className="mx-5 rounded-2xl bg-chop-surface-gray px-4 py-5 text-center text-[13px] font-medium text-chop-ink-secondary">
           {emptyMessage}
         </p>
       ) : (
-        <ul className="space-y-3">
+        <ul className="space-y-4 px-5">
           {vendors.map((v) => (
             <li key={v.id}>
               <VendorCard vendor={v} />
@@ -168,12 +229,46 @@ function Section({
   );
 }
 
-function SectionSkeleton() {
+function SectionHeaderSkeleton() {
   return (
-    <div className="space-y-3">
-      {[1, 2, 3].map((i) => (
-        <div key={i} className="h-24 animate-pulse rounded-lg border bg-background" />
-      ))}
+    <div className="space-y-4 px-5 pt-7">
+      <div className="h-8 w-2/3 animate-pulse rounded-md bg-chop-surface-gray" />
+      <div className="space-y-4">
+        {[0, 1, 2].map((i) => (
+          <div
+            key={i}
+            className="h-64 animate-pulse rounded-3xl bg-chop-surface-gray"
+            style={{ animationDelay: `${i * 80}ms` }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function EmptyAll({
+  hasQueryOrCategory,
+  onClear,
+}: {
+  hasQueryOrCategory: boolean;
+  onClear: () => void;
+}) {
+  return (
+    <div className="mx-5 mt-6 rounded-3xl bg-chop-card-white p-8 text-center shadow-card">
+      <div className="text-5xl">🍽️</div>
+      <h3 className="mt-3 text-[18px] font-extrabold tracking-tight">
+        {hasQueryOrCategory ? 'Rien trouvé' : 'Bientôt en ligne'}
+      </h3>
+      <p className="mx-auto mt-1 max-w-[260px] text-[13px] font-medium text-chop-ink-secondary">
+        {hasQueryOrCategory
+          ? 'Essaye un autre mot ou efface les filtres.'
+          : 'Aucun vendeur ouvert dans ta zone — reviens dans quelques heures.'}
+      </p>
+      {hasQueryOrCategory ? (
+        <Button variant="outline" size="sm" className="mt-4" onClick={onClear}>
+          Effacer les filtres
+        </Button>
+      ) : null}
     </div>
   );
 }
