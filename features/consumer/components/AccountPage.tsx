@@ -102,7 +102,7 @@ export function AccountPage() {
     <main className="min-h-dvh bg-chop-warm pb-16 text-chop-ink">
       <header className="container py-6">
         <p className="text-xs uppercase tracking-widest text-muted-foreground">Mon compte</p>
-        <h1 className="mt-1 text-2xl font-extrabold">{profile.displayName ?? 'Compte ChopNow'}</h1>
+        <h1 className="mt-1 text-2xl font-extrabold">{profile.displayName ?? 'Compte TChopNow'}</h1>
       </header>
 
       <section className="container space-y-4">

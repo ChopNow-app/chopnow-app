@@ -2,9 +2,9 @@ import Link from 'next/link';
 import { VendorOnboardingForm } from '@/features/vendor-onboarding/components/VendorOnboardingForm';
 
 export const metadata = {
-  title: 'Devenir vendeur — ChopNow',
+  title: 'Devenir vendeur — TChopNow',
   description:
-    'Inscris ta cuisine sur ChopNow. Validation sous 24h. Gratuit. Commission seulement sur les commandes livrées.',
+    'Inscris ta cuisine sur TChopNow. Validation sous 24h. Gratuit. Commission seulement sur les commandes livrées.',
 };
 
 // Story 2.0 — vendor onboarding landing. Rebuilt in the Hot Plate Editorial
@@ -26,7 +26,7 @@ export default function VendrePage() {
       <header className="relative z-10 border-b border-divider/50">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-5 py-4 md:px-8">
           <Link href="/" className="text-[15px] font-extrabold uppercase tracking-[0.18em]">
-            Chop<span className="text-chop-red">Now.</span>
+            TChop<span className="text-chop-red">Now.</span>
           </Link>
           <Link
             href="/"
@@ -45,7 +45,7 @@ export default function VendrePage() {
         <h1 className="mt-3 text-[40px] font-extrabold leading-[0.95] tracking-[-0.03em] md:text-[56px]">
           Mets ta cuisine
           <br />
-          <span className="text-chop-red">sur ChopNow.</span>
+          <span className="text-chop-red">sur TChopNow.</span>
         </h1>
         <p className="mt-5 max-w-[44ch] text-[15px] font-medium leading-[1.55] text-chop-ink-secondary md:text-[17px]">
           Gratuit. Validation sous 24h. Commission seulement quand on te livre une commande — pas de

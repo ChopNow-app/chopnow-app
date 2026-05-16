@@ -1,6 +1,6 @@
 {
-  "name": "ChopNow",
-  "short_name": "ChopNow",
+  "name": "TChopNow",
+  "short_name": "TChopNow",
   "description": "Mange sans attendre. De la rue à ta porte.",
   "start_url": "/",
   "display": "standalone",

@@ -36,7 +36,7 @@ export function RatingForm({
     return (
       <div className="bg-card rounded-lg border p-4 text-center">
         <p className="text-base font-semibold">🙏 Merci pour ta note !</p>
-        <p className="mt-1 text-xs text-muted-foreground">Ton retour aide à améliorer ChopNow.</p>
+        <p className="mt-1 text-xs text-muted-foreground">Ton retour aide à améliorer TChopNow.</p>
       </div>
     );
   }

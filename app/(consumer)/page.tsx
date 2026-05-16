@@ -41,7 +41,7 @@ export default function HomePage() {
       <header className="relative z-10 border-b border-divider/50">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 md:px-8 lg:px-12">
           <span className="text-[15px] font-extrabold uppercase tracking-[0.18em] text-chop-ink md:text-[17px]">
-            Chop<span className="text-chop-red">Now.</span>
+            TChop<span className="text-chop-red">Now.</span>
           </span>
           <PwaInstallPrompt />
         </div>

@@ -1,6 +1,6 @@
 {
   "Common": {
-    "appName": "ChopNow",
+    "appName": "TChopNow",
     "slogan": "Eat without waiting.",
     "tagline": "From the street to your door.",
     "cancel": "Cancel",
@@ -15,7 +15,7 @@
     "sending": "Sending…",
     "otpLabel": "6-digit code",
     "verify": "Verify",
-    "consent": "By creating your account, you agree that ChopNow uses your phone number and GPS position only to manage your deliveries."
+    "consent": "By creating your account, you agree that TChopNow uses your phone number and GPS position only to manage your deliveries."
   },
   "Consumer": {
     "ctaOrder": "Order now",

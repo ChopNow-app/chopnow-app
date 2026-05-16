@@ -68,7 +68,7 @@ export default function LoginPage() {
     <main className="min-h-dvh bg-chop-warm text-chop-ink">
       <header className="container py-4">
         <Link href="/" className="text-xl font-extrabold uppercase tracking-tight">
-          ChopNow
+          TChopNow
         </Link>
       </header>
 

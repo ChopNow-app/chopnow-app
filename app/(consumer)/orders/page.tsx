@@ -4,7 +4,7 @@ import { OrdersListPage } from '@/features/consumer/components/OrdersListPage';
 // targets this URL; before this page existed, the route 404'd on prefetch
 // (caught by Lighthouse 2026-05-16). Auth-gated at the component level so
 // the same URL handles logged-in (list) + logged-out (login prompt) states.
-export const metadata = { title: 'Mes commandes — ChopNow' };
+export const metadata = { title: 'Mes commandes — TChopNow' };
 
 export default function Page() {
   return <OrdersListPage />;

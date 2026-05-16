@@ -14,13 +14,13 @@ const jakarta = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: 'ChopNow — Mange sans attendre',
+  title: 'TChopNow — Mange sans attendre',
   description: 'De la rue à ta porte. Livraison de nourriture à Douala.',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'ChopNow',
+    title: 'TChopNow',
   },
   formatDetection: {
     telephone: false,

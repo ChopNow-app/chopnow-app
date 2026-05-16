@@ -262,7 +262,7 @@ export function RiderOnboardingForm() {
           {submitting ? 'Envoi…' : 'Envoyer mon dossier'}
         </Button>
         <p className="mt-3 text-center text-[11px] font-medium text-chop-ink-secondary">
-          En soumettant, tu acceptes les conditions livreur ChopNow.
+          En soumettant, tu acceptes les conditions livreur TChopNow.
         </p>
       </div>
     </form>

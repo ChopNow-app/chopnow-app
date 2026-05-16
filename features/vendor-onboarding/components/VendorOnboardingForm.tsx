@@ -221,7 +221,7 @@ export function VendorOnboardingForm() {
           {submitting ? 'Envoi…' : 'Envoyer ma demande'}
         </Button>
         <p className="mt-3 text-center text-[11px] font-medium text-chop-ink-secondary">
-          En soumettant, tu acceptes la commission ChopNow et les conditions d&apos;utilisation.
+          En soumettant, tu acceptes la commission TChopNow et les conditions d&apos;utilisation.
         </p>
       </div>
     </form>
@@ -437,7 +437,7 @@ export function SuccessState({ role }: { role: 'vendor' | 'rider' }) {
               'Vérification de tes photos',
               'Le validator confirme que le nom + numéro + plat correspondent.',
             ],
-            ['Notification WhatsApp', 'Tu reçois un message du numéro officiel ChopNow.'],
+            ['Notification WhatsApp', 'Tu reçois un message du numéro officiel TChopNow.'],
             [
               'Ouverture du dashboard',
               'Tu te connectes avec ton numéro WhatsApp et tu commences à recevoir des commandes.',
@@ -452,7 +452,7 @@ export function SuccessState({ role }: { role: 'vendor' | 'rider' }) {
               'Vérification CNI + selfie',
               'Le validator confirme que ton ID est lisible et correspond à ta photo.',
             ],
-            ['Notification WhatsApp', 'Tu reçois un message du numéro officiel ChopNow.'],
+            ['Notification WhatsApp', 'Tu reçois un message du numéro officiel TChopNow.'],
             ['Activation', 'Tu te connectes, tu passes en ligne et tu reçois ta première course.'],
           ],
         };
