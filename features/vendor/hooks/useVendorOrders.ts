@@ -31,6 +31,7 @@ export interface VendorOrder {
   deliveryLandmark: string | null;
   placedAt: string;
   acceptedAt: string | null;
+  preparedAt: string | null;
   // Vendor SLA — present on PENDING/CONFIRMED rows; null after the auto-refuse
   // cron flips status. The countdown screen uses this absolute deadline so
   // remaining time survives tab reloads.
@@ -40,6 +41,10 @@ export interface VendorOrder {
     nameSnapshot: string;
     quantity: number;
     lineXAF: number;
+    // Preparation checkbox — set by the vendor on /vendor/preparation/[orderId].
+    // Null = unprepared, ISO timestamp = prepared. The full-checklist "all
+    // prepared" precondition unlocks the "Commande prête" CTA.
+    preparedAt: string | null;
   }>;
   // Story 4.13 — vendor's 4-digit pickup code shown to the rider at pickup.
   // Backend strips the consumer's deliveryCode from this list response.

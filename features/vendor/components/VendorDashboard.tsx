@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ApiClientError } from '@/lib/api/api-client';
+import { cn } from '@/lib/utils';
 import { useVendorAvailability } from '../hooks/useVendorAvailability';
 import { useVendorOrders, type VendorOrder } from '../hooks/useVendorOrders';
 import { useMenuItems, type MenuItem } from '../hooks/useMenuItems';
@@ -244,39 +245,46 @@ function OrderInboxCard({ order }: { order: VendorOrder }) {
 }
 
 function ActiveOrderCard({ order }: { order: VendorOrder }) {
-  // Story 4.13 — show the pickup code only while a rider is en route to
-  // collect. Once status passes PICKED_UP the code is no longer useful
-  // (the rider already used it) so we hide it to declutter the inbox.
-  const SHOW_PICKUP_CODE_FOR: ReadonlySet<typeof order.status> = new Set([
-    'ACCEPTED',
-    'IN_PREP',
-    'READY_PICKUP',
-  ]);
-  const showCode = SHOW_PICKUP_CODE_FOR.has(order.status) && order.pickupCode;
+  // The pickup-code panel + the checklist now both live on /vendor/preparation.
+  // The dashboard card is a preview that routes there in one tap. Keeps the
+  // dashboard scannable when there are several in-flight orders at once.
+  const preparedCount = order.items.filter((i) => i.preparedAt !== null).length;
   return (
-    <div className="bg-card rounded-lg border p-3">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="font-mono text-xs text-muted-foreground">{order.code}</p>
-          <p className="font-semibold">
-            {order.items.length} plat(s) · {formatXAF(order.totalXAF)}
+    <Link
+      href={`/vendor/preparation/${order.id}`}
+      className="group flex items-stretch gap-3 rounded-2xl bg-chop-card-white p-4 shadow-card transition-shadow hover:shadow-elevated focus:outline-none focus-visible:ring-2 focus-visible:ring-chop-red"
+    >
+      <div className="min-w-0 flex-1">
+        <div className="flex items-baseline justify-between gap-3">
+          <p className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
+            {order.code}
           </p>
+          <span
+            className={cn(
+              'shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider',
+              order.status === 'READY_PICKUP'
+                ? 'bg-chop-mboue-light text-chop-mboue'
+                : 'bg-chop-red-light text-chop-red',
+            )}
+          >
+            {labelForActiveStatus(order.status)}
+          </span>
         </div>
-        <span className="shrink-0 rounded-full bg-muted px-2 py-1 text-xs">
-          {labelForActiveStatus(order.status)}
-        </span>
+        <p className="mt-1 text-lg font-extrabold tabular-nums">{formatXAF(order.totalXAF)}</p>
+        <p className="mt-0.5 truncate text-xs text-muted-foreground">
+          {order.items.length} plat{order.items.length > 1 ? 's' : ''}
+          {order.status === 'IN_PREP' || order.status === 'ACCEPTED'
+            ? ` · ${preparedCount}/${order.items.length} prêts`
+            : ''}
+        </p>
       </div>
-      {showCode ? (
-        <div className="mt-3 rounded border-2 border-chop-red bg-background p-2 text-center">
-          <p className="text-xs uppercase tracking-widest text-muted-foreground">
-            Code à donner au livreur
-          </p>
-          <p className="font-mono text-3xl font-extrabold tracking-widest text-chop-red">
-            {order.pickupCode}
-          </p>
-        </div>
-      ) : null}
-    </div>
+      <div className="flex items-center pl-1">
+        <ChevronRight
+          className="h-5 w-5 text-muted-foreground transition-transform group-hover:translate-x-0.5"
+          aria-hidden
+        />
+      </div>
+    </Link>
   );
 }
 
