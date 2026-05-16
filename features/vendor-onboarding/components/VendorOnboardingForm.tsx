@@ -6,6 +6,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -15,6 +16,21 @@ import { Input } from '@/components/ui/input';
 import { PhoneInput } from '@/components/PhoneInput';
 import { ApiClientError } from '@/lib/api/api-client';
 import { cn } from '@/lib/utils';
+
+// Leaflet touches `window` on mount → must be SSR-disabled. Loading="..."
+// keeps the layout space reserved so the form doesn't reflow when the map
+// finishes loading.
+const VendorLocationMap = dynamic(() => import('./VendorLocationMap'), {
+  ssr: false,
+  loading: () => (
+    <div
+      className="flex animate-pulse items-center justify-center rounded-2xl border-2 border-divider bg-chop-surface-gray text-sm font-medium text-chop-ink-secondary"
+      style={{ height: 280 }}
+    >
+      Chargement de la carte…
+    </div>
+  ),
+});
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
 
@@ -224,25 +240,32 @@ export function VendorOnboardingForm() {
           hint="indispensable pour que les clients à proximité te trouvent"
         >
           {coords ? (
-            <div className="flex items-center gap-3 rounded-xl border-2 border-chop-mboue/40 bg-chop-mboue-light/50 p-3 text-[13px]">
-              <span aria-hidden className="text-xl">
-                📍
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="font-semibold text-chop-ink">
-                  Position capturée ({coords.accuracyMeters.toFixed(0)} m de précision)
-                </p>
-                <p className="font-mono text-[11px] text-chop-ink-secondary">
-                  {coords.latitude.toFixed(5)}, {coords.longitude.toFixed(5)}
-                </p>
+            <div className="space-y-2">
+              <VendorLocationMap
+                lat={coords.latitude}
+                lng={coords.longitude}
+                onChange={({ latitude, longitude }) =>
+                  setCoords({ latitude, longitude, accuracyMeters: coords.accuracyMeters })
+                }
+              />
+              <div className="flex items-center justify-between rounded-xl bg-chop-mboue-light/50 px-3 py-2 text-[12px]">
+                <span className="font-mono text-[11px] text-chop-ink-secondary">
+                  📍 {coords.latitude.toFixed(5)}, {coords.longitude.toFixed(5)}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCoords(null);
+                    setGpsState('idle');
+                  }}
+                  className="text-[12px] font-semibold text-chop-ink-secondary underline-offset-2 hover:underline"
+                >
+                  Refaire la capture
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => setCoords(null)}
-                className="shrink-0 text-[12px] font-semibold text-chop-ink-secondary underline-offset-2 hover:underline"
-              >
-                Refaire
-              </button>
+              <p className="text-[12px] font-medium text-chop-ink-secondary">
+                Glisse l&apos;épingle pour affiner — ou touche directement la carte au bon endroit.
+              </p>
             </div>
           ) : (
             <button
