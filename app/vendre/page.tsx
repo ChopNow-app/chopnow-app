@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { VendorOnboardingForm } from '@/features/vendor-onboarding/components/VendorOnboardingForm';
 
 export const metadata = {
@@ -6,21 +7,54 @@ export const metadata = {
     'Inscris ta cuisine sur ChopNow. Validation sous 24h. Gratuit. Commission seulement sur les commandes livrées.',
 };
 
+// Story 2.0 — vendor onboarding landing. Rebuilt in the Hot Plate Editorial
+// aesthetic to match the rest of the app (splash + /restaurants + /).
 export default function VendrePage() {
   return (
-    <main className="min-h-dvh bg-chop-warm pb-16 text-chop-ink">
-      <header className="container py-6">
-        <p className="text-xs uppercase tracking-widest text-muted-foreground">
-          Inscription vendeur
+    <main className="relative min-h-dvh overflow-hidden bg-chop-warm text-chop-ink">
+      {/* paper grain — same 3% noise overlay as the splash */}
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-0 z-0 opacity-[0.035] mix-blend-overlay"
+        style={{
+          backgroundImage:
+            "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")",
+        }}
+      />
+
+      {/* Top nav band — wordmark + back link */}
+      <header className="relative z-10 border-b border-divider/50">
+        <div className="mx-auto flex max-w-3xl items-center justify-between px-5 py-4 md:px-8">
+          <Link href="/" className="text-[15px] font-extrabold uppercase tracking-[0.18em]">
+            Chop<span className="text-chop-red">Now.</span>
+          </Link>
+          <Link
+            href="/"
+            className="text-[12px] font-semibold text-chop-ink-secondary transition-colors hover:text-chop-red"
+          >
+            ← Retour
+          </Link>
+        </div>
+      </header>
+
+      {/* Hero */}
+      <section className="relative z-10 mx-auto max-w-3xl px-5 pt-8 md:px-8 md:pt-12">
+        <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-chop-ink-secondary">
+          Inscription <span className="text-chop-red">·</span> Vendeur
         </p>
-        <h1 className="mt-1 text-3xl font-extrabold">Mets ta cuisine sur ChopNow</h1>
-        <p className="mt-2 max-w-prose text-sm text-muted-foreground">
+        <h1 className="mt-3 text-[40px] font-extrabold leading-[0.95] tracking-[-0.03em] md:text-[56px]">
+          Mets ta cuisine
+          <br />
+          <span className="text-chop-red">sur ChopNow.</span>
+        </h1>
+        <p className="mt-5 max-w-[44ch] text-[15px] font-medium leading-[1.55] text-chop-ink-secondary md:text-[17px]">
           Gratuit. Validation sous 24h. Commission seulement quand on te livre une commande — pas de
           mensualité, pas de frais d&apos;inscription.
         </p>
-      </header>
+      </section>
 
-      <section className="container">
+      {/* Form */}
+      <section className="relative z-10 mx-auto max-w-3xl px-5 pb-16 pt-8 md:px-8 md:pt-10">
         <VendorOnboardingForm />
       </section>
     </main>
