@@ -203,9 +203,9 @@ function DeliveryCodeBlock({ order }: { order: OrderView }) {
   if (!SHOW_FOR.has(order.status) || !order.deliveryCode) return null;
   return (
     <section className="container mt-6">
-      <div className="bg-card rounded-lg border-2 border-chop-orange p-4 text-center">
+      <div className="bg-card rounded-lg border-2 border-chop-red p-4 text-center">
         <p className="text-xs uppercase tracking-widest text-muted-foreground">Code de livraison</p>
-        <p className="mt-2 font-mono text-5xl font-extrabold tracking-widest text-chop-orange">
+        <p className="mt-2 font-mono text-5xl font-extrabold tracking-widest text-chop-red">
           {order.deliveryCode}
         </p>
         <p className="mt-2 text-xs text-muted-foreground">

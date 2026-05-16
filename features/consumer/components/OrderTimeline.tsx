@@ -103,7 +103,7 @@ export function OrderTimeline({ order }: { order: OrderView }) {
             key={step.key}
             className={`flex items-start gap-3 rounded-lg border bg-background p-3 ${
               reached ? '' : 'opacity-40'
-            } ${isCurrent ? 'border-chop-orange' : ''}`}
+            } ${isCurrent ? 'border-chop-red' : ''}`}
           >
             <span className="text-2xl">{step.icon}</span>
             <div className="min-w-0">

@@ -130,7 +130,7 @@ function AddressCard({
           <p className="truncate font-semibold">
             {addr.label ?? 'Adresse'}
             {addr.isDefault ? (
-              <span className="ml-2 rounded-full bg-chop-orange/20 px-2 py-0.5 text-xs">
+              <span className="ml-2 rounded-full bg-chop-red/20 px-2 py-0.5 text-xs">
                 par défaut
               </span>
             ) : null}

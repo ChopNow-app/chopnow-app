@@ -84,7 +84,7 @@ export function GpsHelpDialog({ onClose }: { onClose: () => void }) {
         <ol className="space-y-2 text-sm">
           {guide.steps.map((step, i) => (
             <li key={i} className="flex gap-2">
-              <span className="font-mono font-bold text-chop-orange">{i + 1}.</span>
+              <span className="font-mono font-bold text-chop-red">{i + 1}.</span>
               <span>{step}</span>
             </li>
           ))}

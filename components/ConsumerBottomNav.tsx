@@ -77,7 +77,7 @@ export function ConsumerBottomNav() {
                 aria-current={active ? 'page' : undefined}
                 className={cn(
                   'flex h-full flex-col items-center justify-center gap-0.5 text-xs transition-colors',
-                  active ? 'text-chop-orange' : 'text-muted-foreground hover:text-foreground',
+                  active ? 'text-chop-red' : 'text-muted-foreground hover:text-foreground',
                 )}
               >
                 <Icon className="h-6 w-6" strokeWidth={active ? 2.4 : 2} />
@@ -85,7 +85,7 @@ export function ConsumerBottomNav() {
                 {active ? (
                   <span
                     aria-hidden="true"
-                    className="mt-0.5 h-[3px] w-1 rounded-full bg-chop-orange"
+                    className="mt-0.5 h-[3px] w-1 rounded-full bg-chop-red"
                   />
                 ) : (
                   <span aria-hidden="true" className="mt-0.5 h-[3px] w-1" />

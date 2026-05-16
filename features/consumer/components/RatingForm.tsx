@@ -133,7 +133,7 @@ function StarRow({
             onClick={() => onChange(n)}
             aria-label={`${n} étoile${n > 1 ? 's' : ''}`}
             className={`text-3xl transition ${
-              n <= value ? 'text-chop-orange' : 'text-muted-foreground/40'
+              n <= value ? 'text-chop-red' : 'text-muted-foreground/40'
             }`}
           >
             ★

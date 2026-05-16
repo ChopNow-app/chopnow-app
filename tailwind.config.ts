@@ -37,11 +37,11 @@ const config: Config = {
           DEFAULT: 'hsl(var(--accent))',
           foreground: 'hsl(var(--accent-foreground))',
         },
-        // Brand tokens (current — pending Sugar Art delivery)
+        // Brand tokens — Sugar Art Palier 4 (rouge/noir/blanc, locked 2026-05-12)
         chop: {
-          orange: '#E8570A',
-          'orange-dark': '#B8400A',
-          'orange-light': '#FFF0E8',
+          red: '#E11D2A',
+          'red-dark': '#B01620',
+          'red-light': '#FDEAEB',
           ink: '#0F0F0F',
           'ink-secondary': '#4A4A47',
           warm: '#FAFAF7',

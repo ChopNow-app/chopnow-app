@@ -8,7 +8,7 @@ export default function VendorLayout({ children }: { children: React.ReactNode }
     <div className="min-h-dvh bg-chop-surface-gray">
       <header className="sticky top-0 z-30 border-b border-divider bg-chop-card-white px-4 py-2.5 backdrop-blur supports-[backdrop-filter]:bg-chop-card-white/90">
         <div className="container flex max-w-5xl items-center gap-3">
-          <span className="text-xs font-extrabold uppercase tracking-widest text-chop-orange">
+          <span className="text-xs font-extrabold uppercase tracking-widest text-chop-red">
             ChopNow · Vendeur
           </span>
         </div>

@@ -143,7 +143,7 @@ export function PublicOrderTracker({ orderId }: { orderId: string }) {
         </p>
         <Link
           href="/"
-          className="mt-6 inline-block rounded-md bg-chop-orange px-4 py-2 text-sm font-semibold text-white"
+          className="mt-6 inline-block rounded-md bg-chop-red px-4 py-2 text-sm font-semibold text-white"
         >
           Retour à l&apos;accueil
         </Link>
@@ -172,7 +172,7 @@ export function PublicOrderTracker({ orderId }: { orderId: string }) {
   return (
     <main className="container max-w-md py-8">
       <header className="mb-6 text-center">
-        <p className="text-xs font-semibold uppercase tracking-widest text-chop-orange">
+        <p className="text-xs font-semibold uppercase tracking-widest text-chop-red">
           Suivi de commande
         </p>
         <h1 className="mt-1 text-2xl font-extrabold">{o.vendor.name}</h1>
@@ -199,9 +199,7 @@ export function PublicOrderTracker({ orderId }: { orderId: string }) {
             <li
               key={step.key}
               className={`flex items-start gap-3 rounded-lg border p-3 ${
-                reached
-                  ? 'border-chop-orange bg-background'
-                  : 'border-border bg-muted/30 opacity-60'
+                reached ? 'border-chop-red bg-background' : 'border-border bg-muted/30 opacity-60'
               }`}
             >
               <span className="text-xl" aria-hidden="true">
