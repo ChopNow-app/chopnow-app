@@ -53,7 +53,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <PilotBanner />
           {/* pb-20 = 80px reserve for bottom nav (64px + safe-area-inset). */}
           {/* ConsumerBottomNav hides itself on admin/livreur/vendor routes. */}
-          <div className="min-h-dvh pb-20">{children}</div>
+          <div className="min-h-dvh pb-20 lg:pb-0">{children}</div>
           <ConsumerBottomNav />
         </NextIntlClientProvider>
         <RegisterServiceWorker />

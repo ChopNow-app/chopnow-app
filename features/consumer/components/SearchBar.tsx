@@ -22,7 +22,7 @@ export function SearchBar({
   placeholder = 'Ndolé, poulet DG, pizza…',
 }: SearchBarProps) {
   return (
-    <div className="px-5 pt-5">
+    <div className="px-5 pt-5 md:px-8 lg:px-12">
       <div
         className={cn(
           'flex items-center gap-2 rounded-full bg-chop-surface-gray p-1.5 pl-5',

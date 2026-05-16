@@ -23,7 +23,12 @@ export function SectionHeader({
   className,
 }: SectionHeaderProps) {
   return (
-    <header className={cn('flex items-end justify-between gap-4 px-5 pb-3 pt-7', className)}>
+    <header
+      className={cn(
+        'flex items-end justify-between gap-4 px-5 pb-3 pt-7 md:px-8 lg:px-12',
+        className,
+      )}
+    >
       <div className="min-w-0 flex-1">
         <h2 className="text-[28px] font-extrabold leading-[1.05] tracking-tight text-chop-ink">
           {title}

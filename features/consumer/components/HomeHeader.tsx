@@ -57,7 +57,7 @@ export function HomeHeader({
         : 'bg-chop-neutral';
 
   return (
-    <header className="px-5 pt-6">
+    <header className="px-5 pt-6 md:px-8 lg:px-12">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <button

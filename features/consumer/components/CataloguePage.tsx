@@ -96,7 +96,7 @@ export function CataloguePage() {
         }}
       />
 
-      <div className="relative z-10 mx-auto max-w-md pb-8">
+      <div className="relative z-10 mx-auto max-w-md pb-8 md:max-w-3xl lg:max-w-6xl xl:max-w-7xl">
         <HomeHeader
           geo={geo}
           firstName={null}
@@ -119,7 +119,7 @@ export function CataloguePage() {
         ) : null}
 
         {catalogue.status === 'error' ? (
-          <div className="mx-5 mt-6 rounded-2xl border border-divider bg-chop-card-white p-4 text-sm">
+          <div className="mx-5 mt-6 rounded-2xl border border-divider bg-chop-card-white p-4 text-sm md:mx-8 lg:mx-12">
             <p className="font-semibold text-chop-danger">{catalogue.message}</p>
             <Button variant="outline" size="sm" className="mt-3" onClick={() => geo.request()}>
               Réessayer
@@ -128,7 +128,7 @@ export function CataloguePage() {
         ) : null}
 
         {geo.status === 'denied' || geo.status === 'unsupported' ? (
-          <div className="mx-5 mt-4 rounded-2xl bg-chop-surface-gray px-4 py-3 text-[12px] font-medium text-chop-ink-secondary">
+          <div className="mx-5 mt-4 rounded-2xl bg-chop-surface-gray px-4 py-3 text-[12px] font-medium text-chop-ink-secondary md:mx-8 lg:mx-12">
             Position approximative — centre de Douala.{' '}
             {geo.status === 'denied' ? (
               <button
@@ -167,7 +167,7 @@ export function CataloguePage() {
                 emptyMessage="Aucun vendeur disponible plus loin."
               />
             ) : buckets[3].length > 0 ? (
-              <div className="px-5 pt-6">
+              <div className="px-5 pt-6 md:px-8 lg:px-12">
                 <Button variant="outline" className="w-full" onClick={() => setShowPlan3(true)}>
                   Voir tout Douala ({buckets[3].length})
                 </Button>
@@ -185,7 +185,7 @@ export function CataloguePage() {
             ) : null}
 
             {totalShown === 0 && totalAll > 0 && !showPlan3 ? (
-              <div className="px-5 pt-3 text-center text-[12px] font-medium text-chop-ink-secondary">
+              <div className="px-5 pt-3 text-center text-[12px] font-medium text-chop-ink-secondary md:px-8 lg:px-12">
                 Aucun résultat à proximité — élargis la recherche.
               </div>
             ) : null}
@@ -213,11 +213,11 @@ function Section({
     <section>
       <SectionHeader title={title} subtitle={subtitle} />
       {vendors.length === 0 ? (
-        <p className="mx-5 rounded-2xl bg-chop-surface-gray px-4 py-5 text-center text-[13px] font-medium text-chop-ink-secondary">
+        <p className="mx-5 rounded-2xl bg-chop-surface-gray px-4 py-5 text-center text-[13px] font-medium text-chop-ink-secondary md:mx-8 lg:mx-12">
           {emptyMessage}
         </p>
       ) : (
-        <ul className="space-y-4 px-5">
+        <ul className="grid grid-cols-1 gap-4 px-5 sm:grid-cols-2 md:px-8 lg:grid-cols-3 lg:gap-5 lg:px-12 xl:grid-cols-4 xl:gap-6">
           {vendors.map((v) => (
             <li key={v.id}>
               <VendorCard vendor={v} />
@@ -231,7 +231,7 @@ function Section({
 
 function SectionHeaderSkeleton() {
   return (
-    <div className="space-y-4 px-5 pt-7">
+    <div className="space-y-4 px-5 pt-7 md:px-8 lg:px-12">
       <div className="h-8 w-2/3 animate-pulse rounded-md bg-chop-surface-gray" />
       <div className="space-y-4">
         {[0, 1, 2].map((i) => (
@@ -254,7 +254,7 @@ function EmptyAll({
   onClear: () => void;
 }) {
   return (
-    <div className="mx-5 mt-6 rounded-3xl bg-chop-card-white p-8 text-center shadow-card">
+    <div className="mx-5 mt-6 rounded-3xl bg-chop-card-white p-8 text-center shadow-card md:mx-8 lg:mx-12">
       <div className="text-5xl">🍽️</div>
       <h3 className="mt-3 text-[18px] font-extrabold tracking-tight">
         {hasQueryOrCategory ? 'Rien trouvé' : 'Bientôt en ligne'}

@@ -56,7 +56,7 @@ export function CategoryRail({ selected, onChange }: CategoryRailProps) {
     <nav aria-label="Catégories" className="pt-5">
       <ul
         className={cn(
-          'flex gap-2 overflow-x-auto px-5 pb-1',
+          'flex gap-2 overflow-x-auto px-5 pb-1 md:px-8 lg:px-12',
           // Hide the native scrollbar — visual rhythm is enough of a hint.
           '[scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
         )}

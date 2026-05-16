@@ -170,7 +170,7 @@ export function PublicOrderTracker({ orderId }: { orderId: string }) {
   const terminal = TERMINAL_LABELS[o.status];
 
   return (
-    <main className="container max-w-md py-8">
+    <main className="container max-w-md py-8 md:max-w-3xl">
       <header className="mb-6 text-center">
         <p className="text-xs font-semibold uppercase tracking-widest text-chop-red">
           Suivi de commande
