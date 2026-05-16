@@ -49,6 +49,54 @@ export default function LivrerPage() {
         </p>
       </section>
 
+      {/* Earnings estimator (#10) — persuasive panel between hero + form.
+          Pilot-week numbers based on:
+            - 5-10 courses/day at the pilot's scale (50 cmd/day → 3 riders)
+            - 600-800 FCFA livreur fee per course in Douala moto market
+          Range stays conservative so we don't over-promise. */}
+      <section className="relative z-10 mx-auto max-w-3xl px-5 pt-10 md:px-8">
+        <div className="relative overflow-hidden rounded-3xl bg-chop-ink text-white shadow-elevated">
+          <div
+            aria-hidden
+            className="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-chop-red/20 blur-3xl"
+          />
+          <div className="relative p-6 md:p-8">
+            <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/60">
+              Estimation pilote
+            </p>
+            <h2 className="mt-2 text-[34px] font-extrabold leading-[0.95] tracking-[-0.02em] md:text-[44px]">
+              <span className="text-chop-red">1 500</span> à{' '}
+              <span className="text-chop-red">5 000</span>
+              <span className="ml-2 text-[18px] font-bold tracking-normal text-white/70 md:text-[22px]">
+                FCFA / jour
+              </span>
+            </h2>
+            <p className="mt-2 max-w-[44ch] text-[13px] font-medium text-white/70 md:text-[14px]">
+              Selon le nombre de courses que tu prends. À Bonamoussadi / Makepe pendant le pilote, 5
+              à 10 courses par jour sont typiques.
+            </p>
+            <ul className="mt-5 grid grid-cols-2 gap-3 text-[12px] font-semibold text-white md:grid-cols-3">
+              <li className="flex items-start gap-2 rounded-xl bg-white/10 px-3 py-2 backdrop-blur-sm">
+                <span aria-hidden>💰</span>
+                <span>Paie quotidienne 21h MoMo</span>
+              </li>
+              <li className="flex items-start gap-2 rounded-xl bg-white/10 px-3 py-2 backdrop-blur-sm">
+                <span aria-hidden>📱</span>
+                <span>Tu choisis tes heures</span>
+              </li>
+              <li className="flex items-start gap-2 rounded-xl bg-white/10 px-3 py-2 backdrop-blur-sm">
+                <span aria-hidden>🏍️</span>
+                <span>Moto, vélo ou à pied</span>
+              </li>
+            </ul>
+            <p className="mt-4 text-[11px] font-medium text-white/55">
+              Estimations basées sur le marché Douala. Pas un revenu garanti — dépend de ta
+              disponibilité et de la densité de commandes dans ta zone.
+            </p>
+          </div>
+        </div>
+      </section>
+
       <section className="relative z-10 mx-auto max-w-3xl px-5 pb-16 pt-8 md:px-8 md:pt-10">
         <RiderOnboardingForm />
       </section>
