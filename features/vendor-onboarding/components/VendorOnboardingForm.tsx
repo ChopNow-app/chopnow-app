@@ -25,6 +25,10 @@ const MAX_PHOTO_BYTES = 8 * 1024 * 1024; // 8 MB — mirrors backend limit
 
 const schema = z.object({
   name: z.string().min(2, '2 caractères minimum').max(80),
+  ownerName: z.string().min(2, '2 caractères minimum').max(80),
+  type: z.enum(['INFORMAL', 'SEMI_FORMAL', 'RESTAURANT'], {
+    errorMap: () => ({ message: 'Choisis le type' }),
+  }),
   quartier: z.string().min(2, 'Quartier requis').max(80),
   pointOfReference: z.string().max(200).optional().or(z.literal('')),
   whatsappPhone: z.string().regex(PHONE, 'Numéro WhatsApp invalide'),
@@ -44,6 +48,48 @@ const CAPACITY_OPTIONS = [
   { value: 'GT_30' as const, label: '> 30 plats / jour', sub: 'Restaurant établi' },
 ];
 
+const TYPE_OPTIONS = [
+  {
+    value: 'INFORMAL' as const,
+    label: '🍲 Cuisine maison',
+    sub: 'Tu cuisines chez toi, sans local commercial',
+  },
+  {
+    value: 'SEMI_FORMAL' as const,
+    label: '🍽️ Maquis',
+    sub: 'Petit restaurant de quartier, terrasse, snack',
+  },
+  {
+    value: 'RESTAURANT' as const,
+    label: '🏛️ Restaurant',
+    sub: 'Restaurant déclaré (RCCM), enseigne fixe',
+  },
+];
+
+// Standard browser geolocation reading. Returns the coords or null when
+// the user denies / GPS is unavailable. We don't ask for high accuracy —
+// the catalogue ranking is at the km level, ±50m is fine.
+interface Coords {
+  latitude: number;
+  longitude: number;
+  accuracyMeters: number;
+}
+async function getCoords(): Promise<Coords | null> {
+  if (typeof navigator === 'undefined' || !navigator.geolocation) return null;
+  return new Promise((resolve) => {
+    navigator.geolocation.getCurrentPosition(
+      (pos) =>
+        resolve({
+          latitude: pos.coords.latitude,
+          longitude: pos.coords.longitude,
+          accuracyMeters: pos.coords.accuracy,
+        }),
+      () => resolve(null),
+      { enableHighAccuracy: false, timeout: 12_000, maximumAge: 60_000 },
+    );
+  });
+}
+
 /**
  * Story 2.0 — public onboarding form for informal vendors, rebuilt in the
  * Hot Plate Editorial aesthetic (Phase 2 redesign carryover). Single-shot
@@ -59,6 +105,8 @@ const CAPACITY_OPTIONS = [
 export function VendorOnboardingForm() {
   const [profilePhoto, setProfilePhoto] = React.useState<File | null>(null);
   const [firstItemPhoto, setFirstItemPhoto] = React.useState<File | null>(null);
+  const [coords, setCoords] = React.useState<Coords | null>(null);
+  const [gpsState, setGpsState] = React.useState<'idle' | 'requesting' | 'denied'>('idle');
   const [submitting, setSubmitting] = React.useState(false);
   const [serverError, setServerError] = React.useState<string | null>(null);
   const [photoError, setPhotoError] = React.useState<string | null>(null);
@@ -71,8 +119,19 @@ export function VendorOnboardingForm() {
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { firstItemPriceXAF: 1500 },
+    defaultValues: { firstItemPriceXAF: 1500, type: 'INFORMAL' },
   });
+
+  const onCaptureGps = async () => {
+    setGpsState('requesting');
+    const c = await getCoords();
+    if (c) {
+      setCoords(c);
+      setGpsState('idle');
+    } else {
+      setGpsState('denied');
+    }
+  };
 
   if (done) return <SuccessState role="vendor" />;
 
@@ -88,6 +147,8 @@ export function VendorOnboardingForm() {
     try {
       const form = new FormData();
       form.append('name', values.name);
+      form.append('ownerName', values.ownerName);
+      form.append('type', values.type);
       form.append('quartier', values.quartier);
       if (values.pointOfReference) form.append('pointOfReference', values.pointOfReference);
       form.append('whatsappPhone', values.whatsappPhone);
@@ -95,6 +156,10 @@ export function VendorOnboardingForm() {
       form.append('declaredCapacity', values.declaredCapacity);
       form.append('firstItemName', values.firstItemName);
       form.append('firstItemPriceXAF', String(values.firstItemPriceXAF));
+      if (coords) {
+        form.append('latitude', String(coords.latitude));
+        form.append('longitude', String(coords.longitude));
+      }
       form.append('profilePhoto', profilePhoto);
       if (firstItemPhoto) form.append('firstItemPhoto', firstItemPhoto);
 
@@ -119,6 +184,25 @@ export function VendorOnboardingForm() {
         <Field label="Nom de la cuisine" error={errors.name?.message}>
           <BrandInput placeholder="Chez Maman Mboué" {...register('name')} />
         </Field>
+        <Field label="Ton nom (gérant)" error={errors.ownerName?.message}>
+          <BrandInput placeholder="Marie Mboué" autoComplete="name" {...register('ownerName')} />
+        </Field>
+        <Field label="Type de cuisine">
+          <fieldset className="space-y-2">
+            {TYPE_OPTIONS.map((opt) => (
+              <RadioCard
+                key={opt.value}
+                value={opt.value}
+                label={opt.label}
+                sub={opt.sub}
+                {...register('type')}
+              />
+            ))}
+            {errors.type ? (
+              <p className="mt-1 text-xs font-medium text-chop-danger">{errors.type.message}</p>
+            ) : null}
+          </fieldset>
+        </Field>
         <Field label="Quartier de Douala" error={errors.quartier?.message}>
           <BrandInput placeholder="Makepe, Bonamoussadi…" {...register('quartier')} />
         </Field>
@@ -131,6 +215,54 @@ export function VendorOnboardingForm() {
             {...register('pointOfReference')}
           />
         </Field>
+
+        {/* GPS capture — vendor's actual location pin. Without this every
+            onboarded vendor lands at Douala center and the distance ranking
+            is broken for them. Optional — backend falls back to city center. */}
+        <Field
+          label="Position GPS"
+          hint="indispensable pour que les clients à proximité te trouvent"
+        >
+          {coords ? (
+            <div className="flex items-center gap-3 rounded-xl border-2 border-chop-mboue/40 bg-chop-mboue-light/50 p-3 text-[13px]">
+              <span aria-hidden className="text-xl">
+                📍
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="font-semibold text-chop-ink">
+                  Position capturée ({coords.accuracyMeters.toFixed(0)} m de précision)
+                </p>
+                <p className="font-mono text-[11px] text-chop-ink-secondary">
+                  {coords.latitude.toFixed(5)}, {coords.longitude.toFixed(5)}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setCoords(null)}
+                className="shrink-0 text-[12px] font-semibold text-chop-ink-secondary underline-offset-2 hover:underline"
+              >
+                Refaire
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={onCaptureGps}
+              disabled={gpsState === 'requesting'}
+              className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-divider bg-chop-warm py-4 text-[14px] font-semibold text-chop-ink transition-colors hover:border-chop-red/50 hover:bg-chop-red-light/30 disabled:opacity-60"
+            >
+              <span aria-hidden>📍</span>
+              {gpsState === 'requesting' ? 'Capture en cours…' : 'Capturer ma position'}
+            </button>
+          )}
+          {gpsState === 'denied' ? (
+            <p className="mt-1 text-[12px] font-medium text-chop-danger">
+              Localisation refusée. Tu peux soumettre sans, mais ton restaurant sera placé au centre
+              de Douala par défaut.
+            </p>
+          ) : null}
+        </Field>
+
         <PhotoPicker
           label="Photo de devanture / cuisine"
           required
