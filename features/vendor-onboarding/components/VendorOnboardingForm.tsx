@@ -55,6 +55,17 @@ const schema = z.object({
   }),
   firstItemName: z.string().min(2, '2 caractères minimum').max(80),
   firstItemPriceXAF: z.coerce.number().int().min(100, 'Minimum 100 FCFA').max(1_000_000),
+  // Optional extras (#12) — name + price, no photo. Both halves must be
+  // present together or omitted together. Zod handles the empty-string
+  // case via .or(z.literal('')).
+  extraItem1Name: z.string().max(80).optional().or(z.literal('')),
+  extraItem1PriceXAF: z
+    .union([z.coerce.number().int().min(100).max(1_000_000), z.literal('')])
+    .optional(),
+  extraItem2Name: z.string().max(80).optional().or(z.literal('')),
+  extraItem2PriceXAF: z
+    .union([z.coerce.number().int().min(100).max(1_000_000), z.literal('')])
+    .optional(),
 });
 
 type FormValues = z.input<typeof schema>;
@@ -173,6 +184,17 @@ export function VendorOnboardingForm() {
       form.append('declaredCapacity', values.declaredCapacity);
       form.append('firstItemName', values.firstItemName);
       form.append('firstItemPriceXAF', String(values.firstItemPriceXAF));
+      // Extras — only sent when both halves are filled. Empty strings or
+      // partial pairs are silently dropped (matches the backend's `&&`
+      // guard in vendor.service.ts).
+      if (values.extraItem1Name && values.extraItem1PriceXAF) {
+        form.append('extraItem1Name', values.extraItem1Name);
+        form.append('extraItem1PriceXAF', String(values.extraItem1PriceXAF));
+      }
+      if (values.extraItem2Name && values.extraItem2PriceXAF) {
+        form.append('extraItem2Name', values.extraItem2Name);
+        form.append('extraItem2PriceXAF', String(values.extraItem2PriceXAF));
+      }
       if (coords) {
         form.append('latitude', String(coords.latitude));
         form.append('longitude', String(coords.longitude));
@@ -370,6 +392,30 @@ export function VendorOnboardingForm() {
         />
       </FormSection>
 
+      {/* Multi-item onboarding (#12) — 2 optional extras. No photos here
+          to keep the form fast; vendor adds richer items via the
+          /vendor dashboard once activated. */}
+      <FormSection num="05" title="Autres plats (optionnel)">
+        <p className="-mt-2 text-[12px] font-medium text-chop-ink-secondary">
+          Ajoute jusqu&apos;à 2 plats supplémentaires. Sans photo — tu pourras les enrichir depuis
+          le dashboard après validation.
+        </p>
+        <ExtraItemRow
+          n={1}
+          registerName={register('extraItem1Name')}
+          registerPrice={register('extraItem1PriceXAF')}
+          nameError={errors.extraItem1Name?.message}
+          priceError={errors.extraItem1PriceXAF?.message}
+        />
+        <ExtraItemRow
+          n={2}
+          registerName={register('extraItem2Name')}
+          registerPrice={register('extraItem2PriceXAF')}
+          nameError={errors.extraItem2Name?.message}
+          priceError={errors.extraItem2PriceXAF?.message}
+        />
+      </FormSection>
+
       {serverError ? <ErrorBanner message={serverError} /> : null}
 
       <div className="pt-2">
@@ -471,6 +517,52 @@ export const RadioCard = React.forwardRef<
   </label>
 ));
 RadioCard.displayName = 'RadioCard';
+
+// Extra-item input row (#12). Name + price in a single horizontal pair on
+// tablet+, stacked on mobile. Visually grouped so the user understands
+// "these two fields belong together" without an explicit label.
+function ExtraItemRow({
+  n,
+  registerName,
+  registerPrice,
+  nameError,
+  priceError,
+}: {
+  n: number;
+  registerName: ReturnType<ReturnType<typeof useForm<FormValues>>['register']>;
+  registerPrice: ReturnType<ReturnType<typeof useForm<FormValues>>['register']>;
+  nameError?: string;
+  priceError?: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-divider bg-chop-warm/40 p-3">
+      <p className="mb-2 font-mono text-[10px] font-bold uppercase tracking-widest text-chop-ink-secondary">
+        Plat {n}
+      </p>
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_140px]">
+        <div>
+          <BrandInput placeholder="Nom du plat" {...registerName} />
+          {nameError ? (
+            <p className="mt-1 text-xs font-medium text-chop-danger">{nameError}</p>
+          ) : null}
+        </div>
+        <div>
+          <BrandInput
+            type="number"
+            inputMode="numeric"
+            min={100}
+            step={100}
+            placeholder="2000 FCFA"
+            {...registerPrice}
+          />
+          {priceError ? (
+            <p className="mt-1 text-xs font-medium text-chop-danger">{priceError}</p>
+          ) : null}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export function PhotoPicker({
   label,
