@@ -1,17 +1,29 @@
 'use client';
 
 import * as React from 'react';
-import { useForm, type Resolver } from 'react-hook-form';
+import { useForm, type Resolver, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { PhoneInput } from '@/components/PhoneInput';
 import { ApiClientError } from '@/lib/api/api-client';
+import {
+  FormSection,
+  Field,
+  BrandInput,
+  RadioCard,
+  PhotoPicker,
+  ErrorBanner,
+  SuccessState,
+} from '@/features/vendor-onboarding/components/VendorOnboardingForm';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
 const PHONE = /^(?:6[5-9]\d{7}|\+?[1-9]\d{7,14})$/;
-const PLATE = /^[A-Z0-9-]{4,12}$/;
+// Cameroon plates can carry spaces ("LT 1234 AB"). The old `[A-Z0-9-]{4,12}`
+// rejected legitimate plates. We accept spaces in the visible value and
+// strip them before submitting so the backend stores a normalized form.
+const PLATE_VISIBLE = /^[A-Z0-9 -]{4,15}$/;
 
 const schema = z
   .object({
@@ -21,7 +33,11 @@ const schema = z
       errorMap: () => ({ message: 'Choisis un mode de transport' }),
     }),
     preferredZone: z.string().max(80).optional().or(z.literal('')),
-    licensePlate: z.string().regex(PLATE, 'Format plaque invalide').optional().or(z.literal('')),
+    licensePlate: z
+      .string()
+      .regex(PLATE_VISIBLE, 'Format plaque invalide')
+      .optional()
+      .or(z.literal('')),
     momoPhone: z.string().regex(PHONE, 'Numéro MoMo invalide'),
   })
   .refine(
@@ -29,26 +45,23 @@ const schema = z
       v.vehicleType === 'ON_FOOT' ||
       v.vehicleType === 'BICYCLE' ||
       (typeof v.licensePlate === 'string' && v.licensePlate.length > 0),
-    {
-      message: 'Plaque requise pour moto et voiture',
-      path: ['licensePlate'],
-    },
+    { message: 'Plaque requise pour moto et voiture', path: ['licensePlate'] },
   );
 
 type FormValues = z.input<typeof schema>;
 
 const VEHICLES = [
-  { value: 'MOTO', label: '🏍️ Moto' },
-  { value: 'BICYCLE', label: '🚲 Vélo' },
-  { value: 'CAR', label: '🚗 Voiture' },
-  { value: 'ON_FOOT', label: '👟 À pied' },
-] as const;
+  { value: 'MOTO' as const, label: '🏍️ Moto', sub: 'Plus rapide en ville' },
+  { value: 'BICYCLE' as const, label: '🚲 Vélo', sub: 'Bon pour les courtes distances' },
+  { value: 'CAR' as const, label: '🚗 Voiture', sub: 'Idéal pour les groupes' },
+  { value: 'ON_FOOT' as const, label: '👟 À pied', sub: 'Quartier dense uniquement' },
+];
 
 /**
- * Story 1.4 — public rider onboarding. Same shape as /vendre: single-shot
- * multipart POST to /api/riders. Photos (idCard + selfie + optional vehicle)
- * are required for non-on-foot vehicles. Admin reviews within 4h per the
- * confirmation WhatsApp the backend sends after submit.
+ * Story 1.4 — public rider onboarding, rebuilt in Hot Plate Editorial style
+ * (same look as the consumer surfaces). Single-shot multipart POST to
+ * /api/riders. ID card + selfie always required; vehicle photo required for
+ * MOTO/CAR (license plate visible), optional for BICYCLE, skipped for ON_FOOT.
  */
 export function RiderOnboardingForm() {
   const [idCardPhoto, setIdCard] = React.useState<File | null>(null);
@@ -56,10 +69,12 @@ export function RiderOnboardingForm() {
   const [vehiclePhoto, setVehicle] = React.useState<File | null>(null);
   const [submitting, setSubmitting] = React.useState(false);
   const [serverError, setServerError] = React.useState<string | null>(null);
+  const [photoError, setPhotoError] = React.useState<string | null>(null);
   const [done, setDone] = React.useState(false);
 
   const {
     register,
+    control,
     handleSubmit,
     watch,
     formState: { errors },
@@ -72,34 +87,32 @@ export function RiderOnboardingForm() {
   const needsVehiclePhoto = vehicleType !== 'ON_FOOT';
   const needsLicensePlate = vehicleType === 'MOTO' || vehicleType === 'CAR';
 
-  if (done) {
-    return (
-      <div className="bg-card rounded-lg border p-6 text-center">
-        <h2 className="text-xl font-bold">✅ Dossier reçu</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          On vérifie tes pièces sous 4 heures. Tu recevras une notification WhatsApp à
-          l&apos;activation.
-        </p>
-      </div>
-    );
-  }
+  if (done) return <SuccessState role="rider" />;
 
   const onSubmit = async (values: FormValues) => {
     setServerError(null);
+    setPhotoError(null);
     if (!idCardPhoto) {
-      setServerError("Photo de la pièce d'identité requise");
+      setPhotoError("Photo de la pièce d'identité requise.");
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
     if (!selfiePhoto) {
-      setServerError('Selfie requis');
+      setPhotoError('Selfie requis pour vérifier que la pièce est bien la tienne.');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
-    if (needsVehiclePhoto && !vehiclePhoto) {
-      setServerError(
-        `Photo de ta ${vehicleType === 'MOTO' ? 'moto' : vehicleType === 'CAR' ? 'voiture' : 'vélo'} requise`,
-      );
+    if (needsVehiclePhoto && !vehiclePhoto && vehicleType !== 'BICYCLE') {
+      const noun = vehicleType === 'MOTO' ? 'moto' : 'voiture';
+      setPhotoError(`Photo de ta ${noun} requise (plaque bien visible).`);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
+
+    // Normalize plate before sending: strip spaces + uppercase.
+    const normalizedPlate = values.licensePlate
+      ? values.licensePlate.replace(/\s+/g, '').toUpperCase()
+      : '';
 
     setSubmitting(true);
     try {
@@ -108,7 +121,7 @@ export function RiderOnboardingForm() {
       form.append('phone', values.phone);
       form.append('vehicleType', values.vehicleType);
       if (values.preferredZone) form.append('preferredZone', values.preferredZone);
-      if (values.licensePlate) form.append('licensePlate', values.licensePlate);
+      if (normalizedPlate) form.append('licensePlate', normalizedPlate);
       form.append('momoPhone', values.momoPhone);
       form.append('idCardPhoto', idCardPhoto);
       form.append('selfiePhoto', selfiePhoto);
@@ -128,36 +141,54 @@ export function RiderOnboardingForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-      <Section title="1 · Qui es-tu ?">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+      {photoError ? <ErrorBanner message={photoError} /> : null}
+
+      <FormSection num="01" title="Qui es-tu ?">
         <Field label="Nom complet" error={errors.name?.message}>
-          <Input placeholder="Jean Mboué" {...register('name')} />
+          <BrandInput placeholder="Jean Mboué" autoComplete="name" {...register('name')} />
         </Field>
         <Field label="Numéro WhatsApp" error={errors.phone?.message}>
-          <Input type="tel" inputMode="tel" placeholder="670000000" {...register('phone')} />
+          <Controller
+            control={control}
+            name="phone"
+            render={({ field }) => (
+              <PhoneInput
+                value={field.value}
+                onChange={field.onChange}
+                error={errors.phone?.message}
+              />
+            )}
+          />
         </Field>
-      </Section>
+      </FormSection>
 
-      <Section title="2 · Avec quoi tu livres ?">
+      <FormSection num="02" title="Avec quoi tu livres ?">
         <fieldset className="space-y-2">
           {VEHICLES.map((v) => (
-            <label
+            <RadioCard
               key={v.value}
-              className="flex cursor-pointer items-center gap-3 rounded-lg border bg-background p-3"
-            >
-              <input type="radio" value={v.value} {...register('vehicleType')} />
-              <span>{v.label}</span>
-            </label>
+              value={v.value}
+              label={v.label}
+              sub={v.sub}
+              {...register('vehicleType')}
+            />
           ))}
           {errors.vehicleType ? (
-            <p className="text-xs text-destructive">{errors.vehicleType.message}</p>
+            <p className="mt-1 text-xs font-medium text-chop-danger">
+              {errors.vehicleType.message}
+            </p>
           ) : null}
         </fieldset>
 
         {needsLicensePlate ? (
-          <Field label="Numéro de plaque" error={errors.licensePlate?.message}>
-            <Input
-              placeholder="LT1234"
+          <Field
+            label="Numéro de plaque"
+            hint="majuscules — espaces tolérés"
+            error={errors.licensePlate?.message}
+          >
+            <BrandInput
+              placeholder="LT 1234 X"
               autoCapitalize="characters"
               {...register('licensePlate', {
                 onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -168,126 +199,73 @@ export function RiderOnboardingForm() {
           </Field>
         ) : null}
 
-        <Field label="Zone préférée" hint="(quartier où tu veux travailler — optionnel)">
-          <Input placeholder="Makepe, Bonanjo…" {...register('preferredZone')} />
+        <Field label="Zone préférée" hint="quartier où tu veux travailler — optionnel">
+          <BrandInput placeholder="Makepe, Bonamoussadi…" {...register('preferredZone')} />
         </Field>
-      </Section>
+      </FormSection>
 
-      <Section title="3 · Tes pièces">
+      <FormSection num="03" title="Tes pièces">
         <PhotoPicker
-          label="Photo recto de ta CNI / passeport"
+          label="Recto de ta CNI / passeport"
+          required
           file={idCardPhoto}
           onPick={setIdCard}
-          required
         />
-        <PhotoPicker label="Selfie clair (visage)" file={selfiePhoto} onPick={setSelfie} required />
+        <PhotoPicker
+          label="Selfie clair (visage)"
+          required
+          helperText="Doit clairement montrer ton visage. Pas de masque, pas de filtre."
+          file={selfiePhoto}
+          onPick={setSelfie}
+        />
         {needsVehiclePhoto ? (
           <PhotoPicker
-            label={`Photo de ta ${vehicleType === 'MOTO' ? 'moto' : vehicleType === 'CAR' ? 'voiture' : 'vélo'} ${vehicleType === 'BICYCLE' ? '(optionnel)' : '(plaque visible)'}`}
+            label={
+              vehicleType === 'MOTO'
+                ? 'Photo de ta moto'
+                : vehicleType === 'CAR'
+                  ? 'Photo de ta voiture'
+                  : 'Photo de ton vélo'
+            }
+            hint={vehicleType === 'BICYCLE' ? 'optionnel' : 'plaque visible'}
+            required={vehicleType !== 'BICYCLE'}
             file={vehiclePhoto}
             onPick={setVehicle}
-            required={vehicleType !== 'BICYCLE'}
           />
         ) : null}
-      </Section>
+      </FormSection>
 
-      <Section title="4 · Pour être payé">
-        <Field label="Numéro MTN MoMo / Orange Money" error={errors.momoPhone?.message}>
-          <Input type="tel" inputMode="tel" placeholder="670000000" {...register('momoPhone')} />
-        </Field>
-      </Section>
-
-      {serverError ? (
-        <p className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm">
-          {serverError}
-        </p>
-      ) : null}
-
-      <Button type="submit" disabled={submitting} className="w-full" size="lg">
-        {submitting ? 'Envoi…' : 'Envoyer mon dossier'}
-      </Button>
-
-      <p className="text-center text-xs text-muted-foreground">
-        En soumettant, tu acceptes les conditions livreur ChopNow.
-      </p>
-    </form>
-  );
-}
-
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <section className="bg-card space-y-3 rounded-lg border p-4">
-      <h2 className="text-lg font-bold">{title}</h2>
-      {children}
-    </section>
-  );
-}
-
-function Field({
-  label,
-  hint,
-  error,
-  children,
-}: {
-  label: string;
-  hint?: string;
-  error?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div>
-      <label className="mb-1 block text-sm font-semibold">
-        {label}
-        {hint ? <span className="ml-1 text-xs text-muted-foreground">{hint}</span> : null}
-      </label>
-      {children}
-      {error ? <p className="mt-1 text-xs text-destructive">{error}</p> : null}
-    </div>
-  );
-}
-
-function PhotoPicker({
-  label,
-  file,
-  onPick,
-  required,
-}: {
-  label: string;
-  file: File | null;
-  onPick: (f: File | null) => void;
-  required?: boolean;
-}) {
-  const inputId = React.useId();
-  return (
-    <div>
-      <label htmlFor={inputId} className="mb-1 block text-sm font-semibold">
-        {label}
-        {required ? <span className="ml-1 text-destructive">*</span> : null}
-      </label>
-      <label
-        htmlFor={inputId}
-        className="flex cursor-pointer items-center justify-center rounded-lg border border-dashed bg-background p-4 text-sm"
-      >
-        {file ? `📸 ${file.name}` : '📸 Prendre / choisir une photo'}
-      </label>
-      <input
-        id={inputId}
-        type="file"
-        accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
-        capture="environment"
-        onChange={(e) => onPick(e.target.files?.[0] ?? null)}
-        className="hidden"
-      />
-      {file ? (
-        <button
-          type="button"
-          onClick={() => onPick(null)}
-          className="mt-1 text-xs text-muted-foreground underline"
+      <FormSection num="04" title="Pour être payé">
+        <Field
+          label="Numéro MTN MoMo / Orange Money"
+          hint="paie quotidienne à 21h00"
+          error={errors.momoPhone?.message}
         >
-          Retirer
-        </button>
-      ) : null}
-    </div>
+          <Controller
+            control={control}
+            name="momoPhone"
+            render={({ field }) => (
+              <PhoneInput
+                value={field.value}
+                onChange={field.onChange}
+                error={errors.momoPhone?.message}
+              />
+            )}
+          />
+        </Field>
+      </FormSection>
+
+      {serverError ? <ErrorBanner message={serverError} /> : null}
+
+      <div className="pt-2">
+        <Button type="submit" disabled={submitting} size="lg" className="w-full">
+          {submitting ? 'Envoi…' : 'Envoyer mon dossier'}
+        </Button>
+        <p className="mt-3 text-center text-[11px] font-medium text-chop-ink-secondary">
+          En soumettant, tu acceptes les conditions livreur ChopNow.
+        </p>
+      </div>
+    </form>
   );
 }
 

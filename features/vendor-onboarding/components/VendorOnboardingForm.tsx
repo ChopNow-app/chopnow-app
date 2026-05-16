@@ -1,17 +1,27 @@
 'use client';
 
+// React 19's react-hooks/set-state-in-effect bites the blob-URL preview
+// pattern in PhotoPicker. Same precedent as features/consumer/hooks/useCatalogue.ts.
+/* eslint-disable react-hooks/set-state-in-effect */
+
 import * as React from 'react';
-import { useForm } from 'react-hook-form';
+import Link from 'next/link';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PhoneInput } from '@/components/PhoneInput';
 import { ApiClientError } from '@/lib/api/api-client';
+import { cn } from '@/lib/utils';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
 
+// 9-digit Cameroon local (PhoneInput strips to digits) OR E.164. The backend
+// re-validates with the same pattern.
 const PHONE = /^(?:6[5-9]\d{7}|\+?[1-9]\d{7,14})$/;
+const MAX_PHOTO_BYTES = 8 * 1024 * 1024; // 8 MB — mirrors backend limit
 
 const schema = z.object({
   name: z.string().min(2, '2 caractères minimum').max(80),
@@ -29,27 +39,34 @@ const schema = z.object({
 type FormValues = z.input<typeof schema>;
 
 const CAPACITY_OPTIONS = [
-  { value: 'LT_10', label: '< 10 plats / jour' },
-  { value: 'R_10_30', label: '10 à 30 plats / jour' },
-  { value: 'GT_30', label: '> 30 plats / jour' },
-] as const;
+  { value: 'LT_10' as const, label: '< 10 plats / jour', sub: 'Tu cuisines à la maison' },
+  { value: 'R_10_30' as const, label: '10 à 30 plats / jour', sub: 'Petite cuisine, maquis' },
+  { value: 'GT_30' as const, label: '> 30 plats / jour', sub: 'Restaurant établi' },
+];
 
 /**
- * Story 2.0 — public onboarding form for informal vendors. The "share link"
- * route is `tchopnow.app/vendre`. Single-shot multipart submission per the
- * backend contract — text fields + two optional photos in one POST. No auth
- * required; the response includes a placeholder Vendor row with status =
- * PENDING_REVIEW and an admin reviews it within 24h.
+ * Story 2.0 — public onboarding form for informal vendors, rebuilt in the
+ * Hot Plate Editorial aesthetic (Phase 2 redesign carryover). Single-shot
+ * multipart submission per the backend contract: text fields + two photos
+ * in one POST. No auth required; the response includes a Vendor row with
+ * status = PENDING_REVIEW and an admin reviews within 24h.
+ *
+ * Photo handling: profilePhoto is now required client-side because the
+ * /restaurants catalogue card relies on it for the hero image (the
+ * deterministic gradient + emoji fallback is a graceful-degrade only).
+ * firstItemPhoto stays optional but is strongly encouraged.
  */
 export function VendorOnboardingForm() {
   const [profilePhoto, setProfilePhoto] = React.useState<File | null>(null);
   const [firstItemPhoto, setFirstItemPhoto] = React.useState<File | null>(null);
   const [submitting, setSubmitting] = React.useState(false);
   const [serverError, setServerError] = React.useState<string | null>(null);
+  const [photoError, setPhotoError] = React.useState<string | null>(null);
   const [done, setDone] = React.useState(false);
 
   const {
     register,
+    control,
     handleSubmit,
     formState: { errors },
   } = useForm<FormValues>({
@@ -57,20 +74,16 @@ export function VendorOnboardingForm() {
     defaultValues: { firstItemPriceXAF: 1500 },
   });
 
-  if (done) {
-    return (
-      <div className="bg-card rounded-lg border p-6 text-center">
-        <h2 className="text-xl font-bold">✅ Demande reçue</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Nous validons ton inscription sous 24h. Tu recevras une notification WhatsApp dès
-          l&apos;activation.
-        </p>
-      </div>
-    );
-  }
+  if (done) return <SuccessState role="vendor" />;
 
   const onSubmit = async (values: FormValues) => {
     setServerError(null);
+    setPhotoError(null);
+    if (!profilePhoto) {
+      setPhotoError('La photo de devanture est obligatoire — sans elle ta cuisine est invisible.');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
     setSubmitting(true);
     try {
       const form = new FormData();
@@ -82,7 +95,7 @@ export function VendorOnboardingForm() {
       form.append('declaredCapacity', values.declaredCapacity);
       form.append('firstItemName', values.firstItemName);
       form.append('firstItemPriceXAF', String(values.firstItemPriceXAF));
-      if (profilePhoto) form.append('profilePhoto', profilePhoto);
+      form.append('profilePhoto', profilePhoto);
       if (firstItemPhoto) form.append('firstItemPhoto', firstItemPhoto);
 
       const res = await fetch(`${API_URL}/api/vendors`, { method: 'POST', body: form });
@@ -99,70 +112,92 @@ export function VendorOnboardingForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-      <Section title="1 · Ta cuisine">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+      {photoError ? <ErrorBanner message={photoError} /> : null}
+
+      <FormSection num="01" title="Ta cuisine">
         <Field label="Nom de la cuisine" error={errors.name?.message}>
-          <Input placeholder="Chez Maman Mboué" {...register('name')} />
+          <BrandInput placeholder="Chez Maman Mboué" {...register('name')} />
         </Field>
         <Field label="Quartier de Douala" error={errors.quartier?.message}>
-          <Input placeholder="Makepe, Bonamoussadi…" {...register('quartier')} />
+          <BrandInput placeholder="Makepe, Bonamoussadi…" {...register('quartier')} />
         </Field>
         <Field
           label="Point de repère"
-          hint="(optionnel — en face de la pharmacie X, derrière le carrefour Y…)"
+          hint="optionnel — en face de la pharmacie X, derrière le carrefour Y…"
         >
-          <Input
+          <BrandInput
             placeholder="En face de la pharmacie Ste-Marie"
             {...register('pointOfReference')}
           />
         </Field>
         <PhotoPicker
-          label="Photo de profil / devanture"
+          label="Photo de devanture / cuisine"
+          required
+          helperText="Indispensable. Sans photo, ton restaurant n'apparaît pas dans le feed."
           file={profilePhoto}
           onPick={setProfilePhoto}
         />
-      </Section>
+      </FormSection>
 
-      <Section title="2 · Comment te joindre">
+      <FormSection num="02" title="Comment te joindre">
         <Field label="Numéro WhatsApp" error={errors.whatsappPhone?.message}>
-          <Input
-            type="tel"
-            inputMode="tel"
-            placeholder="670000000"
-            {...register('whatsappPhone')}
+          <Controller
+            control={control}
+            name="whatsappPhone"
+            render={({ field }) => (
+              <PhoneInput
+                value={field.value}
+                onChange={field.onChange}
+                error={errors.whatsappPhone?.message}
+              />
+            )}
           />
         </Field>
         <Field
-          label="Numéro MTN MoMo / Orange Money (pour recevoir les paiements)"
+          label="Numéro MTN MoMo / Orange Money"
+          hint="pour recevoir tes paiements"
           error={errors.momoPhone?.message}
         >
-          <Input type="tel" inputMode="tel" placeholder="670000000" {...register('momoPhone')} />
+          <Controller
+            control={control}
+            name="momoPhone"
+            render={({ field }) => (
+              <PhoneInput
+                value={field.value}
+                onChange={field.onChange}
+                error={errors.momoPhone?.message}
+              />
+            )}
+          />
         </Field>
-      </Section>
+      </FormSection>
 
-      <Section title="3 · Combien tu prépares par jour ?">
+      <FormSection num="03" title="Combien tu prépares par jour ?">
         <fieldset className="space-y-2">
           {CAPACITY_OPTIONS.map((opt) => (
-            <label
+            <RadioCard
               key={opt.value}
-              className="flex cursor-pointer items-center gap-3 rounded-lg border bg-background p-3"
-            >
-              <input type="radio" value={opt.value} {...register('declaredCapacity')} />
-              <span>{opt.label}</span>
-            </label>
+              value={opt.value}
+              label={opt.label}
+              sub={opt.sub}
+              {...register('declaredCapacity')}
+            />
           ))}
           {errors.declaredCapacity ? (
-            <p className="text-xs text-destructive">{errors.declaredCapacity.message}</p>
+            <p className="mt-1 text-xs font-medium text-chop-danger">
+              {errors.declaredCapacity.message}
+            </p>
           ) : null}
         </fieldset>
-      </Section>
+      </FormSection>
 
-      <Section title="4 · Ton plat phare">
+      <FormSection num="04" title="Ton plat phare">
         <Field label="Nom du plat" error={errors.firstItemName?.message}>
-          <Input placeholder="Poulet DG, Ndolè…" {...register('firstItemName')} />
+          <BrandInput placeholder="Poulet DG, Ndolè…" {...register('firstItemName')} />
         </Field>
         <Field label="Prix (FCFA)" error={errors.firstItemPriceXAF?.message}>
-          <Input
+          <BrandInput
             type="number"
             inputMode="numeric"
             min={100}
@@ -172,39 +207,54 @@ export function VendorOnboardingForm() {
           />
         </Field>
         <PhotoPicker
-          label="Photo du plat (très conseillé — les plats avec photo se vendent mieux)"
+          label="Photo du plat"
+          helperText="Très conseillé — les plats avec photo se vendent 3x mieux."
           file={firstItemPhoto}
           onPick={setFirstItemPhoto}
         />
-      </Section>
+      </FormSection>
 
-      {serverError ? (
-        <p className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm">
-          {serverError}
+      {serverError ? <ErrorBanner message={serverError} /> : null}
+
+      <div className="pt-2">
+        <Button type="submit" disabled={submitting} size="lg" className="w-full">
+          {submitting ? 'Envoi…' : 'Envoyer ma demande'}
+        </Button>
+        <p className="mt-3 text-center text-[11px] font-medium text-chop-ink-secondary">
+          En soumettant, tu acceptes la commission ChopNow et les conditions d&apos;utilisation.
         </p>
-      ) : null}
-
-      <Button type="submit" disabled={submitting} className="w-full" size="lg">
-        {submitting ? 'Envoi…' : 'Envoyer ma demande'}
-      </Button>
-
-      <p className="text-center text-xs text-muted-foreground">
-        En soumettant, tu acceptes la commission ChopNow et les conditions d&apos;utilisation.
-      </p>
+      </div>
     </form>
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+// ─── Shared form atoms (used by both vendor + rider forms) ──────────────
+
+export function FormSection({
+  num,
+  title,
+  children,
+}: {
+  num: string;
+  title: string;
+  children: React.ReactNode;
+}) {
   return (
-    <section className="bg-card space-y-3 rounded-lg border p-4">
-      <h2 className="text-lg font-bold">{title}</h2>
-      {children}
+    <section className="rounded-3xl bg-chop-card-white p-5 shadow-card md:p-7">
+      <header className="mb-5">
+        <span className="font-mono text-[11px] font-bold tabular-nums tracking-widest text-chop-red">
+          {num}.
+        </span>
+        <h2 className="mt-0.5 text-[20px] font-extrabold tracking-tight text-chop-ink md:text-[22px]">
+          {title}
+        </h2>
+      </header>
+      <div className="space-y-4">{children}</div>
     </section>
   );
 }
 
-function Field({
+export function Field({
   label,
   hint,
   error,
@@ -217,54 +267,229 @@ function Field({
 }) {
   return (
     <div>
-      <label className="mb-1 block text-sm font-semibold">
+      <label className="mb-1.5 block text-[13px] font-bold text-chop-ink">
         {label}
-        {hint ? <span className="ml-1 text-xs text-muted-foreground">{hint}</span> : null}
+        {hint ? <span className="ml-1.5 font-medium text-chop-ink-secondary">· {hint}</span> : null}
       </label>
       {children}
-      {error ? <p className="mt-1 text-xs text-destructive">{error}</p> : null}
+      {error ? <p className="mt-1 text-xs font-medium text-chop-danger">{error}</p> : null}
     </div>
   );
 }
 
-function PhotoPicker({
+export const BrandInput = React.forwardRef<
+  HTMLInputElement,
+  React.InputHTMLAttributes<HTMLInputElement>
+>(({ className, ...props }, ref) => (
+  <Input
+    ref={ref}
+    className={cn(
+      'h-11 rounded-xl border-divider bg-chop-warm text-[15px] focus-visible:border-chop-red focus-visible:ring-2 focus-visible:ring-chop-red/20',
+      className,
+    )}
+    {...props}
+  />
+));
+BrandInput.displayName = 'BrandInput';
+
+export const RadioCard = React.forwardRef<
+  HTMLInputElement,
+  React.InputHTMLAttributes<HTMLInputElement> & { label: string; sub?: string }
+>(({ label, sub, ...props }, ref) => (
+  <label className="group block cursor-pointer">
+    <input ref={ref} type="radio" className="peer sr-only" {...props} />
+    <div className="flex items-start gap-3 rounded-xl border-2 border-divider bg-chop-warm p-3.5 transition-all peer-checked:border-chop-red peer-checked:bg-chop-red-light peer-checked:shadow-card">
+      <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-divider transition-all peer-checked:border-chop-red">
+        <span
+          aria-hidden
+          className="hidden h-2.5 w-2.5 rounded-full bg-chop-red group-[:has(:checked)]:block peer-checked:block"
+        />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="text-[14px] font-semibold text-chop-ink">{label}</p>
+        {sub ? (
+          <p className="mt-0.5 text-[12px] font-medium text-chop-ink-secondary">{sub}</p>
+        ) : null}
+      </div>
+    </div>
+  </label>
+));
+RadioCard.displayName = 'RadioCard';
+
+export function PhotoPicker({
   label,
+  hint,
+  helperText,
   file,
   onPick,
+  required,
 }: {
   label: string;
+  hint?: string;
+  helperText?: string;
   file: File | null;
   onPick: (f: File | null) => void;
+  required?: boolean;
 }) {
   const inputId = React.useId();
+  const [preview, setPreview] = React.useState<string | null>(null);
+
+  // Generate (and revoke) a blob URL for the live preview thumbnail. This
+  // makes the "did my photo upload?" feedback immediate — the old UI showed
+  // only the filename, which made the picker feel like a placeholder.
+  React.useEffect(() => {
+    if (!file) {
+      setPreview(null);
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    setPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [file]);
+
+  const onSelect = (next: File | null) => {
+    if (next && next.size > MAX_PHOTO_BYTES) {
+      onPick(null);
+      window.alert(`Photo trop lourde (${(next.size / 1024 / 1024).toFixed(1)} MB). Max 8 MB.`);
+      return;
+    }
+    onPick(next);
+  };
+
   return (
     <div>
-      <label htmlFor={inputId} className="mb-1 block text-sm font-semibold">
+      <label className="mb-1.5 block text-[13px] font-bold text-chop-ink">
         {label}
+        {required ? <span className="ml-1 text-chop-red">*</span> : null}
+        {hint ? <span className="ml-1.5 font-medium text-chop-ink-secondary">· {hint}</span> : null}
       </label>
-      <label
-        htmlFor={inputId}
-        className="flex cursor-pointer items-center justify-center rounded-lg border border-dashed bg-background p-4 text-sm"
-      >
-        {file ? `📸 ${file.name}` : '📸 Choisir une photo'}
-      </label>
+
+      {file && preview ? (
+        // Live preview with file metadata + remove action — makes upload
+        // feel concrete, not placeholder-y.
+        <div className="relative overflow-hidden rounded-2xl border-2 border-chop-mboue/40 shadow-card">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={preview} alt="" className="aspect-[16/10] w-full object-cover" />
+          <div className="absolute inset-x-0 bottom-0 flex items-center justify-between bg-gradient-to-t from-black/70 via-black/50 to-transparent px-3 py-2.5 text-[12px] font-medium text-white">
+            <span className="flex min-w-0 items-center gap-1.5">
+              <span aria-hidden>✓</span>
+              <span className="truncate">{file.name}</span>
+              <span className="shrink-0 opacity-70">· {(file.size / 1024).toFixed(0)} KB</span>
+            </span>
+            <button
+              type="button"
+              onClick={() => onPick(null)}
+              className="shrink-0 text-white underline-offset-2 hover:underline"
+            >
+              Changer
+            </button>
+          </div>
+        </div>
+      ) : (
+        <label
+          htmlFor={inputId}
+          className="flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-2xl border-2 border-dashed border-divider bg-chop-warm py-7 text-center transition-colors hover:border-chop-red/50 hover:bg-chop-red-light/30"
+        >
+          <span aria-hidden className="text-3xl">
+            📸
+          </span>
+          <span className="text-[14px] font-semibold text-chop-ink">Touche pour photographier</span>
+          <span className="text-[11px] font-medium text-chop-ink-secondary">
+            JPG, PNG, HEIC · max 8 MB
+          </span>
+        </label>
+      )}
+
       <input
         id={inputId}
         type="file"
         accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
         capture="environment"
-        onChange={(e) => onPick(e.target.files?.[0] ?? null)}
+        onChange={(e) => onSelect(e.target.files?.[0] ?? null)}
         className="hidden"
       />
-      {file ? (
-        <button
-          type="button"
-          onClick={() => onPick(null)}
-          className="mt-1 text-xs text-muted-foreground underline"
-        >
-          Retirer
-        </button>
+
+      {helperText ? (
+        <p className="mt-1.5 text-[12px] font-medium text-chop-ink-secondary">{helperText}</p>
       ) : null}
+    </div>
+  );
+}
+
+export function ErrorBanner({ message }: { message: string }) {
+  return (
+    <div className="rounded-xl border-l-4 border-chop-danger bg-chop-danger-light px-4 py-3 text-[13px] font-medium text-chop-danger">
+      {message}
+    </div>
+  );
+}
+
+// ─── Shared success state ────────────────────────────────────────────────
+
+export function SuccessState({ role }: { role: 'vendor' | 'rider' }) {
+  const config =
+    role === 'vendor'
+      ? {
+          title: 'Demande reçue.',
+          sub: 'On vérifie ton profil et tes photos. Réponse sur WhatsApp sous 24h.',
+          steps: [
+            [
+              'Vérification de tes photos',
+              'Le validator confirme que le nom + numéro + plat correspondent.',
+            ],
+            ['Notification WhatsApp', 'Tu reçois un message du numéro officiel ChopNow.'],
+            [
+              'Ouverture du dashboard',
+              'Tu te connectes avec ton numéro WhatsApp et tu commences à recevoir des commandes.',
+            ],
+          ],
+        }
+      : {
+          title: 'Dossier reçu.',
+          sub: 'On vérifie tes pièces. Réponse sur WhatsApp sous 4 heures.',
+          steps: [
+            [
+              'Vérification CNI + selfie',
+              'Le validator confirme que ton ID est lisible et correspond à ta photo.',
+            ],
+            ['Notification WhatsApp', 'Tu reçois un message du numéro officiel ChopNow.'],
+            ['Activation', 'Tu te connectes, tu passes en ligne et tu reçois ta première course.'],
+          ],
+        };
+  return (
+    <div className="relative overflow-hidden rounded-3xl bg-chop-card-white p-7 shadow-elevated md:p-10">
+      <div className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-chop-mboue-light">
+        <span aria-hidden className="text-2xl">
+          ✓
+        </span>
+      </div>
+      <h2 className="mt-5 text-[28px] font-extrabold leading-tight tracking-tight text-chop-ink md:text-[32px]">
+        {config.title}
+      </h2>
+      <p className="mt-2 max-w-prose text-[15px] font-medium text-chop-ink-secondary md:text-[16px]">
+        {config.sub}
+      </p>
+      <ol className="mt-6 space-y-4 border-t border-divider pt-5">
+        {config.steps.map(([title, body], i) => (
+          <li key={title} className="flex items-start gap-3">
+            <span className="font-mono text-[11px] font-bold tabular-nums tracking-widest text-chop-red">
+              {String(i + 1).padStart(2, '0')}.
+            </span>
+            <div className="flex-1">
+              <p className="text-[14px] font-semibold text-chop-ink">{title}</p>
+              <p className="mt-0.5 text-[13px] font-medium text-chop-ink-secondary">{body}</p>
+            </div>
+          </li>
+        ))}
+      </ol>
+      <div className="mt-7 flex flex-wrap gap-3">
+        <Button asChild className="flex-1 sm:flex-none">
+          <Link href="/">Retour à l&apos;accueil</Link>
+        </Button>
+        <Button asChild variant="outline" className="flex-1 sm:flex-none">
+          <Link href="/restaurants">Voir le feed</Link>
+        </Button>
+      </div>
     </div>
   );
 }
