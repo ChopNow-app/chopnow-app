@@ -8,8 +8,7 @@ import { ApiClientError } from '@/lib/api/api-client';
 import { cn } from '@/lib/utils';
 import { useVendorAvailability } from '../hooks/useVendorAvailability';
 import { useVendorOrders, type VendorOrder } from '../hooks/useVendorOrders';
-import { useMenuItems, type MenuItem } from '../hooks/useMenuItems';
-import { MenuItemEditor } from './MenuItemEditor';
+import { useMenuItems } from '../hooks/useMenuItems';
 
 const formatXAF = (n: number) => `${n.toLocaleString('fr-FR')} FCFA`;
 
@@ -17,9 +16,6 @@ export function VendorDashboard() {
   const availability = useVendorAvailability();
   const orders = useVendorOrders();
   const menu = useMenuItems();
-  const [editing, setEditing] = React.useState<
-    { kind: 'new' } | { kind: 'edit'; item: MenuItem } | null
-  >(null);
 
   if (orders.status === 'unauthenticated' || availability.status === 'unauthenticated') {
     return (
@@ -106,62 +102,23 @@ export function VendorDashboard() {
         </section>
       ) : null}
 
-      <section>
-        <header className="mb-3 flex items-center justify-between">
-          <h2 className="text-lg font-bold">Menu</h2>
-          {menu.status === 'ready' ? (
-            <Button type="button" size="sm" onClick={() => setEditing({ kind: 'new' })}>
-              + Ajouter un plat
-            </Button>
-          ) : null}
-        </header>
-        {menu.status === 'loading' || menu.status === 'idle' ? (
-          <SkeletonList />
-        ) : menu.status === 'error' ? (
-          <p className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm">
-            {menu.message}
+      <Link
+        href="/vendor/menu"
+        className="group flex items-center justify-between gap-3 rounded-2xl bg-chop-card-white p-4 shadow-card transition-shadow hover:shadow-elevated focus:outline-none focus-visible:ring-2 focus-visible:ring-chop-red"
+      >
+        <div className="min-w-0">
+          <p className="text-base font-extrabold">Mon menu</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            {menu.status === 'ready'
+              ? `${menu.items.length} ${menu.items.length === 1 ? 'plat' : 'plats'} · gérer disponibilité, prix, photos`
+              : 'Gérer mes plats'}
           </p>
-        ) : menu.status === 'ready' ? (
-          menu.items.length === 0 ? (
-            <p className="bg-card rounded-lg border p-4 text-sm text-muted-foreground">
-              Aucun plat. Clique sur « + Ajouter un plat » pour commencer.
-            </p>
-          ) : (
-            <ul className="space-y-2">
-              {menu.items.map((item) => (
-                <li key={item.id}>
-                  <MenuItemRow
-                    item={item}
-                    onToggleStock={menu.setInStock}
-                    onEdit={() => setEditing({ kind: 'edit', item })}
-                    onDelete={async () => {
-                      if (!window.confirm(`Supprimer « ${item.name} » ?`)) return;
-                      try {
-                        await menu.deleteItem(item.id);
-                      } catch (err) {
-                        window.alert(extract(err) ?? 'Suppression échouée');
-                      }
-                    }}
-                  />
-                </li>
-              ))}
-            </ul>
-          )
-        ) : null}
-      </section>
-
-      {editing && menu.status === 'ready' ? (
-        <MenuItemEditor
-          initial={editing.kind === 'edit' ? editing.item : undefined}
-          onSave={(input) =>
-            editing.kind === 'edit'
-              ? menu.updateItem(editing.item.id, input)
-              : menu.createItem(input)
-          }
-          onUploadPhoto={menu.uploadPhoto}
-          onClose={() => setEditing(null)}
+        </div>
+        <ChevronRight
+          className="h-5 w-5 text-muted-foreground transition-transform group-hover:translate-x-0.5"
+          aria-hidden
         />
-      ) : null}
+      </Link>
     </div>
   );
 }
@@ -285,66 +242,6 @@ function ActiveOrderCard({ order }: { order: VendorOrder }) {
         />
       </div>
     </Link>
-  );
-}
-
-function MenuItemRow({
-  item,
-  onToggleStock,
-  onEdit,
-  onDelete,
-}: {
-  item: MenuItem;
-  onToggleStock: (id: string, inStock: boolean) => Promise<void>;
-  onEdit: () => void;
-  onDelete: () => Promise<void>;
-}) {
-  return (
-    <div
-      className={`bg-card flex items-center gap-3 rounded-lg border p-3 ${
-        !item.isInStock ? 'opacity-60' : ''
-      }`}
-    >
-      {item.photoUrl ? (
-        <img
-          src={item.photoUrl}
-          alt={item.name}
-          className="h-14 w-14 shrink-0 rounded-lg object-cover"
-        />
-      ) : (
-        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-muted text-xs text-muted-foreground">
-          —
-        </div>
-      )}
-      <div className="min-w-0 flex-1">
-        <p className="truncate font-semibold">{item.name}</p>
-        <p className="text-xs text-muted-foreground">{formatXAF(item.priceXAF)}</p>
-      </div>
-      <div className="flex shrink-0 flex-col gap-1">
-        <Button
-          type="button"
-          variant={item.isInStock ? 'outline' : 'default'}
-          size="sm"
-          onClick={() => onToggleStock(item.id, !item.isInStock)}
-        >
-          {item.isInStock ? '✓ Dispo' : '× Épuisé'}
-        </Button>
-        <div className="flex gap-1">
-          <Button type="button" variant="outline" size="sm" onClick={onEdit} aria-label="Modifier">
-            ✏️
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={onDelete}
-            aria-label="Supprimer"
-          >
-            🗑
-          </Button>
-        </div>
-      </div>
-    </div>
   );
 }
 

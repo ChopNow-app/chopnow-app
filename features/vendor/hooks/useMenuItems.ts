@@ -6,6 +6,9 @@ import * as React from 'react';
 import { api } from '@/lib/api/api-client';
 import { apiRaw, ApiClientError } from '@/lib/api/api-client';
 
+export type ItemKind = 'FOOD' | 'DRINK';
+export type StockLevel = 'IN_STOCK' | 'LOW_STOCK' | 'OUT_OF_STOCK';
+
 export interface MenuItem {
   id: string;
   name: string;
@@ -15,6 +18,8 @@ export interface MenuItem {
   categoryId: string | null;
   isAvailable: boolean;
   isInStock: boolean;
+  stockLevel: StockLevel;
+  kind: ItemKind;
   sortOrder: number;
   preparationMinutes?: number | null;
 }
@@ -26,6 +31,8 @@ export interface MenuItemInput {
   categoryId?: string;
   preparationMinutes?: number;
   sortOrder?: number;
+  kind?: ItemKind;
+  stockLevel?: StockLevel;
 }
 
 export type MenuState =
@@ -37,6 +44,7 @@ export type MenuState =
 
 export function useMenuItems(): MenuState & {
   setInStock(itemId: string, inStock: boolean): Promise<void>;
+  setStockLevel(itemId: string, level: StockLevel): Promise<void>;
   createItem(input: MenuItemInput): Promise<MenuItem>;
   updateItem(itemId: string, input: MenuItemInput): Promise<MenuItem>;
   deleteItem(itemId: string): Promise<void>;
@@ -79,25 +87,68 @@ export function useMenuItems(): MenuState & {
    * back on error so the next tap feels instant on flaky 3G.
    */
   const setInStock = React.useCallback(async (itemId: string, inStock: boolean) => {
+    const targetLevel: StockLevel = inStock ? 'IN_STOCK' : 'OUT_OF_STOCK';
     setState((prev) => {
       if (prev.status !== 'ready') return prev;
       return {
         ...prev,
-        items: prev.items.map((it) => (it.id === itemId ? { ...it, isInStock: inStock } : it)),
+        items: prev.items.map((it) =>
+          it.id === itemId ? { ...it, isInStock: inStock, stockLevel: targetLevel } : it,
+        ),
       };
     });
     try {
-      await apiRaw.patch(`/api/vendors/me/items/${itemId}/stock`, { isInStock: inStock });
+      await apiRaw.patch(`/api/vendors/me/items/${itemId}/stock`, { stockLevel: targetLevel });
     } catch (err) {
       setState((prev) => {
         if (prev.status !== 'ready') return prev;
         return {
           ...prev,
-          items: prev.items.map((it) => (it.id === itemId ? { ...it, isInStock: !inStock } : it)),
+          items: prev.items.map((it) =>
+            it.id === itemId
+              ? { ...it, isInStock: !inStock, stockLevel: inStock ? 'OUT_OF_STOCK' : 'IN_STOCK' }
+              : it,
+          ),
         };
       });
       if (err instanceof ApiClientError) {
         console.warn('stock toggle failed', err.status, err.body);
+      }
+    }
+  }, []);
+
+  // 3-tier set — used by the menu screen's "stock faible" cycle / radio.
+  // Same optimistic pattern as setInStock; isInStock is recomputed locally
+  // so the consumer-facing catalogue stays consistent until the next poll.
+  const setStockLevel = React.useCallback(async (itemId: string, level: StockLevel) => {
+    type Snapshot = { stockLevel: StockLevel; isInStock: boolean };
+    const previousRef: { current: Snapshot | null } = { current: null };
+    setState((prev) => {
+      if (prev.status !== 'ready') return prev;
+      return {
+        ...prev,
+        items: prev.items.map((it) => {
+          if (it.id !== itemId) return it;
+          previousRef.current = { stockLevel: it.stockLevel, isInStock: it.isInStock };
+          return { ...it, stockLevel: level, isInStock: level !== 'OUT_OF_STOCK' };
+        }),
+      };
+    });
+    try {
+      await apiRaw.patch(`/api/vendors/me/items/${itemId}/stock`, { stockLevel: level });
+    } catch (err) {
+      const snapshot = previousRef.current;
+      if (snapshot) {
+        setState((prev) => {
+          if (prev.status !== 'ready') return prev;
+          return {
+            ...prev,
+            items: prev.items.map((it) => (it.id === itemId ? { ...it, ...snapshot } : it)),
+          };
+        });
+      }
+      if (err instanceof ApiClientError) {
+        console.warn('stockLevel update failed', err.status, err.body);
       }
     }
   }, []);
@@ -157,7 +208,16 @@ export function useMenuItems(): MenuState & {
   }, []);
 
   return React.useMemo(
-    () => ({ ...state, setInStock, createItem, updateItem, deleteItem, uploadPhoto, reload }),
-    [state, setInStock, createItem, updateItem, deleteItem, uploadPhoto, reload],
+    () => ({
+      ...state,
+      setInStock,
+      setStockLevel,
+      createItem,
+      updateItem,
+      deleteItem,
+      uploadPhoto,
+      reload,
+    }),
+    [state, setInStock, setStockLevel, createItem, updateItem, deleteItem, uploadPhoto, reload],
   );
 }
