@@ -1,0 +1,407 @@
+'use client';
+
+/* eslint-disable react-hooks/set-state-in-effect */
+
+import * as React from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
+import { ChevronRight, X, Utensils, ShoppingBag, Bike, Clock } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+const STORAGE_KEY = 'chopnow.onboarded';
+
+/**
+ * 4-slide first-launch onboarding for the **installed PWA only**. Replays
+ * the value proposition (slides 1–3) then ends on a role picker (slide 4).
+ * Swipe-driven via CSS scroll-snap; "Suivant" advances programmatically.
+ * Tap-to-jump on pagination dots.
+ *
+ * Why standalone-only: the carousel is the "I just installed an app, give
+ * me the welcome sequence" experience. A casual visitor browsing in mobile
+ * Safari or Chrome didn't sign up for that — they want a website. Forcing
+ * onboarding on a browser visit feels heavy-handed and blocks SEO/preview
+ * shares. So:
+ *
+ *   - display-mode: standalone (PWA installed)  → carousel
+ *   - display-mode: browser (mobile or desktop) → marketing splash beneath
+ *
+ * iOS Safari predates the display-mode media query for standalone PWAs;
+ * use `navigator.standalone` as the iOS-specific fallback. Both checks
+ * combine into one `isStandalone` flag.
+ *
+ * Dev escape hatch: append `?onboarding=force` to the URL to preview the
+ * carousel from a regular browser tab without having to install the PWA.
+ *
+ * Persistence: localStorage flag `chopnow.onboarded`. Once dismissed
+ * (skipped or a role card tapped), the splash takes over for any future
+ * anonymous visit. RoleRedirector takes priority for authenticated
+ * visits — this component never paints for an authed user.
+ */
+export function MobileOnboarding() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const scrollerRef = React.useRef<HTMLDivElement>(null);
+  const [current, setCurrent] = React.useState(0);
+  const [show, setShow] = React.useState<boolean | null>(null); // null = pre-mount
+
+  const slides = SLIDES;
+  const lastIndex = slides.length - 1;
+
+  React.useEffect(() => {
+    try {
+      const already = window.localStorage.getItem(STORAGE_KEY) === '1';
+      // `?onboarding=force` is a dev-only escape hatch so I can preview the
+      // carousel in a regular browser tab without installing the PWA. In
+      // production it does nothing — a real visitor on app.tchopnow.app can
+      // never trigger the carousel from a browser, even by typing the query
+      // param, regardless of how they arrived at the page.
+      const force =
+        process.env.NODE_ENV !== 'production' && searchParams.get('onboarding') === 'force';
+      const isStandalone =
+        window.matchMedia('(display-mode: standalone)').matches ||
+        (window.navigator as { standalone?: boolean }).standalone === true;
+      setShow(!already && (force || isStandalone));
+    } catch {
+      setShow(false);
+    }
+  }, [searchParams]);
+
+  const goTo = (idx: number) => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    const target = Math.max(0, Math.min(lastIndex, idx));
+    el.scrollTo({ left: target * el.clientWidth, behavior: 'smooth' });
+  };
+
+  const onScroll = () => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    const idx = Math.round(el.scrollLeft / el.clientWidth);
+    if (idx !== current) setCurrent(idx);
+  };
+
+  const dismiss = (href: string) => {
+    try {
+      window.localStorage.setItem(STORAGE_KEY, '1');
+    } catch {
+      // private-browsing: dismiss anyway, the user can re-onboard next session
+    }
+    router.push(href);
+  };
+
+  if (!show) return null;
+
+  return (
+    <div
+      role="dialog"
+      aria-label="Bienvenue chez TChopNow"
+      className="fixed inset-0 z-50 flex flex-col bg-chop-warm text-chop-ink"
+    >
+      <header className="flex shrink-0 items-center justify-between px-5 pt-4">
+        <span className="text-[15px] font-extrabold uppercase tracking-[0.18em]">
+          TChop<span className="text-chop-red">Now.</span>
+        </span>
+        <button
+          type="button"
+          onClick={() => dismiss('/restaurants')}
+          aria-label="Passer l'onboarding"
+          className="flex items-center gap-1 rounded-full px-3 py-1.5 text-[12px] font-semibold uppercase tracking-wider text-chop-ink-secondary transition-colors hover:text-chop-red"
+        >
+          Passer
+          <X className="h-3.5 w-3.5" aria-hidden />
+        </button>
+      </header>
+
+      <div
+        ref={scrollerRef}
+        onScroll={onScroll}
+        className="flex flex-1 snap-x snap-mandatory overflow-x-auto overflow-y-hidden scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
+        {slides.map((slide, idx) => (
+          <SlideView key={slide.key} slide={slide} isLast={idx === lastIndex} onDismiss={dismiss} />
+        ))}
+      </div>
+
+      <footer
+        className="shrink-0 border-t border-divider/40 bg-chop-warm px-5 pb-6 pt-4"
+        style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 1.5rem)' }}
+      >
+        <Dots count={slides.length} current={current} onJump={goTo} />
+        {current < lastIndex ? (
+          <button
+            type="button"
+            onClick={() => goTo(current + 1)}
+            className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-chop-ink px-5 py-3.5 text-[15px] font-bold text-white shadow-card transition-colors hover:bg-chop-ink/90"
+          >
+            Suivant
+            <ChevronRight className="h-5 w-5" aria-hidden />
+          </button>
+        ) : null}
+      </footer>
+    </div>
+  );
+}
+
+interface Slide {
+  key: string;
+  variant: 'brand' | 'step' | 'roles';
+  eyebrow?: string;
+  title: React.ReactNode;
+  body?: string;
+  icon?: React.ReactNode;
+}
+
+const SLIDES: Slide[] = [
+  {
+    key: 'brand',
+    variant: 'brand',
+    title: (
+      <>
+        Mange
+        <br />
+        sans
+        <br />
+        <span className="text-chop-red">attendre.</span>
+      </>
+    ),
+    body: 'De la rue à ta porte. Tes vendeurs du quartier, livrés chauds en 30 minutes.',
+  },
+  {
+    key: 'step-choose',
+    variant: 'step',
+    eyebrow: '01. Le vendeur',
+    title: 'Choisis ton plat.',
+    body: 'Maman du quartier, maquis, restaurant — tous autour de toi.',
+    icon: <Utensils className="h-12 w-12" strokeWidth={1.6} />,
+  },
+  {
+    key: 'step-order',
+    variant: 'step',
+    eyebrow: '02. Le panier',
+    title: 'Commande en 3 taps.',
+    body: 'Plats, adresse, paiement à la livraison — c’est tout.',
+    icon: <ShoppingBag className="h-12 w-12" strokeWidth={1.6} />,
+  },
+  {
+    key: 'roles',
+    variant: 'roles',
+    title: 'Tu es ?',
+  },
+];
+
+function SlideView({
+  slide,
+  onDismiss,
+}: {
+  slide: Slide;
+  isLast: boolean;
+  onDismiss: (href: string) => void;
+}) {
+  return (
+    <section
+      aria-roledescription="slide"
+      className="flex w-full shrink-0 snap-center snap-always flex-col items-center justify-center px-7 py-8"
+    >
+      {slide.variant === 'brand' ? <BrandSlide slide={slide} /> : null}
+      {slide.variant === 'step' ? <StepSlide slide={slide} /> : null}
+      {slide.variant === 'roles' ? <RolesSlide onDismiss={onDismiss} /> : null}
+    </section>
+  );
+}
+
+function BrandSlide({ slide }: { slide: Slide }) {
+  return (
+    <div className="flex h-full w-full max-w-sm flex-col justify-between">
+      <div className="flex-1 pt-8">
+        <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-chop-ink-secondary">
+          Douala <span className="text-chop-red">·</span> Cameroun
+        </p>
+        <h1 className="mt-4 text-[64px] font-extrabold leading-[0.92] tracking-[-0.04em]">
+          {slide.title}
+        </h1>
+        <p className="mt-6 text-[15px] font-medium leading-[1.55] text-chop-ink-secondary">
+          {slide.body}
+        </p>
+      </div>
+
+      <div className="relative overflow-hidden rounded-3xl bg-chop-red p-5 text-white shadow-elevated">
+        <div className="flex items-center gap-3">
+          <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/15 backdrop-blur-sm">
+            <Clock className="h-5 w-5" strokeWidth={2.4} aria-hidden />
+          </span>
+          <div>
+            <p className="text-[13px] font-bold uppercase tracking-widest text-white/70">
+              Le pacte
+            </p>
+            <p className="text-[16px] font-extrabold leading-tight">30 minutes ou moins.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function StepSlide({ slide }: { slide: Slide }) {
+  return (
+    <div className="flex h-full w-full max-w-sm flex-col items-start justify-center">
+      <span className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-chop-red-light text-chop-red">
+        {slide.icon}
+      </span>
+      <p className="mt-7 text-[11px] font-bold uppercase tracking-[0.22em] text-chop-ink-secondary">
+        {slide.eyebrow}
+      </p>
+      <h2 className="mt-2 text-[40px] font-extrabold leading-[0.95] tracking-[-0.03em]">
+        {slide.title}
+      </h2>
+      <p className="mt-4 text-[16px] font-medium leading-[1.55] text-chop-ink-secondary">
+        {slide.body}
+      </p>
+    </div>
+  );
+}
+
+function RolesSlide({ onDismiss }: { onDismiss: (href: string) => void }) {
+  return (
+    <div className="flex h-full w-full max-w-sm flex-col justify-center">
+      <h2 className="text-[40px] font-extrabold leading-[0.95] tracking-[-0.03em]">Tu es ?</h2>
+      <p className="mt-3 text-[14px] font-medium leading-[1.55] text-chop-ink-secondary">
+        Choisis ton espace. Tu pourras le changer plus tard depuis ton compte.
+      </p>
+
+      <ul className="mt-7 space-y-3">
+        <RoleCard
+          tone="primary"
+          eyebrow="01"
+          label="Je commande"
+          sub="Mange chaud, livré en 30 min."
+          icon={<ShoppingBag className="h-5 w-5" strokeWidth={2.2} aria-hidden />}
+          onClick={() => onDismiss('/restaurants')}
+        />
+        <RoleCard
+          tone="default"
+          eyebrow="02"
+          label="Je vends mes plats"
+          sub="Devenir vendeur TChopNow."
+          icon={<Utensils className="h-5 w-5" strokeWidth={2.2} aria-hidden />}
+          onClick={() => onDismiss('/vendre')}
+        />
+        <RoleCard
+          tone="default"
+          eyebrow="03"
+          label="Je livre à moto"
+          sub="Gagner en livrant dans ton quartier."
+          icon={<Bike className="h-5 w-5" strokeWidth={2.2} aria-hidden />}
+          onClick={() => onDismiss('/livrer')}
+        />
+      </ul>
+
+      <p className="mt-6 text-center text-[11px] font-medium text-chop-ink-secondary">
+        Déjà inscrit ?{' '}
+        <Link href="/login" className="font-semibold text-chop-red underline">
+          Se connecter
+        </Link>
+      </p>
+    </div>
+  );
+}
+
+function RoleCard({
+  tone,
+  eyebrow,
+  label,
+  sub,
+  icon,
+  onClick,
+}: {
+  tone: 'primary' | 'default';
+  eyebrow: string;
+  label: string;
+  sub: string;
+  icon: React.ReactNode;
+  onClick: () => void;
+}) {
+  const isPrimary = tone === 'primary';
+  return (
+    <li>
+      <button
+        type="button"
+        onClick={onClick}
+        className={cn(
+          'group flex w-full items-center gap-4 rounded-2xl p-4 text-left shadow-card transition-shadow hover:shadow-elevated',
+          isPrimary
+            ? 'bg-chop-red text-white'
+            : 'border-2 border-chop-ink/10 bg-chop-card-white text-chop-ink hover:border-chop-ink',
+        )}
+      >
+        <span
+          className={cn(
+            'inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl',
+            isPrimary ? 'bg-white/15 text-white' : 'bg-chop-warm text-chop-ink',
+          )}
+        >
+          {icon}
+        </span>
+        <span className="min-w-0 flex-1">
+          <span
+            className={cn(
+              'block font-mono text-[10px] font-bold tabular-nums',
+              isPrimary ? 'text-white/60' : 'text-chop-ink-secondary',
+            )}
+          >
+            {eyebrow}.
+          </span>
+          <span className="block text-[16px] font-extrabold leading-tight tracking-tight">
+            {label}
+          </span>
+          <span
+            className={cn(
+              'mt-0.5 block text-[12px] font-medium',
+              isPrimary ? 'text-white/80' : 'text-chop-ink-secondary',
+            )}
+          >
+            {sub}
+          </span>
+        </span>
+        <ChevronRight
+          className={cn(
+            'h-5 w-5 shrink-0 transition-transform group-hover:translate-x-0.5',
+            isPrimary ? 'text-white' : 'text-chop-ink-secondary',
+          )}
+          aria-hidden
+        />
+      </button>
+    </li>
+  );
+}
+
+function Dots({
+  count,
+  current,
+  onJump,
+}: {
+  count: number;
+  current: number;
+  onJump: (i: number) => void;
+}) {
+  return (
+    <div className="flex items-center justify-center gap-2" role="tablist" aria-label="Pagination">
+      {Array.from({ length: count }).map((_, i) => {
+        const active = i === current;
+        return (
+          <button
+            key={i}
+            type="button"
+            onClick={() => onJump(i)}
+            role="tab"
+            aria-selected={active}
+            aria-label={`Aller à la diapositive ${i + 1}`}
+            className={cn(
+              'h-1.5 rounded-full transition-all',
+              active ? 'w-7 bg-chop-red' : 'w-1.5 bg-chop-neutral hover:bg-chop-ink-secondary',
+            )}
+          />
+        );
+      })}
+    </div>
+  );
+}
