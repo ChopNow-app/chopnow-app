@@ -3,7 +3,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 
 import * as React from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { ChevronRight, X, Utensils, ShoppingBag, Bike, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -29,6 +29,7 @@ const STORAGE_KEY = 'chopnow.onboarded';
  */
 export function MobileOnboarding() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const scrollerRef = React.useRef<HTMLDivElement>(null);
   const [current, setCurrent] = React.useState(0);
   const [show, setShow] = React.useState<boolean | null>(null); // null = SSR / first paint
@@ -37,19 +38,34 @@ export function MobileOnboarding() {
   const lastIndex = slides.length - 1;
 
   // Decide whether to mount the overlay AFTER hydration so we never flash it
-  // for returning users. Anonymous-only check; authed users are handled by
-  // RoleRedirector elsewhere on the page.
+  // for returning users. Carousel is gated on the installed PWA only — a
+  // casual browser visit (mobile Safari, desktop Chrome, etc.) sees the
+  // editorial marketing splash on the same route instead.
+  //
+  //   - display-mode: standalone (PWA installed)      → eligible
+  //   - navigator.standalone === true (iOS fallback)  → eligible
+  //   - everything else                                → splash beneath
+  //
+  // `?onboarding=force` is a dev-only escape hatch so I can preview the
+  // carousel without reinstalling the PWA every time. NODE_ENV check
+  // makes it a no-op in production — a regular user typing the query
+  // param at app.tchopnow.app cannot trigger the carousel from a browser.
+  //
+  // Auth: this component never reaches its decision for authed users —
+  // RoleRedirector replace()s the URL before this effect runs.
   React.useEffect(() => {
     try {
       const already = window.localStorage.getItem(STORAGE_KEY) === '1';
-      // Heuristic: only show on narrow viewports — the desktop visitor gets
-      // the marketing splash, the mobile visitor gets the swipey intro.
-      const narrow = window.matchMedia('(max-width: 767px)').matches;
-      setShow(!already && narrow);
+      const force =
+        process.env.NODE_ENV !== 'production' && searchParams.get('onboarding') === 'force';
+      const isStandalone =
+        window.matchMedia('(display-mode: standalone)').matches ||
+        (window.navigator as { standalone?: boolean }).standalone === true;
+      setShow(!already && (force || isStandalone));
     } catch {
       setShow(false);
     }
-  }, []);
+  }, [searchParams]);
 
   const goTo = (idx: number) => {
     const el = scrollerRef.current;
