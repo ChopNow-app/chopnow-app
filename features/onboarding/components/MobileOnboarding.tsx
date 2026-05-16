@@ -3,7 +3,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 
 import * as React from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ChevronRight, X, Utensils, ShoppingBag, Bike, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -29,7 +29,6 @@ const STORAGE_KEY = 'chopnow.onboarded';
  */
 export function MobileOnboarding() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const scrollerRef = React.useRef<HTMLDivElement>(null);
   const [current, setCurrent] = React.useState(0);
   const [show, setShow] = React.useState<boolean | null>(null); // null = SSR / first paint
@@ -56,8 +55,14 @@ export function MobileOnboarding() {
   React.useEffect(() => {
     try {
       const already = window.localStorage.getItem(STORAGE_KEY) === '1';
+      // Read the dev escape hatch from window.location.search rather than
+      // useSearchParams() — the hook forces the page into client-side
+      // rendering during build, which bails out the static prerender of /.
+      // We're already inside a useEffect (client-only), so the global is
+      // safe and produces the same result without the build cost.
       const force =
-        process.env.NODE_ENV !== 'production' && searchParams.get('onboarding') === 'force';
+        process.env.NODE_ENV !== 'production' &&
+        new URLSearchParams(window.location.search).get('onboarding') === 'force';
       const isStandalone =
         window.matchMedia('(display-mode: standalone)').matches ||
         (window.navigator as { standalone?: boolean }).standalone === true;
@@ -65,7 +70,7 @@ export function MobileOnboarding() {
     } catch {
       setShow(false);
     }
-  }, [searchParams]);
+  }, []);
 
   const goTo = (idx: number) => {
     const el = scrollerRef.current;
