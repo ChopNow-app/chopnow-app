@@ -134,10 +134,11 @@ export default function HomePage() {
           <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-chop-ink-secondary md:text-[11px]">
             Autres espaces
           </p>
-          <ul className="mt-4 grid grid-cols-1 divide-y divide-divider md:mt-6 md:grid-cols-3 md:gap-4 md:divide-y-0">
+          {/* Admin is intentionally NOT here — staff-only entry point, not a
+              public role. Reach it directly at /admin/login. */}
+          <ul className="mt-4 grid grid-cols-1 divide-y divide-divider md:mt-6 md:grid-cols-2 md:gap-4 md:divide-y-0">
             <RoleLink href="/livreur" label="Espace livreur" sub="Recevoir des courses" />
             <RoleLink href="/vendor" label="Espace vendeur" sub="Gérer le catalogue" />
-            <RoleLink href="/admin" label="Admin" sub="Console opérations" />
           </ul>
         </nav>
 
