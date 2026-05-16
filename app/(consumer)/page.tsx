@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { PwaInstallPrompt } from '@/components/PwaInstallPrompt';
+import { PwaInstallModal } from '@/components/PwaInstallModal';
 import { RoleRedirector } from '@/features/auth/components/RoleRedirector';
 import { MobileOnboarding } from '@/features/onboarding/components/MobileOnboarding';
 
@@ -15,7 +15,7 @@ import { MobileOnboarding } from '@/features/onboarding/components/MobileOnboard
 //   lg  (1024+)   max-w-7xl, 2-col hero (1.3fr text + 1fr poster)
 //   xl  (1280+)   max-w-7xl with more breathing room
 //
-// Server component on purpose. PwaInstallPrompt is the only client island.
+// Server component on purpose. PwaInstallModal is the only client island.
 
 const STEAM_PATTERN_URL =
   "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96'%3E%3Cpath d='M 34.3,11.3 A 13.5,13.5 0 1 0 34.3,28.7' stroke='%23FFFFFF' stroke-width='3.5' stroke-linecap='round' fill='none' opacity='0.16'/%3E%3Cpath d='M 82.3,11.3 A 13.5,13.5 0 1 0 82.3,28.7' stroke='%23FFFFFF' stroke-width='3.5' stroke-linecap='round' fill='none' opacity='0.16'/%3E%3Cpath d='M 58.3,59.3 A 13.5,13.5 0 1 0 58.3,76.7' stroke='%23FFFFFF' stroke-width='3.5' stroke-linecap='round' fill='none' opacity='0.16'/%3E%3C/svg%3E\")";
@@ -58,7 +58,7 @@ export default function HomePage() {
           <span className="text-[15px] font-extrabold uppercase tracking-[0.18em] text-chop-ink md:text-[17px]">
             TChop<span className="text-chop-red">Now.</span>
           </span>
-          <PwaInstallPrompt />
+          <PwaInstallModal />
         </div>
       </header>
 
