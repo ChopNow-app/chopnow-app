@@ -1,18 +1,19 @@
 import Link from 'next/link';
-import { VendorOnboardingForm } from '@/features/vendor-onboarding/components/VendorOnboardingForm';
+import { StatusCheckPage } from '@/features/onboarding-status/components/StatusCheckPage';
 
 export const metadata = {
-  title: 'Devenir vendeur — TChopNow',
+  title: 'Vérifier mon inscription — TChopNow',
   description:
-    'Inscris ta cuisine sur TChopNow. Validation sous 24h. Gratuit. Commission seulement sur les commandes livrées.',
+    "Suis ton statut d'inscription vendeur ou livreur sur TChopNow. Entre ton numéro WhatsApp pour voir où en est ta demande.",
 };
 
-// Story 2.0 — vendor onboarding landing. Rebuilt in the Hot Plate Editorial
-// aesthetic to match the rest of the app (splash + /restaurants + /).
-export default function VendrePage() {
+// Story 1.4 / 2.0 follow-up (#13) — public status check page. Vendor or rider
+// types their WhatsApp number, sees where they sit in the validation pipeline
+// (PENDING_REVIEW / CORRECTION_REQUESTED / ACTIVE / SUSPENDED / REJECTED).
+// Reachable from /vendre + /livrer footers (added separately).
+export default function StatutPage() {
   return (
     <main className="relative min-h-dvh overflow-hidden bg-chop-warm text-chop-ink">
-      {/* paper grain — same 3% noise overlay as the splash */}
       <div
         aria-hidden
         className="pointer-events-none fixed inset-0 z-0 opacity-[0.035] mix-blend-overlay"
@@ -22,7 +23,6 @@ export default function VendrePage() {
         }}
       />
 
-      {/* Top nav band — wordmark + back link */}
       <header className="relative z-10 border-b border-divider/50">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-5 py-4 md:px-8">
           <Link href="/" className="text-[15px] font-extrabold uppercase tracking-[0.18em]">
@@ -37,38 +37,23 @@ export default function VendrePage() {
         </div>
       </header>
 
-      {/* Hero */}
       <section className="relative z-10 mx-auto max-w-3xl px-5 pt-8 md:px-8 md:pt-12">
         <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-chop-ink-secondary">
-          Inscription <span className="text-chop-red">·</span> Vendeur
+          Mon inscription <span className="text-chop-red">·</span> Suivi
         </p>
         <h1 className="mt-3 text-[40px] font-extrabold leading-[0.95] tracking-[-0.03em] md:text-[56px]">
-          Mets ta cuisine
+          Vérifier
           <br />
-          <span className="text-chop-red">sur TChopNow.</span>
+          <span className="text-chop-red">mon dossier.</span>
         </h1>
         <p className="mt-5 max-w-[44ch] text-[15px] font-medium leading-[1.55] text-chop-ink-secondary md:text-[17px]">
-          Gratuit. Validation sous 24h. Commission seulement quand on te livre une commande — pas de
-          mensualité, pas de frais d&apos;inscription.
+          Entre ton numéro WhatsApp pour voir où en est ton inscription vendeur ou livreur. Pas
+          besoin de compte.
         </p>
       </section>
 
-      {/* Form */}
-      <section className="relative z-10 mx-auto max-w-3xl px-5 pt-8 md:px-8 md:pt-10">
-        <VendorOnboardingForm />
-      </section>
-
-      {/* Status-check footer link (#13) — vendors who already submitted
-          can come back to this URL anytime, click here, and check where
-          their dossier sits without re-filing the whole form. */}
-      <section className="relative z-10 mx-auto max-w-3xl px-5 pb-16 pt-8 text-center text-[13px] font-medium text-chop-ink-secondary md:px-8">
-        Déjà inscrit ?{' '}
-        <Link
-          href="/statut"
-          className="font-semibold text-chop-red underline-offset-2 hover:underline"
-        >
-          Vérifier mon statut
-        </Link>
+      <section className="relative z-10 mx-auto max-w-3xl px-5 pb-16 pt-8 md:px-8 md:pt-10">
+        <StatusCheckPage />
       </section>
     </main>
   );
