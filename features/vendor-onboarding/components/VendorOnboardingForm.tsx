@@ -14,6 +14,7 @@ import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PhoneInput } from '@/components/PhoneInput';
+import { PwaInstallPrompt } from '@/components/PwaInstallPrompt';
 import { ApiClientError } from '@/lib/api/api-client';
 import { cn } from '@/lib/utils';
 
@@ -644,6 +645,27 @@ export function SuccessState({ role }: { role: 'vendor' | 'rider' }) {
         <Button asChild variant="outline" className="flex-1 sm:flex-none">
           <Link href="/restaurants">Voir le feed</Link>
         </Button>
+      </div>
+
+      {/* PWA install nudge (#14) — once activated by admin, the vendor /
+          livreur opens the app daily for orders / courses. Installed as a
+          PWA they get push notifications + a home-screen icon. The
+          PwaInstallPrompt only renders when `beforeinstallprompt` has
+          actually fired in this session (Chrome/Edge); on iOS Safari it's
+          quiet, which is fine — iOS users follow the manual share-sheet
+          path anyway. */}
+      <div className="mt-6 rounded-2xl border border-divider bg-chop-warm/60 p-4">
+        <p className="text-[13px] font-semibold text-chop-ink">
+          💡 Installe TChopNow sur ton téléphone
+        </p>
+        <p className="mt-1 text-[12px] font-medium text-chop-ink-secondary">
+          Notifications instantanées pour chaque{' '}
+          {role === 'vendor' ? 'commande qui arrive' : 'course assignée'}, raccourci sur
+          l&apos;écran d&apos;accueil, ouverture en plein écran.
+        </p>
+        <div className="mt-3">
+          <PwaInstallPrompt />
+        </div>
       </div>
     </div>
   );
