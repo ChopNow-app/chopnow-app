@@ -97,8 +97,21 @@ export default function LivrerPage() {
         </div>
       </section>
 
-      <section className="relative z-10 mx-auto max-w-3xl px-5 pb-16 pt-8 md:px-8 md:pt-10">
+      <section className="relative z-10 mx-auto max-w-3xl px-5 pt-8 md:px-8 md:pt-10">
         <RiderOnboardingForm />
+      </section>
+
+      {/* Status-check footer link (#13) — riders who already submitted
+          can check their dossier state without going through onboarding
+          again. */}
+      <section className="relative z-10 mx-auto max-w-3xl px-5 pb-16 pt-8 text-center text-[13px] font-medium text-chop-ink-secondary md:px-8">
+        Déjà inscrit ?{' '}
+        <Link
+          href="/statut"
+          className="font-semibold text-chop-red underline-offset-2 hover:underline"
+        >
+          Vérifier mon statut
+        </Link>
       </section>
     </main>
   );
