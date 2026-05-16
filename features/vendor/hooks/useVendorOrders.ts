@@ -31,6 +31,10 @@ export interface VendorOrder {
   deliveryLandmark: string | null;
   placedAt: string;
   acceptedAt: string | null;
+  // Vendor SLA — present on PENDING/CONFIRMED rows; null after the auto-refuse
+  // cron flips status. The countdown screen uses this absolute deadline so
+  // remaining time survives tab reloads.
+  acceptanceDeadlineAt: string | null;
   items: Array<{
     id: string;
     nameSnapshot: string;

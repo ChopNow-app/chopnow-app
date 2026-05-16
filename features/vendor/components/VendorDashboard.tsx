@@ -2,22 +2,15 @@
 
 import * as React from 'react';
 import Link from 'next/link';
+import { ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { apiRaw, ApiClientError } from '@/lib/api/api-client';
+import { ApiClientError } from '@/lib/api/api-client';
 import { useVendorAvailability } from '../hooks/useVendorAvailability';
 import { useVendorOrders, type VendorOrder } from '../hooks/useVendorOrders';
 import { useMenuItems, type MenuItem } from '../hooks/useMenuItems';
 import { MenuItemEditor } from './MenuItemEditor';
 
 const formatXAF = (n: number) => `${n.toLocaleString('fr-FR')} FCFA`;
-
-const REFUSAL_REASONS = [
-  { value: 'ITEM_OUT_OF_STOCK', label: 'Plat épuisé' },
-  { value: 'CLOSED', label: 'Fermé' },
-  { value: 'TOO_MANY_ORDERS', label: 'Trop de commandes' },
-  { value: 'POWER_OUTAGE', label: 'Coupure de courant (non pénalisant)' },
-  { value: 'OTHER', label: 'Autre' },
-] as const;
 
 export function VendorDashboard() {
   const availability = useVendorAvailability();
@@ -87,7 +80,7 @@ export function VendorDashboard() {
           <ul className="space-y-3">
             {pendingDecision.map((o) => (
               <li key={o.id}>
-                <OrderInboxCard order={o} onChanged={orders.reload} />
+                <OrderInboxCard order={o} />
               </li>
             ))}
           </ul>
@@ -213,138 +206,40 @@ function AvailabilitySection({ state }: { state: ReturnType<typeof useVendorAvai
   );
 }
 
-function OrderInboxCard({ order, onChanged }: { order: VendorOrder; onChanged: () => void }) {
-  const [refusing, setRefusing] = React.useState(false);
-  const [reason, setReason] =
-    React.useState<(typeof REFUSAL_REASONS)[number]['value']>('ITEM_OUT_OF_STOCK');
-  const [busy, setBusy] = React.useState<null | 'accept' | 'refuse'>(null);
-  const [error, setError] = React.useState<string | null>(null);
-
-  const accept = async () => {
-    setBusy('accept');
-    setError(null);
-    try {
-      await apiRaw.patch(`/api/orders/${order.id}/accept`, {});
-      onChanged();
-    } catch (err) {
-      setError(extract(err) ?? 'Acceptation échouée');
-    } finally {
-      setBusy(null);
-    }
-  };
-
-  const submitRefuse = async () => {
-    setBusy('refuse');
-    setError(null);
-    try {
-      await apiRaw.patch(`/api/orders/${order.id}/refuse`, { reason });
-      onChanged();
-    } catch (err) {
-      setError(extract(err) ?? 'Refus échoué');
-    } finally {
-      setBusy(null);
-      setRefusing(false);
-    }
-  };
-
+function OrderInboxCard({ order }: { order: VendorOrder }) {
+  // Decision now lives on /vendor/commande/[id] (full-screen with countdown).
+  // The dashboard card is purely a preview that routes the vendor into the
+  // decision flow — one Link, one tap. Reduces tap-target ambiguity in a
+  // busy kitchen ("did I just accept or refuse?") and gives the countdown
+  // its own surface where it dominates the viewport.
+  const itemCount = order.items.reduce((sum, line) => sum + line.quantity, 0);
   return (
-    <div className="rounded-xl bg-chop-card-white p-4 shadow-card">
-      <header className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
+    <Link
+      href={`/vendor/commande/${order.id}`}
+      className="group flex items-stretch gap-3 rounded-2xl bg-chop-card-white p-4 shadow-card transition-shadow hover:shadow-elevated focus:outline-none focus-visible:ring-2 focus-visible:ring-chop-red"
+    >
+      <div className="min-w-0 flex-1">
+        <div className="flex items-baseline justify-between gap-3">
           <p className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
             {order.code}
           </p>
-          <p className="mt-0.5 text-lg font-extrabold">{formatXAF(order.subtotalXAF)}</p>
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            {labelForPayment(order.paymentMethod)} · 📍 {order.deliveryQuartier}
-          </p>
+          <span className="shrink-0 rounded-full bg-chop-red-light px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-chop-red">
+            À décider
+          </span>
         </div>
-        <span
-          className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider ${
-            order.status === 'PENDING'
-              ? 'bg-cash-light text-cash'
-              : 'bg-chop-mboue-light text-chop-mboue'
-          }`}
-        >
-          {order.status === 'PENDING' ? 'Cash' : 'Payé'}
-        </span>
-      </header>
-
-      <ul className="mt-3 space-y-1 text-sm">
-        {order.items.map((line) => (
-          <li key={line.id} className="flex justify-between">
-            <span>
-              {line.quantity} × {line.nameSnapshot}
-            </span>
-            <span className="font-mono text-muted-foreground">{formatXAF(line.lineXAF)}</span>
-          </li>
-        ))}
-      </ul>
-
-      {order.noteForVendor ? (
-        <p className="mt-2 rounded bg-chop-warm p-2 text-xs">📝 {order.noteForVendor}</p>
-      ) : null}
-
-      {error ? <p className="mt-2 text-sm text-destructive">{error}</p> : null}
-
-      {refusing ? (
-        <div className="mt-3 space-y-2 rounded-lg border bg-background p-3">
-          <p className="text-sm font-semibold">Motif du refus</p>
-          <select
-            value={reason}
-            onChange={(e) => setReason(e.target.value as typeof reason)}
-            className="w-full rounded border bg-background p-2 text-sm"
-          >
-            {REFUSAL_REASONS.map((r) => (
-              <option key={r.value} value={r.value}>
-                {r.label}
-              </option>
-            ))}
-          </select>
-          <div className="flex gap-2">
-            <Button
-              type="button"
-              variant="destructive"
-              disabled={busy === 'refuse'}
-              onClick={submitRefuse}
-              className="flex-1"
-            >
-              {busy === 'refuse' ? '…' : 'Confirmer le refus'}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setRefusing(false)}
-              disabled={busy !== null}
-            >
-              Annuler
-            </Button>
-          </div>
-        </div>
-      ) : (
-        <div className="mt-3 flex gap-2">
-          <Button
-            type="button"
-            size="lg"
-            disabled={busy === 'accept'}
-            onClick={accept}
-            className="flex-[2] bg-chop-mboue hover:bg-chop-mboue/90"
-          >
-            {busy === 'accept' ? '…' : '✅ Accepter'}
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="lg"
-            disabled={busy !== null}
-            onClick={() => setRefusing(true)}
-            className="flex-1 border-chop-danger text-chop-danger hover:bg-chop-danger-light"
-          >
-            ❌ Refuser
-          </Button>
-        </div>
-      )}
-    </div>
+        <p className="mt-1 text-lg font-extrabold tabular-nums">{formatXAF(order.totalXAF)}</p>
+        <p className="mt-0.5 truncate text-xs text-muted-foreground">
+          {itemCount} plat{itemCount > 1 ? 's' : ''} · {labelForPayment(order.paymentMethod)} · 📍{' '}
+          {order.deliveryQuartier}
+        </p>
+      </div>
+      <div className="flex items-center pl-1">
+        <ChevronRight
+          className="h-5 w-5 text-muted-foreground transition-transform group-hover:translate-x-0.5"
+          aria-hidden
+        />
+      </div>
+    </Link>
   );
 }
 
