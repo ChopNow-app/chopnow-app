@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { PwaInstallPrompt } from '@/components/PwaInstallPrompt';
 import { RoleRedirector } from '@/features/auth/components/RoleRedirector';
+import { MobileOnboarding } from '@/features/onboarding/components/MobileOnboarding';
 
 // Marketing splash at /. Editorial counterpart to /restaurants — same
 // "Hot Plate" aesthetic, but on desktop the hero opens into a 2-column
@@ -33,6 +34,13 @@ export default function HomePage() {
           Anonymous visitors see the splash below. Renders an overlay while
           fetching /users/me to hide the splash-flicker. */}
       <RoleRedirector />
+
+      {/* First-visit mobile onboarding carousel — only shows for anonymous
+          visitors on narrow viewports who haven't dismissed it yet. Decides
+          its own visibility client-side; null on desktop / second visit /
+          authed sessions. Sits above the splash so the underlying static
+          content remains for SEO + desktop fallback. */}
+      <MobileOnboarding />
 
       {/* paper grain — 3% noise overlay for editorial feel */}
       <div
