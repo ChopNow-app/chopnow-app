@@ -58,6 +58,14 @@ const config: NextConfig = {
       },
     ];
   },
+  // /r2/<key> rewrites to the API's public media proxy. VendorCard /
+  // VendorDetailPage render <img src={`/r2/${profilePhotoUrl}`} /> and
+  // the API streams the WebP bytes from R2 with a 24h immutable cache.
+  // Falls back to localhost so dev works without setting the env var.
+  async rewrites() {
+    const api = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') ?? 'http://localhost:3001';
+    return [{ source: '/r2/:path*', destination: `${api}/api/media/:path*` }];
+  },
 };
 
 export default withNextIntl(config);
