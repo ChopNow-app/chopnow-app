@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 import { useVendorAvailability } from '../hooks/useVendorAvailability';
 import { useVendorOrders, type VendorOrder } from '../hooks/useVendorOrders';
 import { useMenuItems } from '../hooks/useMenuItems';
+import { VendorPushPermissionBanner } from './VendorPushPermissionBanner';
 
 const formatXAF = (n: number) => `${n.toLocaleString('fr-FR')} FCFA`;
 
@@ -15,6 +16,28 @@ export function VendorDashboard() {
   const availability = useVendorAvailability();
   const orders = useVendorOrders();
   const menu = useMenuItems();
+
+  // Sub-second reaction to incoming orders. The service worker fires a
+  // postMessage on every push event; when the kind is ORDER_CREATED we
+  // refresh the order list immediately (don't wait for the 10s poll) and
+  // play a short two-tone chime so the kitchen hears it over background
+  // noise.
+  //
+  // Audio uses Web Audio API rather than a static MP3 to avoid shipping
+  // an asset; trade-off is a slightly less polished sound that we can
+  // swap later by pointing this at /sounds/new-order.mp3.
+  React.useEffect(() => {
+    if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return;
+    const handler = (event: MessageEvent) => {
+      const payload = event.data as { source?: string; data?: { kind?: string } } | undefined;
+      if (payload?.source !== 'push') return;
+      if (payload.data?.kind !== 'ORDER_CREATED') return;
+      playChime();
+      if (orders.status === 'ready') orders.reload();
+    };
+    navigator.serviceWorker.addEventListener('message', handler);
+    return () => navigator.serviceWorker.removeEventListener('message', handler);
+  }, [orders]);
 
   if (orders.status === 'unauthenticated' || availability.status === 'unauthenticated') {
     return (
@@ -40,6 +63,7 @@ export function VendorDashboard() {
 
   return (
     <div className="space-y-4">
+      <VendorPushPermissionBanner />
       <AvailabilitySection state={availability} />
 
       <section>
@@ -305,4 +329,35 @@ function SkeletonList() {
       ))}
     </div>
   );
+}
+
+// Two-tone synth chime via Web Audio. Survives autoplay restrictions because
+// it only runs after a user-driven push event reaches an interactive client.
+function playChime(): void {
+  try {
+    const Ctx =
+      window.AudioContext ||
+      (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!Ctx) return;
+    const ctx = new Ctx();
+    const now = ctx.currentTime;
+    [
+      { freq: 880, start: 0, duration: 0.14 },
+      { freq: 1320, start: 0.16, duration: 0.18 },
+    ].forEach(({ freq, start, duration }) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.0001, now + start);
+      gain.gain.exponentialRampToValueAtTime(0.35, now + start + 0.015);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + start + duration);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(now + start);
+      osc.stop(now + start + duration + 0.02);
+    });
+    setTimeout(() => ctx.close().catch(() => undefined), 800);
+  } catch {
+    // No-op — chime is decorative.
+  }
 }
