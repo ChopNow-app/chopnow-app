@@ -6,6 +6,8 @@ import { ChevronLeft, Plus, AlertTriangle, Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useMenuItems, type MenuItem, type StockLevel, type ItemKind } from '../hooks/useMenuItems';
+import { useMenuCategories, type MenuCategory } from '../hooks/useMenuCategories';
+import { useVendorProfile } from '../hooks/useVendorProfile';
 import { MenuItemEditor } from './MenuItemEditor';
 
 const formatXAF = (n: number) => `${n.toLocaleString('fr-FR')} FCFA`;
@@ -20,10 +22,22 @@ const TABS: Array<{ key: Tab; label: string }> = [
 
 export function MenuManagementScreen() {
   const menu = useMenuItems();
+  const profile = useVendorProfile();
+  const cats = useMenuCategories();
   const [tab, setTab] = React.useState<Tab>('all');
+  // SEMI_FORMAL + RESTAURANT vendors get a category strip. `selectedCategoryId`
+  // tracks which category bucket is active; null === "Tout".
+  const [selectedCategoryId, setSelectedCategoryId] = React.useState<string | null>(null);
   const [editing, setEditing] = React.useState<
     { kind: 'new' } | { kind: 'edit'; item: MenuItem } | null
   >(null);
+
+  // Type-awareness: INFORMAL keeps the kind tabs view. SEMI_FORMAL + RESTAURANT
+  // get category grouping. We render the kind-tabs branch by default while
+  // the profile loads (no flicker into category UI for an INFORMAL vendor on
+  // a slow connection).
+  const vendorType = profile.status === 'ready' ? profile.data.type : 'INFORMAL';
+  const useCategories = vendorType !== 'INFORMAL';
 
   if (menu.status === 'unauthenticated') {
     return (
@@ -66,18 +80,45 @@ export function MenuManagementScreen() {
     );
   }
 
-  const filtered = menu.items.filter((item) =>
-    tab === 'all' ? true : tab === 'food' ? item.kind === 'FOOD' : item.kind === 'DRINK',
-  );
+  // For non-informal: filter by selectedCategoryId. For informal: filter by kind tab.
+  const categoriesList = cats.status === 'ready' ? cats.categories : [];
+  const filtered = useCategories
+    ? selectedCategoryId === null
+      ? menu.items
+      : menu.items.filter((i) => i.categoryId === selectedCategoryId)
+    : menu.items.filter((item) =>
+        tab === 'all' ? true : tab === 'food' ? item.kind === 'FOOD' : item.kind === 'DRINK',
+      );
+
+  const handleCreateCategory = async () => {
+    const name = window.prompt('Nom de la catégorie ?');
+    if (!name || name.trim().length < 2) return;
+    try {
+      await cats.createCategory(name.trim());
+    } catch (err) {
+      window.alert(extract(err) ?? 'Création échouée');
+    }
+  };
 
   return (
     <Shell>
       <Header itemCount={menu.items.length} />
-      <CategoryTabs current={tab} onChange={setTab} items={menu.items} />
+
+      {useCategories ? (
+        <CategoryStrip
+          categories={categoriesList}
+          items={menu.items}
+          selectedId={selectedCategoryId}
+          onSelect={setSelectedCategoryId}
+          onCreate={handleCreateCategory}
+        />
+      ) : (
+        <CategoryTabs current={tab} onChange={setTab} items={menu.items} />
+      )}
 
       {filtered.length === 0 ? (
         <p className="mt-6 rounded-2xl bg-chop-card-white p-5 text-center text-sm text-muted-foreground shadow-card">
-          {tab === 'all'
+          {menu.items.length === 0
             ? 'Aucun plat. Tape « + Ajouter un plat » pour commencer.'
             : 'Rien dans cette catégorie pour le moment.'}
         </p>
@@ -87,6 +128,11 @@ export function MenuManagementScreen() {
             <li key={item.id}>
               <MenuItemCard
                 item={item}
+                categoryName={
+                  useCategories
+                    ? (categoriesList.find((c) => c.id === item.categoryId)?.name ?? null)
+                    : null
+                }
                 onToggleStock={menu.setInStock}
                 onCycleStockLevel={menu.setStockLevel}
                 onEdit={() => setEditing({ kind: 'edit', item })}
@@ -117,6 +163,7 @@ export function MenuManagementScreen() {
       {editing ? (
         <MenuItemEditor
           initial={editing.kind === 'edit' ? editing.item : undefined}
+          categories={useCategories ? categoriesList : []}
           onSave={(input) =>
             editing.kind === 'edit'
               ? menu.updateItem(editing.item.id, input)
@@ -200,6 +247,108 @@ function CategoryTabs({
   );
 }
 
+/**
+ * Horizontal scrollable category strip for SEMI_FORMAL + RESTAURANT vendors.
+ * "Tout" pill resets the filter; "+ Nouvelle catégorie" pill triggers a
+ * one-shot prompt that POSTs to /vendors/me/categories. Categories overflow
+ * to horizontal scroll on mobile rather than wrapping — keeps the rest of
+ * the menu visible.
+ */
+function CategoryStrip({
+  categories,
+  items,
+  selectedId,
+  onSelect,
+  onCreate,
+}: {
+  categories: MenuCategory[];
+  items: MenuItem[];
+  selectedId: string | null;
+  onSelect: (id: string | null) => void;
+  onCreate: () => void;
+}) {
+  // Count items in each category for the badge — helps the vendor see at
+  // a glance which sections are sparse.
+  const counts = React.useMemo(() => {
+    const out: Record<string, number> = {};
+    for (const item of items) {
+      if (item.categoryId) {
+        out[item.categoryId] = (out[item.categoryId] ?? 0) + 1;
+      }
+    }
+    return out;
+  }, [items]);
+  return (
+    <nav
+      className="mt-5 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      aria-label="Filtrer par catégorie"
+    >
+      <CategoryPill active={selectedId === null} onClick={() => onSelect(null)}>
+        Tout
+        <span
+          className={cn(
+            'inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-bold tabular-nums',
+            selectedId === null
+              ? 'bg-white/20 text-white'
+              : 'bg-chop-surface-gray text-muted-foreground',
+          )}
+        >
+          {items.length}
+        </span>
+      </CategoryPill>
+      {categories.map((c) => (
+        <CategoryPill key={c.id} active={selectedId === c.id} onClick={() => onSelect(c.id)}>
+          {c.name}
+          <span
+            className={cn(
+              'inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-bold tabular-nums',
+              selectedId === c.id
+                ? 'bg-white/20 text-white'
+                : 'bg-chop-surface-gray text-muted-foreground',
+            )}
+          >
+            {counts[c.id] ?? 0}
+          </span>
+        </CategoryPill>
+      ))}
+      <button
+        type="button"
+        onClick={onCreate}
+        className="flex shrink-0 items-center gap-1 rounded-full border-2 border-dashed border-divider bg-chop-card-white px-3 py-2 text-xs font-bold text-chop-red transition-colors hover:border-chop-red hover:bg-chop-red-light"
+      >
+        <Plus className="h-3 w-3" aria-hidden />
+        Nouvelle
+      </button>
+    </nav>
+  );
+}
+
+function CategoryPill({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={cn(
+        'flex shrink-0 items-center gap-1.5 rounded-full border-2 px-3 py-2 text-sm font-bold transition-colors',
+        active
+          ? 'border-chop-ink bg-chop-ink text-white'
+          : 'border-divider bg-chop-card-white text-chop-ink hover:border-chop-ink/40',
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+
 function CategorySkeleton() {
   return (
     <div className="mt-5 flex gap-2">
@@ -212,12 +361,14 @@ function CategorySkeleton() {
 
 function MenuItemCard({
   item,
+  categoryName,
   onToggleStock,
   onCycleStockLevel,
   onEdit,
   onDelete,
 }: {
   item: MenuItem;
+  categoryName: string | null;
   onToggleStock: (id: string, inStock: boolean) => Promise<void>;
   onCycleStockLevel: (id: string, level: StockLevel) => Promise<void>;
   onEdit: () => void;
@@ -237,6 +388,11 @@ function MenuItemCard({
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-bold">{item.name}</p>
         <p className="mt-0.5 text-sm font-extrabold text-chop-red">{formatXAF(item.priceXAF)}</p>
+        {categoryName ? (
+          <p className="mt-0.5 truncate text-[11px] font-medium text-muted-foreground">
+            {categoryName}
+          </p>
+        ) : null}
         <StockBadge level={item.stockLevel} onCycle={(next) => onCycleStockLevel(item.id, next)} />
       </div>
 

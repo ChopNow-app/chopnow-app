@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { ApiClientError } from '@/lib/api/api-client';
 import { cn } from '@/lib/utils';
 import type { ItemKind, MenuItem, MenuItemInput, StockLevel } from '../hooks/useMenuItems';
+import type { MenuCategory } from '../hooks/useMenuCategories';
 
 const schema = z.object({
   name: z.string().min(2, '2 caractères minimum').max(80),
@@ -35,6 +36,11 @@ export interface MenuItemEditorProps {
   onSave: (input: MenuItemInput) => Promise<MenuItem>;
   onUploadPhoto?: (itemId: string, file: File) => Promise<MenuItem>;
   onClose: () => void;
+  /**
+   * Categories the vendor can assign this item to. Pass an empty array for
+   * INFORMAL vendors (categories are hidden in the menu screen there too).
+   */
+  categories?: MenuCategory[];
 }
 
 /**
@@ -43,16 +49,24 @@ export interface MenuItemEditorProps {
  * itemId). For existing items, the photo can be uploaded before / after edits
  * are saved.
  */
-export function MenuItemEditor({ initial, onSave, onUploadPhoto, onClose }: MenuItemEditorProps) {
+export function MenuItemEditor({
+  initial,
+  onSave,
+  onUploadPhoto,
+  onClose,
+  categories = [],
+}: MenuItemEditorProps) {
   const [serverError, setServerError] = React.useState<string | null>(null);
   const [saving, setSaving] = React.useState(false);
   const [photoUploading, setPhotoUploading] = React.useState(false);
   const [photoError, setPhotoError] = React.useState<string | null>(null);
   const [currentItem, setCurrentItem] = React.useState<MenuItem | undefined>(initial);
-  // kind + stockLevel live outside react-hook-form because they're toggles,
-  // not text inputs, and we want the radio-style UX (immediate feedback).
+  // kind + stockLevel + categoryId live outside react-hook-form because
+  // they're toggles, not text inputs, and we want the immediate-feedback
+  // radio UX. categoryId is `null` to mean "Sans catégorie".
   const [kind, setKind] = React.useState<ItemKind>(initial?.kind ?? 'FOOD');
   const [stockLevel, setStockLevel] = React.useState<StockLevel>(initial?.stockLevel ?? 'IN_STOCK');
+  const [categoryId, setCategoryId] = React.useState<string | null>(initial?.categoryId ?? null);
 
   const {
     register,
@@ -84,6 +98,7 @@ export function MenuItemEditor({ initial, onSave, onUploadPhoto, onClose }: Menu
         preparationMinutes: prep,
         kind,
         stockLevel,
+        categoryId: categoryId ?? undefined,
       };
       const saved = await onSave(input);
       setCurrentItem(saved);
@@ -191,7 +206,7 @@ export function MenuItemEditor({ initial, onSave, onUploadPhoto, onClose }: Menu
           </div>
 
           <div>
-            <p className="mb-1 text-sm font-semibold">Catégorie</p>
+            <p className="mb-1 text-sm font-semibold">Type</p>
             <div className="flex gap-2">
               <Pill active={kind === 'FOOD'} onClick={() => setKind('FOOD')}>
                 🍽️ Plat
@@ -201,6 +216,26 @@ export function MenuItemEditor({ initial, onSave, onUploadPhoto, onClose }: Menu
               </Pill>
             </div>
           </div>
+
+          {/* MenuCategory selector — only renders when the parent passes
+              categories (SEMI_FORMAL + RESTAURANT vendors). INFORMAL passes
+              an empty array, so the row stays hidden and items remain
+              implicitly uncategorized. */}
+          {categories.length > 0 ? (
+            <div>
+              <p className="mb-1 text-sm font-semibold">Catégorie du menu</p>
+              <div className="flex flex-wrap gap-2">
+                <Pill active={categoryId === null} onClick={() => setCategoryId(null)}>
+                  Sans catégorie
+                </Pill>
+                {categories.map((c) => (
+                  <Pill key={c.id} active={categoryId === c.id} onClick={() => setCategoryId(c.id)}>
+                    {c.name}
+                  </Pill>
+                ))}
+              </div>
+            </div>
+          ) : null}
 
           <div>
             <p className="mb-1 text-sm font-semibold">Stock</p>
