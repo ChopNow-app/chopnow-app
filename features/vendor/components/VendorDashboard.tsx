@@ -134,6 +134,22 @@ export function VendorDashboard() {
           aria-hidden
         />
       </Link>
+
+      <Link
+        href="/vendor/profile"
+        className="group flex items-center justify-between gap-3 rounded-2xl bg-chop-card-white p-4 shadow-card transition-shadow hover:shadow-elevated focus:outline-none focus-visible:ring-2 focus-visible:ring-chop-red"
+      >
+        <div className="min-w-0">
+          <p className="text-base font-extrabold">Mon profil</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            Modifier nom, description, photos, MoMo
+          </p>
+        </div>
+        <ChevronRight
+          className="h-5 w-5 text-muted-foreground transition-transform group-hover:translate-x-0.5"
+          aria-hidden
+        />
+      </Link>
     </div>
   );
 }
