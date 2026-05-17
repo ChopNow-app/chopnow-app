@@ -4,7 +4,6 @@ import * as React from 'react';
 import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { ApiClientError } from '@/lib/api/api-client';
 import { cn } from '@/lib/utils';
 import { useVendorAvailability } from '../hooks/useVendorAvailability';
 import { useVendorOrders, type VendorOrder } from '../hooks/useVendorOrders';
@@ -112,6 +111,22 @@ export function VendorDashboard() {
             {menu.status === 'ready'
               ? `${menu.items.length} ${menu.items.length === 1 ? 'plat' : 'plats'} · gérer disponibilité, prix, photos`
               : 'Gérer mes plats'}
+          </p>
+        </div>
+        <ChevronRight
+          className="h-5 w-5 text-muted-foreground transition-transform group-hover:translate-x-0.5"
+          aria-hidden
+        />
+      </Link>
+
+      <Link
+        href="/vendor/hours"
+        className="group flex items-center justify-between gap-3 rounded-2xl bg-chop-card-white p-4 shadow-card transition-shadow hover:shadow-elevated focus:outline-none focus-visible:ring-2 focus-visible:ring-chop-red"
+      >
+        <div className="min-w-0">
+          <p className="text-base font-extrabold">Mes horaires</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            Définir les jours et heures d&apos;ouverture
           </p>
         </div>
         <ChevronRight
@@ -264,14 +279,6 @@ function labelForActiveStatus(s: VendorOrder['status']): string {
     default:
       return s;
   }
-}
-
-function extract(err: unknown): string | null {
-  if (err instanceof ApiClientError) {
-    const body = err.body as { message?: string } | undefined;
-    return body?.message ?? `Erreur ${err.status}`;
-  }
-  return (err as Error)?.message ?? null;
 }
 
 function SkeletonList() {
