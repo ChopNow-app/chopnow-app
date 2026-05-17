@@ -9,14 +9,14 @@ import { Button } from '@/components/ui/button';
 import { PhoneInput } from '@/components/PhoneInput';
 import { ApiClientError } from '@/lib/api/api-client';
 import {
-  FormSection,
-  Field,
   BrandInput,
-  RadioCard,
-  PhotoPicker,
   ErrorBanner,
-  SuccessState,
-} from '@/features/vendor-onboarding/components/VendorOnboardingForm';
+  Field,
+  FormSection,
+  PhotoPicker,
+  RadioCard,
+} from '@/components/forms/onboarding-atoms';
+import { SuccessState } from '@/features/vendor-onboarding/components/VendorOnboardingForm';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
 const PHONE = /^(?:6[5-9]\d{7}|\+?[1-9]\d{7,14})$/;
