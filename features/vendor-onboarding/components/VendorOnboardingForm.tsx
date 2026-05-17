@@ -45,33 +45,56 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
 // re-validates with the same pattern.
 const PHONE = /^(?:6[5-9]\d{7}|\+?[1-9]\d{7,14})$/;
 
-const schema = z.object({
-  name: z.string().min(2, '2 caractères minimum').max(80),
-  ownerName: z.string().min(2, '2 caractères minimum').max(80),
-  type: z.enum(['INFORMAL', 'SEMI_FORMAL', 'RESTAURANT'], {
-    errorMap: () => ({ message: 'Choisis le type' }),
-  }),
-  quartier: z.string().min(2, 'Quartier requis').max(80),
-  pointOfReference: z.string().max(200).optional().or(z.literal('')),
-  whatsappPhone: z.string().regex(PHONE, 'Numéro WhatsApp invalide'),
-  momoPhone: z.string().regex(PHONE, 'Numéro MoMo invalide'),
-  declaredCapacity: z.enum(['LT_10', 'R_10_30', 'GT_30'], {
-    errorMap: () => ({ message: 'Choisis une capacité' }),
-  }),
-  firstItemName: z.string().min(2, '2 caractères minimum').max(80),
-  firstItemPriceXAF: z.coerce.number().int().min(100, 'Minimum 100 FCFA').max(1_000_000),
-  // Optional extras (#12) — name + price, no photo. Both halves must be
-  // present together or omitted together. Zod handles the empty-string
-  // case via .or(z.literal('')).
-  extraItem1Name: z.string().max(80).optional().or(z.literal('')),
-  extraItem1PriceXAF: z
-    .union([z.coerce.number().int().min(100).max(1_000_000), z.literal('')])
-    .optional(),
-  extraItem2Name: z.string().max(80).optional().or(z.literal('')),
-  extraItem2PriceXAF: z
-    .union([z.coerce.number().int().min(100).max(1_000_000), z.literal('')])
-    .optional(),
-});
+const schema = z
+  .object({
+    name: z.string().min(2, '2 caractères minimum').max(80),
+    ownerName: z.string().min(2, '2 caractères minimum').max(80),
+    type: z.enum(['INFORMAL', 'SEMI_FORMAL', 'RESTAURANT'], {
+      errorMap: () => ({ message: 'Choisis le type' }),
+    }),
+    quartier: z.string().min(2, 'Quartier requis').max(80),
+    pointOfReference: z.string().max(200).optional().or(z.literal('')),
+    whatsappPhone: z.string().regex(PHONE, 'Numéro WhatsApp invalide'),
+    momoPhone: z.string().regex(PHONE, 'Numéro MoMo invalide'),
+    declaredCapacity: z.enum(['LT_10', 'R_10_30', 'GT_30'], {
+      errorMap: () => ({ message: 'Choisis une capacité' }),
+    }),
+    firstItemName: z.string().min(2, '2 caractères minimum').max(80),
+    firstItemPriceXAF: z.coerce.number().int().min(100, 'Minimum 100 FCFA').max(1_000_000),
+    // Optional extras (#12) — name + price, no photo. Both halves must be
+    // present together or omitted together. Zod handles the empty-string
+    // case via .or(z.literal('')).
+    extraItem1Name: z.string().max(80).optional().or(z.literal('')),
+    extraItem1PriceXAF: z
+      .union([z.coerce.number().int().min(100).max(1_000_000), z.literal('')])
+      .optional(),
+    extraItem2Name: z.string().max(80).optional().or(z.literal('')),
+    extraItem2PriceXAF: z
+      .union([z.coerce.number().int().min(100).max(1_000_000), z.literal('')])
+      .optional(),
+    // Restaurant-only KYC fields. Optional at the schema level — the
+    // superRefine below enforces presence when type=RESTAURANT, mirroring
+    // the backend's @ValidateIf decorators on SubmitVendorDto.
+    rccmNumber: z.string().max(50).optional().or(z.literal('')),
+    niuNumber: z.string().max(20).optional().or(z.literal('')),
+  })
+  .superRefine((data, ctx) => {
+    if (data.type !== 'RESTAURANT') return;
+    if (!data.rccmNumber || data.rccmNumber.length < 5) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['rccmNumber'],
+        message: 'RCCM requis (5 caractères min)',
+      });
+    }
+    if (!data.niuNumber || data.niuNumber.length < 8) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['niuNumber'],
+        message: 'NIU requis (8 caractères min)',
+      });
+    }
+  });
 
 type FormValues = z.input<typeof schema>;
 
@@ -144,11 +167,17 @@ export function VendorOnboardingForm() {
   const [serverError, setServerError] = React.useState<string | null>(null);
   const [photoError, setPhotoError] = React.useState<string | null>(null);
   const [done, setDone] = React.useState(false);
+  // Restaurant-only enseigne (storefront) photo. Stays on the form even
+  // when type=INFORMAL is selected — the conditional render below hides
+  // its block, but we don't reset the file when the user toggles types
+  // back and forth (cheaper UX than re-prompting).
+  const [enseignePhoto, setEnseignePhoto] = React.useState<File | null>(null);
 
   const {
     register,
     control,
     handleSubmit,
+    watch,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -173,6 +202,11 @@ export function VendorOnboardingForm() {
     setPhotoError(null);
     if (!profilePhoto) {
       setPhotoError('La photo de devanture est obligatoire — sans elle ta cuisine est invisible.');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    if (values.type === 'RESTAURANT' && !enseignePhoto) {
+      setPhotoError("La photo de l'enseigne est obligatoire pour les restaurants.");
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
@@ -206,6 +240,14 @@ export function VendorOnboardingForm() {
       }
       form.append('profilePhoto', profilePhoto);
       if (firstItemPhoto) form.append('firstItemPhoto', firstItemPhoto);
+      // Restaurant KYC payload. The backend's @ValidateIf only requires
+      // these when type=RESTAURANT, so we send them as-is — empty strings
+      // for non-restaurants are silently ignored server-side.
+      if (values.type === 'RESTAURANT') {
+        if (values.rccmNumber) form.append('rccmNumber', values.rccmNumber);
+        if (values.niuNumber) form.append('niuNumber', values.niuNumber);
+        if (enseignePhoto) form.append('enseignePhoto', enseignePhoto);
+      }
 
       const res = await fetch(`${API_URL}/api/vendors`, { method: 'POST', body: form });
       if (!res.ok) {
@@ -247,6 +289,56 @@ export function VendorOnboardingForm() {
             ) : null}
           </fieldset>
         </Field>
+
+        {/* Restaurant-only KYC block. Reveals when the type radio flips to
+            RESTAURANT — the schema's superRefine then enforces RCCM + NIU
+            presence and the FormData payload includes the enseigne photo.
+            Backend re-validates via @ValidateIf decorators. */}
+        {watch('type') === 'RESTAURANT' ? (
+          <div className="rounded-2xl border-2 border-chop-red/20 bg-chop-red-light/30 p-4">
+            <p className="mb-3 text-[12px] font-bold uppercase tracking-widest text-chop-red">
+              🏛️ Documents légaux
+            </p>
+            <div className="space-y-3">
+              <Field
+                label="Numéro RCCM"
+                hint="Registre du Commerce et du Crédit Mobilier"
+                error={errors.rccmNumber?.message}
+              >
+                <BrandInput
+                  placeholder="RC/DLA/2024/A/12345"
+                  autoComplete="off"
+                  {...register('rccmNumber')}
+                />
+              </Field>
+              <Field
+                label="NIU"
+                hint="Numéro d'Identifiant Unique"
+                error={errors.niuNumber?.message}
+              >
+                <BrandInput
+                  placeholder="M091900012345A"
+                  autoComplete="off"
+                  {...register('niuNumber')}
+                />
+              </Field>
+              <PhotoPicker
+                label="Photo de l'enseigne"
+                hint="devanture / façade du restaurant"
+                helperText="L'équipe vérifie que l'enseigne correspond au nom déclaré ci-dessus."
+                file={enseignePhoto}
+                onPick={setEnseignePhoto}
+                required
+              />
+              {!enseignePhoto ? (
+                <p className="text-[11px] font-medium text-chop-danger">
+                  La photo de l&apos;enseigne est obligatoire pour les restaurants.
+                </p>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
+
         <Field label="Quartier de Douala" error={errors.quartier?.message}>
           <BrandInput placeholder="Makepe, Bonamoussadi…" {...register('quartier')} />
         </Field>

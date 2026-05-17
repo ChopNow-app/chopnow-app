@@ -184,6 +184,42 @@ function VendorRow({ vendor, onChanged }: { vendor: PendingVendor; onChanged: ()
           />
         ) : null}
       </header>
+
+      {/* Restaurant KYC block — only rendered when type=RESTAURANT and at
+          least one KYC field is populated. The text + link give the admin
+          everything they need to verify legal identity before approving. */}
+      {vendor.type === 'RESTAURANT' &&
+      (vendor.rccmNumber || vendor.niuNumber || vendor.enseignePhotoUrl) ? (
+        <div className="mt-3 rounded-md border border-chop-red/30 bg-chop-red-light/40 p-3">
+          <p className="mb-1.5 text-[11px] font-bold uppercase tracking-widest text-chop-red">
+            🏛️ Documents légaux
+          </p>
+          <p className="text-xs text-chop-ink">
+            {vendor.rccmNumber ? (
+              <>
+                RCCM : <span className="font-mono font-semibold">{vendor.rccmNumber}</span>
+              </>
+            ) : null}
+            {vendor.rccmNumber && vendor.niuNumber ? ' · ' : null}
+            {vendor.niuNumber ? (
+              <>
+                NIU : <span className="font-mono font-semibold">{vendor.niuNumber}</span>
+              </>
+            ) : null}
+          </p>
+          {vendor.enseignePhotoUrl ? (
+            <a
+              href={`/r2/${vendor.enseignePhotoUrl}`}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-1.5 inline-block text-xs font-semibold text-chop-red underline"
+            >
+              Voir la photo d&apos;enseigne →
+            </a>
+          ) : null}
+        </div>
+      ) : null}
+
       <DecisionActions
         onApprove={() => adminApi.approveVendor(vendor.id)}
         onReject={(reason) => adminApi.rejectVendor(vendor.id, reason)}
