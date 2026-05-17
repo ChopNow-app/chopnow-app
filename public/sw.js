@@ -14,7 +14,7 @@
 // page auto-reloads → user sees latest deploy. Total update propagation
 // is one page load instead of "until next browser restart."
 
-const CACHE_VERSION = 'v0.2.0';
+const CACHE_VERSION = 'v0.3.0';
 const APP_SHELL = ['/'];
 
 self.addEventListener('install', (event) => {
@@ -80,7 +80,16 @@ self.addEventListener('fetch', (event) => {
   );
 });
 
-// Story 1.11: web push payload handler
+// Story 1.11: web push payload handler.
+//
+// Two responsibilities on every push:
+//   1. Always show the OS-level notification (Chrome requires userVisibleOnly
+//      so this is non-optional). On Android the system auto-suppresses the
+//      banner when the PWA is foregrounded, so there's no double-display.
+//   2. postMessage focused clients so an in-app listener can react before
+//      the user even sees the notification — play a chime, refresh the
+//      vendor dashboard, etc. This is what makes Web Push double as our
+//      "live channel" without needing a separate SSE/WebSocket layer.
 self.addEventListener('push', (event) => {
   const data = (() => {
     try {
@@ -90,19 +99,45 @@ self.addEventListener('push', (event) => {
     }
   })();
   const title = data.title || 'ChopNow';
+  const orderId = data.data && data.data.orderId;
   event.waitUntil(
-    self.registration.showNotification(title, {
-      body: data.body,
-      icon: data.icon || '/icons/icon-192.png',
-      badge: '/icons/icon-192.png',
-      data: data.data || {},
-    }),
+    Promise.all([
+      self.registration.showNotification(title, {
+        body: data.body,
+        icon: data.icon || '/icons/icon-192.png',
+        badge: '/icons/icon-192.png',
+        data: data.data || {},
+        // tag collapses duplicate retries of the same order into one banner.
+        tag: orderId || undefined,
+      }),
+      self.clients
+        .matchAll({ type: 'window', includeUncontrolled: true })
+        .then((clientList) =>
+          clientList.forEach((client) =>
+            client.postMessage({ source: 'push', data }),
+          ),
+        ),
+    ]),
   );
 });
 
+// Tap a notification → open (or focus) the deep link. The backend includes
+// `data.deepLink` for explicit routing; legacy payloads with just `orderId`
+// keep working via the fallback below.
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const orderId = event.notification.data && event.notification.data.orderId;
-  const url = orderId ? `/orders/${orderId}` : '/';
-  event.waitUntil(self.clients.openWindow(url));
+  const d = event.notification.data || {};
+  const url = d.deepLink || (d.orderId ? `/orders/${d.orderId}` : '/');
+  event.waitUntil(
+    self.clients
+      .matchAll({ type: 'window', includeUncontrolled: true })
+      .then((clientList) => {
+        // Focus an existing tab if one is open on the target URL — beats
+        // opening a duplicate.
+        for (const client of clientList) {
+          if (client.url.includes(url) && 'focus' in client) return client.focus();
+        }
+        return self.clients.openWindow(url);
+      }),
+  );
 });
