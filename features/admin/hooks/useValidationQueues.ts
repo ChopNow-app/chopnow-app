@@ -15,6 +15,11 @@ export interface PendingVendor {
   declaredCapacity: number | null;
   profilePhotoUrl: string | null;
   submittedAt: string;
+  // Restaurant KYC — null on INFORMAL + SEMI_FORMAL rows; admin reviews
+  // them inline before approving the application.
+  rccmNumber: string | null;
+  niuNumber: string | null;
+  enseignePhotoUrl: string | null;
 }
 
 export interface PendingRider {
