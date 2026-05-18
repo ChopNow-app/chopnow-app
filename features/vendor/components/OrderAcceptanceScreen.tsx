@@ -381,9 +381,7 @@ function EmptyState({
 }
 
 function labelForPayment(m: VendorOrder['paymentMethod']): string {
-  if (m === 'CASH') return 'Cash à la livraison';
-  if (m === 'MTN_MOMO') return 'MTN MoMo';
-  return 'Orange Money';
+  return m === 'MTN_MOMO' ? 'MTN MoMo' : 'Orange Money';
 }
 
 function extract(err: unknown): string | null {

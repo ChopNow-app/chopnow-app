@@ -155,8 +155,9 @@ function OrderContent({ order, onReload }: { order: OrderView; onReload: () => v
  * Story 4.14 — terminal "no rider available" state. When dispatch retried
  * 10× over 5 minutes without finding an online rider, the backend marks
  * the order EXPIRED with refusalReason=NO_RIDER_AVAILABLE. Show the
- * consumer a clear terminal block + the refund / re-order CTA. MoMo
- * orders auto-refund (paymentStatus=REFUNDED); CASH orders just close.
+ * consumer a clear terminal block + the refund / re-order CTA. Pilot is
+ * MoMo-only, so an expired order always means the MoMo charge auto-refunds
+ * (paymentStatus=REFUNDED).
  */
 function NoRiderAvailableBlock({ order }: { order: OrderView }) {
   if (order.status !== 'EXPIRED' || order.refusalReason !== 'NO_RIDER_AVAILABLE') return null;

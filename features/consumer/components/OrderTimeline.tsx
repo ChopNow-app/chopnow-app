@@ -20,10 +20,7 @@ const STEPS: Step[] = [
     key: 'confirmed',
     label: 'Confirmée',
     icon: '✅',
-    description: (o) =>
-      o.paymentMethod === 'CASH'
-        ? 'Commande envoyée au vendeur — paiement à la livraison.'
-        : 'Paiement reçu, commande envoyée au vendeur.',
+    description: () => 'Paiement reçu, commande envoyée au vendeur.',
     reached: (_s, o) => !!o.placedAt,
   },
   {

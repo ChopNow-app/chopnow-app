@@ -25,7 +25,7 @@ export interface VendorOrder {
   deliveryFeeXAF: number;
   totalXAF: number;
   noteForVendor: string | null;
-  paymentMethod: 'MTN_MOMO' | 'ORANGE_MONEY' | 'CASH';
+  paymentMethod: 'MTN_MOMO' | 'ORANGE_MONEY';
   paymentStatus: 'PENDING' | 'PROCESSING' | 'PAID' | 'FAILED' | 'REFUNDED';
   deliveryQuartier: string;
   deliveryLandmark: string | null;

@@ -11,7 +11,7 @@ import { ApiClientError, apiRaw } from '@/lib/api/api-client';
  * declare X-Idempotency-Key in the OpenAPI schema.
  */
 
-export type PaymentMethod = 'MTN_MOMO' | 'ORANGE_MONEY' | 'CASH';
+export type PaymentMethod = 'MTN_MOMO' | 'ORANGE_MONEY';
 
 export interface PlaceOrderInput {
   vendorId: string;
