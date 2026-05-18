@@ -301,9 +301,7 @@ function ActiveOrderCard({ order }: { order: VendorOrder }) {
 }
 
 function labelForPayment(m: VendorOrder['paymentMethod']): string {
-  if (m === 'CASH') return 'Cash';
-  if (m === 'MTN_MOMO') return 'MTN MoMo';
-  return 'Orange Money';
+  return m === 'MTN_MOMO' ? 'MTN MoMo' : 'Orange Money';
 }
 
 function labelForActiveStatus(s: VendorOrder['status']): string {

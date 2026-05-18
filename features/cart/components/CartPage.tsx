@@ -16,9 +16,9 @@ import { initiateMomo, placeOrder, type PaymentMethod } from '../api';
 
 /**
  * Fetch the authenticated user's phone once on mount. Used as the final
- * fallback for `deliveryPhone` so that CASH orders with no per-address phone
- * still send a valid number (the backend requires one). Returns null while
- * loading or if unauthenticated.
+ * fallback for `deliveryPhone` when the picked address has none — the
+ * backend requires one and we'd rather pass the account phone than fail
+ * the submit. Returns null while loading or if unauthenticated.
  */
 function useUserPhone(): string | null {
   const [phone, setPhone] = React.useState<string | null>(null);
@@ -42,21 +42,14 @@ function useUserPhone(): string | null {
 const MIN_ORDER_XAF = 1200;
 const formatXAF = (n: number) => `${n.toLocaleString('fr-FR')} FCFA`;
 
-// Pilot mode (Week 1 micro-zone validation, 2026-05-15): hide MoMo options.
-// Cash-on-delivery only until we register RCCM and switch on Campay live.
-const PILOT_COD_ONLY = process.env.NEXT_PUBLIC_PILOT_COD_ONLY === 'true';
-
-const ALL_PAYMENT_OPTIONS: Array<{ id: PaymentMethod; label: string; sublabel: string }> = [
+// Pilot is MoMo-only (MTN MoMo + Orange Money). The cash-on-delivery branch
+// + the PILOT_COD_ONLY flag were removed 2026-05-18 (chopnow-api issue #177).
+const PAYMENT_OPTIONS: Array<{ id: PaymentMethod; label: string; sublabel: string }> = [
   { id: 'MTN_MOMO', label: 'MTN MoMo', sublabel: 'Prompt USSD envoyé sur votre téléphone' },
   { id: 'ORANGE_MONEY', label: 'Orange Money', sublabel: 'Prompt USSD envoyé sur votre téléphone' },
-  { id: 'CASH', label: 'Cash à la livraison', sublabel: "Préparez l'appoint exact" },
 ];
 
-const PAYMENT_OPTIONS = PILOT_COD_ONLY
-  ? ALL_PAYMENT_OPTIONS.filter((o) => o.id === 'CASH')
-  : ALL_PAYMENT_OPTIONS;
-
-const DEFAULT_PAYMENT_METHOD: PaymentMethod = PILOT_COD_ONLY ? 'CASH' : 'MTN_MOMO';
+const DEFAULT_PAYMENT_METHOD: PaymentMethod = 'MTN_MOMO';
 
 export function CartPage() {
   const cart = useCart();
@@ -106,12 +99,12 @@ export function CartPage() {
       : null;
 
   const belowMinimum = cart.subtotalXAF < MIN_ORDER_XAF;
-  const needsPayerPhone = paymentMethod !== 'CASH';
+  // payerPhone is always required now (every order is MoMo).
   const canSubmit =
     !belowMinimum &&
     !submitting &&
     selectedAddress !== null &&
-    (!needsPayerPhone || /^(?:6[5-9]\d{7}|\+?[1-9]\d{7,14})$/.test(payerPhone));
+    /^(?:6[5-9]\d{7}|\+?[1-9]\d{7,14})$/.test(payerPhone);
 
   const onSubmit = async () => {
     if (!selectedAddress || !cart.vendorId) return;
@@ -138,9 +131,7 @@ export function CartPage() {
         crypto.randomUUID(),
       );
 
-      if (paymentMethod !== 'CASH') {
-        await initiateMomo(order.id, payerPhone);
-      }
+      await initiateMomo(order.id, payerPhone);
 
       cart.clear();
       router.replace(`/orders/${order.id}`);
@@ -242,26 +233,24 @@ export function CartPage() {
           </div>
         </section>
 
-        {needsPayerPhone ? (
-          <div>
-            <label htmlFor="payerPhone" className="mb-1 block text-sm font-semibold">
-              Numéro MoMo pour le paiement
-            </label>
-            <Input
-              id="payerPhone"
-              type="tel"
-              inputMode="tel"
-              placeholder="670000000"
-              value={payerPhone}
-              onChange={(e) => setPayerPhone(e.target.value.replace(/\s+/g, ''))}
-            />
-            <p className="mt-1 text-xs text-muted-foreground">
-              {paymentMethod === 'MTN_MOMO'
-                ? 'Format MTN (commence par 65–68 ou 670–674).'
-                : 'Format Orange (commence par 69X).'}
-            </p>
-          </div>
-        ) : null}
+        <div>
+          <label htmlFor="payerPhone" className="mb-1 block text-sm font-semibold">
+            Numéro MoMo pour le paiement
+          </label>
+          <Input
+            id="payerPhone"
+            type="tel"
+            inputMode="tel"
+            placeholder="670000000"
+            value={payerPhone}
+            onChange={(e) => setPayerPhone(e.target.value.replace(/\s+/g, ''))}
+          />
+          <p className="mt-1 text-xs text-muted-foreground">
+            {paymentMethod === 'MTN_MOMO'
+              ? 'Format MTN (commence par 65–68 ou 670–674).'
+              : 'Format Orange (commence par 69X).'}
+          </p>
+        </div>
 
         <div>
           <label htmlFor="note" className="mb-1 block text-sm font-semibold">
@@ -291,7 +280,7 @@ export function CartPage() {
           <div className="min-w-0">
             <p className="truncate text-xs text-muted-foreground">
               {cart.lines.length} article{cart.lines.length > 1 ? 's' : ''} ·{' '}
-              {paymentMethod === 'CASH' ? 'Cash' : paymentMethod === 'MTN_MOMO' ? 'MTN' : 'Orange'}
+              {paymentMethod === 'MTN_MOMO' ? 'MTN' : 'Orange'}
             </p>
             <p className="text-base font-extrabold">{formatXAF(cart.subtotalXAF)}</p>
           </div>
@@ -302,11 +291,7 @@ export function CartPage() {
             onClick={onSubmit}
             className="max-w-[60%] flex-1"
           >
-            {submitting
-              ? 'Envoi…'
-              : paymentMethod === 'CASH'
-                ? 'Commander (cash)'
-                : 'Commander & payer'}
+            {submitting ? 'Envoi…' : 'Commander & payer'}
           </Button>
         </div>
       </div>

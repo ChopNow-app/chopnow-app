@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 // Replaces the generic radio list on checkout — visually communicates which
 // payment provider you're about to use.
 
-type ChipKind = 'MTN_MOMO' | 'ORANGE_MONEY' | 'CASH';
+type ChipKind = 'MTN_MOMO' | 'ORANGE_MONEY';
 
 const STYLES: Record<
   ChipKind,
@@ -38,15 +38,6 @@ const STYLES: Record<
     selectedBg: 'bg-orange-money',
     selectedText: 'text-white',
     icon: '📱',
-  },
-  CASH: {
-    label: 'Cash à la livraison',
-    sublabel: "Prépare l'appoint exact",
-    border: 'border-cash',
-    bg: 'bg-cash-light',
-    selectedBg: 'bg-cash',
-    selectedText: 'text-white',
-    icon: '💵',
   },
 };
 

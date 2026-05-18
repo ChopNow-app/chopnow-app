@@ -19,7 +19,7 @@ export type OrderStatus =
   | 'EXPIRED';
 
 export type PaymentStatus = 'PENDING' | 'PROCESSING' | 'PAID' | 'FAILED' | 'REFUNDED';
-export type PaymentMethod = 'MTN_MOMO' | 'ORANGE_MONEY' | 'CASH';
+export type PaymentMethod = 'MTN_MOMO' | 'ORANGE_MONEY';
 
 export interface OrderItem {
   id: string;
