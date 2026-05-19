@@ -4,6 +4,22 @@
  */
 
 export interface paths {
+    "/api/media/{prefix}/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["MediaController_streamObject"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/request-otp": {
         parameters: {
             query?: never;
@@ -165,6 +181,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/orders/{orderId}/public": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Public order status (no auth — UUID-as-token model)
+         * @description Returns only non-PII fields (order code, status, vendor name, lifecycle timestamps) so consumers can share the link with friends/family without exposing payment info, delivery code, or contact details. UUID-as-token: the order id is the access key — treat the link as semi-secret.
+         */
+        get: operations["OrdersController_detailPublic"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/orders/{orderId}/cancel": {
         parameters: {
             query?: never;
@@ -213,8 +249,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Vendor inbox — list own orders (Story 3.7)
-         * @description Optional `status` query filters to a single state — pass `CONFIRMED` for "awaiting decision".
+         * Vendor inbox — list own orders (Story 3.7, pre-orders #187)
+         * @description Optional `status` query filters to a single state — pass `CONFIRMED` for "awaiting decision". Optional `type` query splits immediate orders (default — scheduledFor=null, sorted placedAt DESC) from pre-orders (type=preorder — scheduledFor!=null, sorted scheduledFor ASC).
          */
         get: operations["OrdersController_vendorList"];
         put?: never;
@@ -262,6 +298,84 @@ export interface paths {
         patch: operations["OrdersController_refuse"];
         trace?: never;
     };
+    "/api/orders/{orderId}/items/{itemId}/prepared": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Vendor toggles a single article as prepared (preparation checklist) */
+        patch: operations["OrdersController_setItemPrepared"];
+        trace?: never;
+    };
+    "/api/orders/{orderId}/ready": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Vendor marks an order ready for pickup — all items must be prepared first */
+        patch: operations["OrdersController_markReady"];
+        trace?: never;
+    };
+    "/api/orders/{orderId}/vendor-cancel-preorder": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Vendor cancels a pre-order they already accepted (#187). Triggers consumer refund + VendorPenalty.
+         * @description Only valid for pre-orders (scheduledFor != null) currently in ACCEPTED or IN_PREP. Pre-acceptance cancellations should use the regular refuse endpoint (no penalty). Returns the cancelled status + the penalty amount in FCFA.
+         */
+        patch: operations["OrdersController_vendorCancelPreOrder"];
+        trace?: never;
+    };
+    "/api/notifications/push/subscribe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Register or refresh a Web Push subscription for the current user
+         * @description Upserts by (userId, deviceFingerprint). Same device re-granting permission updates the row in place — the endpoint URL may have rotated.
+         */
+        post: operations["PushSubscriptionsController_subscribe"];
+        /**
+         * Remove a push subscription for the current user
+         * @description Idempotent: 204 even if the row is already gone.
+         */
+        delete: operations["PushSubscriptionsController_unsubscribe"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/vendors": {
         parameters: {
             query?: never;
@@ -289,7 +403,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * Get own vendor profile
+         * @description Read endpoint backing the /vendor/profile editor and the type-aware menu UI. Returns the vendor row plus enough metadata for the dashboard to render — deliberately omits admin-only fields (commissionRate, rejectionReason, KYC numbers).
+         */
+        get: operations["VendorController_getMe"];
         put?: never;
         post?: never;
         delete?: never;
@@ -320,6 +438,46 @@ export interface paths {
          * @description Multipart field `photo`. Same size + MIME guardrails as onboarding.
          */
         patch: operations["VendorController_updateMePhoto"];
+        trace?: never;
+    };
+    "/api/vendors/me/cover": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Replace own cover photo (hero image on the vendor's catalogue card)
+         * @description Multipart field `photo`. Same size + MIME guardrails as profile photo. The old R2 key is left to the lifecycle sweeper — keeps the rollback story simple if a failed upload need not race a delete.
+         */
+        patch: operations["VendorController_updateMeCover"];
+        trace?: never;
+    };
+    "/api/vendors/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Check vendor submission status by WhatsApp phone (Story 2.0 follow-up)
+         * @description Public, throttled. Returns PENDING_REVIEW / CORRECTION_REQUESTED / ACTIVE / SUSPENDED / REJECTED for the vendor row associated with `phone` (Cameroon local OR E.164). 404 if no submission exists. Does NOT leak name/address — only the validation lifecycle.
+         */
+        get: operations["VendorController_getStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/vendors/me/items": {
@@ -632,8 +790,8 @@ export interface paths {
         options?: never;
         head?: never;
         /**
-         * Rider confirms pickup at vendor (Story 4.2)
-         * @description Transitions ACCEPTED / IN_PREP / READY_PICKUP → PICKED_UP.
+         * Rider confirms pickup at vendor (Story 4.2 / 4.13)
+         * @description Transitions ACCEPTED / IN_PREP / READY_PICKUP → PICKED_UP. Requires the 4-digit pickup code from the vendor in the body. Error codes: wrong_pickup_code, order_not_pickupable.
          */
         patch: operations["RidersController_markPickedUp"];
         trace?: never;
@@ -652,10 +810,30 @@ export interface paths {
         options?: never;
         head?: never;
         /**
-         * Rider confirms drop-off (Story 4.2)
-         * @description Transitions PICKED_UP → DELIVERED. Delivery proof photo (Story 4.10) lands later.
+         * Rider confirms drop-off (Story 4.2 / 4.13)
+         * @description Transitions PICKED_UP → DELIVERED. Requires the 4-digit delivery code from the consumer in the body. Error codes: wrong_delivery_code, order_not_in_delivery. Delivery proof photo (Story 4.10) lands later.
          */
         patch: operations["RidersController_markDelivered"];
+        trace?: never;
+    };
+    "/api/riders/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Check rider submission status by phone (Story 1.4 follow-up)
+         * @description Public, throttled. Returns PENDING_REVIEW / CORRECTION_REQUESTED / ACTIVE / SUSPENDED / REJECTED. 404 if no submission. No PII beyond status + timestamps.
+         */
+        get: operations["RidersController_getStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/admin/auth/login": {
@@ -857,6 +1035,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/metrics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Pilot KPI snapshot (7-day reorder rate, completion, avg times)
+         * @description Drives the Week-3 decision point of the COD-only pilot. Defaults to a rolling 7-day window. Pass ?from=&to= (ISO 8601) to inspect a custom range.
+         */
+        get: operations["AdminMetricsController_getMetrics"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/orders/{orderId}/pay/momo": {
         parameters: {
             query?: never;
@@ -1042,6 +1240,12 @@ export interface components {
             deliveryDescription?: string;
             /** @description Phone the rider will call if lost. E.164 or Cameroon local. */
             deliveryPhone: string;
+            /**
+             * Format: date-time
+             * @description Schedule the order for a future time (vendor must have acceptsPreOrders=true). Omit / null for immediate delivery. v1 supports same-day pre-orders only.
+             * @example 2026-05-19T12:30:00.000Z
+             */
+            scheduledFor?: string;
         };
         RateOrderDto: {
             /** @example 5 */
@@ -1056,6 +1260,34 @@ export interface components {
             /** @description Free-text note (required when reason=OTHER). */
             note?: string;
         };
+        SetItemPreparedDto: {
+            /** @example true */
+            prepared: boolean;
+        };
+        VendorCancelPreOrderDto: {
+            /**
+             * @description Optional explanation surfaced to the consumer (max 200 chars).
+             * @example Pas de courant depuis 2h, impossible de finir la cuisson.
+             */
+            note?: string;
+        };
+        PushKeysDto: {
+            /** @description P-256 ECDH public key (base64url) */
+            p256dh: string;
+            /** @description Auth secret (base64url) */
+            auth: string;
+        };
+        SubscribePushDto: {
+            /** @description Push service endpoint URL (FCM/APNs/Mozilla) */
+            endpoint: string;
+            keys: components["schemas"]["PushKeysDto"];
+            /** @description Opaque per-device ID minted by the client (localStorage) so re-subscribes from the same device dedupe */
+            deviceFingerprint: string;
+        };
+        UnsubscribePushDto: {
+            /** @description Push service endpoint URL to deactivate */
+            endpoint: string;
+        };
         SubmitVendorDto: {
             /**
              * @description Nom de la cuisine.
@@ -1063,10 +1295,32 @@ export interface components {
              */
             name: string;
             /**
+             * @description Nom complet du propriétaire (gérant). Used for KYC + payment receipts.
+             * @example Marie Mboué
+             */
+            ownerName: string;
+            /**
+             * @description Type de vendeur — détermine le badge affiché + le tier KYC.
+             * @default INFORMAL
+             * @example INFORMAL
+             * @enum {string}
+             */
+            type: "INFORMAL" | "SEMI_FORMAL" | "RESTAURANT";
+            /**
              * @description Quartier de Douala.
              * @example Makepe
              */
             quartier: string;
+            /**
+             * @description Latitude WGS84. Captured via the browser geolocation API from the vendor phone. Optional — when absent the service falls back to Douala city center (legacy behavior).
+             * @example 4.0826
+             */
+            latitude?: number;
+            /**
+             * @description Longitude WGS84. Same source/constraints as latitude.
+             * @example 9.7679
+             */
+            longitude?: number;
             /**
              * @description Point de repère (optionnel).
              * @example En face de la pharmacie Sainte-Marie
@@ -1098,6 +1352,36 @@ export interface components {
              * @example 3000
              */
             firstItemPriceXAF: number;
+            /**
+             * @description Nom d'un 2e plat (optionnel).
+             * @example Ndolè
+             */
+            extraItem1Name?: string;
+            /**
+             * @description Prix du 2e plat en FCFA.
+             * @example 2500
+             */
+            extraItem1PriceXAF?: number;
+            /**
+             * @description Nom d'un 3e plat (optionnel).
+             * @example Eru
+             */
+            extraItem2Name?: string;
+            /**
+             * @description Prix du 3e plat en FCFA.
+             * @example 2000
+             */
+            extraItem2PriceXAF?: number;
+            /**
+             * @description Numéro RCCM (Registre du Commerce et du Crédit Mobilier). Restaurant uniquement.
+             * @example RC/DLA/2024/A/12345
+             */
+            rccmNumber?: string;
+            /**
+             * @description NIU (Numéro d'Identifiant Unique). Restaurant uniquement.
+             * @example M091900012345A
+             */
+            niuNumber?: string;
         };
         UpdateVendorProfileDto: {
             /** @example Chez Maman Mboué */
@@ -1129,13 +1413,30 @@ export interface components {
              * @example 0
              */
             sortOrder?: number;
+            /**
+             * @description Food/Drink — drives the /vendor/menu category tabs.
+             * @default FOOD
+             * @enum {string}
+             */
+            kind: "FOOD" | "DRINK";
+            /**
+             * @description Stock state. Defaults to IN_STOCK on create. Edit later from the menu screen / item editor.
+             * @default IN_STOCK
+             * @enum {string}
+             */
+            stockLevel: "IN_STOCK" | "LOW_STOCK" | "OUT_OF_STOCK";
         };
         UpdateItemStockDto: {
             /**
-             * @description true = Disponible, false = Épuisé.
+             * @description Legacy fallback — true = IN_STOCK, false = OUT_OF_STOCK.
              * @example false
              */
-            isInStock: boolean;
+            isInStock?: boolean;
+            /**
+             * @description Preferred — full 3-tier stock control.
+             * @enum {string}
+             */
+            stockLevel?: "IN_STOCK" | "LOW_STOCK" | "OUT_OF_STOCK";
         };
         UpsertCategoryDto: {
             /** @example Plats */
@@ -1209,6 +1510,13 @@ export interface components {
             /** @example 9.7679 */
             lng: number;
         };
+        ConfirmationCodeDto: {
+            /**
+             * @description 4-digit pickup or delivery code as shown by the vendor / consumer.
+             * @example 4271
+             */
+            code: string;
+        };
         AdminLoginDto: {
             /** @example admin@chopnow.app */
             email: string;
@@ -1241,6 +1549,26 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    MediaController_streamObject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                prefix: string;
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     AuthController_requestOtp: {
         parameters: {
             query?: never;
@@ -1481,6 +1809,25 @@ export interface operations {
             };
         };
     };
+    OrdersController_detailPublic: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                orderId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     OrdersController_cancel: {
         parameters: {
             query?: never;
@@ -1525,7 +1872,10 @@ export interface operations {
     };
     OrdersController_vendorList: {
         parameters: {
-            query?: never;
+            query?: {
+                type?: "immediate" | "preorder";
+                status?: "PENDING" | "CONFIRMED" | "ACCEPTED" | "IN_PREP" | "READY_PICKUP" | "PICKED_UP" | "DELIVERED" | "CANCELLED" | "REFUSED" | "EXPIRED";
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -1582,6 +1932,114 @@ export interface operations {
             };
         };
     };
+    OrdersController_setItemPrepared: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                orderId: string;
+                itemId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetItemPreparedDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    OrdersController_markReady: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                orderId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    OrdersController_vendorCancelPreOrder: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                orderId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VendorCancelPreOrderDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PushSubscriptionsController_subscribe: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubscribePushDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PushSubscriptionsController_unsubscribe: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UnsubscribePushDto"];
+            };
+        };
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     VendorController_submit: {
         parameters: {
             query?: never;
@@ -1596,6 +2054,23 @@ export interface operations {
         };
         responses: {
             201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    VendorController_getMe: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1627,6 +2102,43 @@ export interface operations {
     VendorController_updateMePhoto: {
         parameters: {
             query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    VendorController_updateMeCover: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    VendorController_getStatus: {
+        parameters: {
+            query: {
+                /** @description WhatsApp phone — Cameroon local or E.164 */
+                phone: string;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -2055,7 +2567,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConfirmationCodeDto"];
+            };
+        };
         responses: {
             200: {
                 headers: {
@@ -2072,6 +2588,30 @@ export interface operations {
             path: {
                 orderId: string;
             };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConfirmationCodeDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    RidersController_getStatus: {
+        parameters: {
+            query: {
+                /** @description WhatsApp phone — Cameroon local or E.164 */
+                phone: string;
+            };
+            header?: never;
+            path?: never;
             cookie?: never;
         };
         requestBody?: never;
@@ -2295,6 +2835,26 @@ export interface operations {
             path: {
                 riderId: string;
             };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminMetricsController_getMetrics: {
+        parameters: {
+            query?: {
+                from?: string;
+                to?: string;
+            };
+            header?: never;
+            path?: never;
             cookie?: never;
         };
         requestBody?: never;
