@@ -18,7 +18,15 @@ export type OrderStatus =
   | 'REFUSED'
   | 'EXPIRED';
 
-export type PaymentStatus = 'PENDING' | 'PROCESSING' | 'PAID' | 'FAILED' | 'REFUNDED';
+export type PaymentStatus =
+  | 'PENDING'
+  | 'PROCESSING'
+  | 'PAID'
+  | 'FAILED'
+  // Pre-order vendor cancel-after-accept (#187): order is awaiting refund
+  // via Campay; Story 3.8 will flip it to REFUNDED once the refund settles.
+  | 'REFUND_PENDING'
+  | 'REFUNDED';
 export type PaymentMethod = 'MTN_MOMO' | 'ORANGE_MONEY';
 
 export interface OrderItem {
@@ -46,6 +54,12 @@ export interface OrderView {
   deliveryPhone: string;
   placedAt: string;
   paidAt: string | null;
+  /**
+   * Pre-orders (#187): the scheduled pickup/delivery window. ISO 8601. Null
+   * for immediate orders. Shown prominently on the tracking page; locks the
+   * cancel button (consumer cannot cancel a paid pre-order).
+   */
+  scheduledFor: string | null;
   acceptedAt: string | null;
   refusedAt: string | null;
   preparedAt: string | null;

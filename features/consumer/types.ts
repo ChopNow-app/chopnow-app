@@ -31,6 +31,9 @@ export interface CatalogueResponse {
 export interface PublicVendorView {
   vendor: Omit<VendorCard, 'distanceKm' | 'deliveryFeeXAF' | 'etaMinutes' | 'plan'> & {
     hours: WeeklyHours | null;
+    // Pre-orders (#187): per-vendor opt-in. True for INFORMAL by default; admin
+    // can flip per vendor. Drives the consumer cart "Plus tard" picker visibility.
+    acceptsPreOrders: boolean;
   };
   categories: Array<{ id: string; name: string; sortOrder: number }>;
   items: Array<{

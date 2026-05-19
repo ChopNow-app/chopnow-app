@@ -140,6 +140,13 @@ function PreparationView({ order, reload }: { order: VendorOrder; reload: () => 
         onError={(msg) => window.alert(msg)}
       />
 
+      {/* Pre-order vendor cancel-after-accept (#187). Only shown for pre-orders
+          (scheduledFor != null) in ACCEPTED/IN_PREP. Triggers a confirmation
+          modal warning about the 10% penalty + consumer refund. Not shown on
+          READY_PICKUP — once the order is ready for the rider, vendor cancel
+          isn't allowed (the order is in the handover flow). */}
+      {order.scheduledFor && !isReady ? <PreOrderCancelCta order={order} onDone={reload} /> : null}
+
       <Link
         href="/vendor"
         className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-full border border-divider bg-chop-card-white px-4 py-3 text-sm font-semibold text-muted-foreground transition-colors hover:bg-chop-surface-gray"
@@ -148,6 +155,90 @@ function PreparationView({ order, reload }: { order: VendorOrder; reload: () => 
         Retour au dashboard
       </Link>
     </Shell>
+  );
+}
+
+function PreOrderCancelCta({ order, onDone }: { order: VendorOrder; onDone: () => void }) {
+  const [open, setOpen] = React.useState(false);
+  const [note, setNote] = React.useState('');
+  const [busy, setBusy] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+  // Penalty preview — mirrors the backend rule (10% of totalXAF rounded down
+  // to 50 FCFA). Server is authoritative; this is purely UX confirmation.
+  const penalty = Math.floor((order.totalXAF * 0.1) / 50) * 50;
+
+  const submit = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      await apiRaw.patch(`/api/orders/${order.id}/vendor-cancel-preorder`, {
+        note: note.trim() || undefined,
+      });
+      setOpen(false);
+      onDone();
+    } catch (err) {
+      const msg =
+        err instanceof ApiClientError
+          ? ((err.body as { message?: string } | undefined)?.message ?? `Erreur ${err.status}`)
+          : (err as Error).message;
+      setError(msg ?? 'Échec');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="mt-3 w-full rounded-full border border-chop-danger/40 bg-chop-danger-light px-4 py-3 text-sm font-semibold text-chop-danger transition-colors hover:bg-chop-danger/15"
+      >
+        Annuler cette pré-commande
+      </button>
+    );
+  }
+
+  return (
+    <div className="mt-3 rounded-2xl border border-chop-danger/40 bg-chop-danger-light p-4">
+      <p className="text-sm font-bold text-chop-danger">Confirmer l&apos;annulation</p>
+      <p className="mt-1 text-xs text-chop-ink">
+        Le client sera remboursé intégralement. Une pénalité de{' '}
+        <strong>{formatXAF(penalty)}</strong> (10% du total) sera prélevée sur ton prochain
+        versement.
+      </p>
+      <label htmlFor="cancel-note" className="mt-3 block text-xs font-semibold">
+        Raison (optionnel, vu par le client) :
+      </label>
+      <textarea
+        id="cancel-note"
+        rows={2}
+        maxLength={200}
+        value={note}
+        onChange={(e) => setNote(e.target.value)}
+        placeholder="Pas de courant depuis 2h, impossible de finir."
+        className="mt-1 w-full rounded-xl border border-divider bg-chop-card-white p-2 text-sm"
+      />
+      {error ? <p className="mt-2 text-xs text-chop-danger">{error}</p> : null}
+      <div className="mt-3 flex gap-2">
+        <button
+          type="button"
+          onClick={() => setOpen(false)}
+          disabled={busy}
+          className="flex-1 rounded-full border border-divider bg-chop-card-white px-4 py-2 text-sm font-semibold text-chop-ink-secondary hover:bg-chop-surface-gray disabled:opacity-50"
+        >
+          Garder la commande
+        </button>
+        <button
+          type="button"
+          onClick={submit}
+          disabled={busy}
+          className="flex-1 rounded-full bg-chop-danger px-4 py-2 text-sm font-bold text-white shadow-card hover:bg-chop-danger/90 disabled:opacity-50"
+        >
+          {busy ? '…' : `Annuler (-${formatXAF(penalty)})`}
+        </button>
+      </div>
+    </div>
   );
 }
 

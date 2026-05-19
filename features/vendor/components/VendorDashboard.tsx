@@ -8,13 +8,20 @@ import { cn } from '@/lib/utils';
 import { useVendorAvailability } from '../hooks/useVendorAvailability';
 import { useVendorOrders, type VendorOrder } from '../hooks/useVendorOrders';
 import { useMenuItems } from '../hooks/useMenuItems';
+import { useVendorProfile } from '../hooks/useVendorProfile';
 import { VendorPushPermissionBanner } from './VendorPushPermissionBanner';
 
 const formatXAF = (n: number) => `${n.toLocaleString('fr-FR')} FCFA`;
 
 export function VendorDashboard() {
   const availability = useVendorAvailability();
-  const orders = useVendorOrders();
+  const orders = useVendorOrders('immediate');
+  const profile = useVendorProfile();
+  const acceptsPreOrders = profile.status === 'ready' && profile.data.acceptsPreOrders === true;
+  // Only fetch pre-orders when the vendor is opted in — `enabled=false`
+  // returns an empty ready state with no HTTP call so restaurants /
+  // semi-formal vendors don't pay a 10s poll for a feature they don't use.
+  const preOrders = useVendorOrders('preorder', acceptsPreOrders);
   const menu = useMenuItems();
 
   // Sub-second reaction to incoming orders. The service worker fires a
@@ -65,6 +72,26 @@ export function VendorDashboard() {
     <div className="space-y-4">
       <VendorPushPermissionBanner />
       <AvailabilitySection state={availability} />
+
+      {acceptsPreOrders && preOrders.status === 'ready' && preOrders.orders.length > 0 ? (
+        <section>
+          <header className="mb-2 flex items-center justify-between">
+            <h2 className="flex items-center gap-2 text-base font-extrabold">
+              Pré-commandes
+              <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-chop-mboue px-1.5 text-xs font-bold text-white">
+                {preOrders.orders.length}
+              </span>
+            </h2>
+          </header>
+          <ul className="space-y-3">
+            {preOrders.orders.map((o) => (
+              <li key={o.id}>
+                <PreOrderCard order={o} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       <section>
         <header className="mb-2 flex items-center justify-between">
@@ -327,6 +354,61 @@ function SkeletonList() {
       ))}
     </div>
   );
+}
+
+// Pre-order card — shows the scheduled time prominently + routes to the same
+// surfaces immediate orders use. Status drives the destination:
+//   - CONFIRMED  → /vendor/commande/[id] (the 60s decision screen will be
+//                  triggered at scheduledFor - 60min by the promotion cron)
+//   - ACCEPTED / IN_PREP / READY_PICKUP → /vendor/preparation/[id]
+function PreOrderCard({ order }: { order: VendorOrder }) {
+  const route =
+    order.status === 'CONFIRMED' || order.status === 'PENDING'
+      ? `/vendor/commande/${order.id}`
+      : `/vendor/preparation/${order.id}`;
+  const itemCount = order.items.reduce((sum, line) => sum + line.quantity, 0);
+  return (
+    <Link
+      href={route}
+      className="group flex items-stretch gap-3 rounded-2xl bg-chop-card-white p-4 shadow-card transition-shadow hover:shadow-elevated focus:outline-none focus-visible:ring-2 focus-visible:ring-chop-red"
+    >
+      <div className="min-w-0 flex-1">
+        <div className="flex items-baseline justify-between gap-3">
+          <p className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
+            {order.code}
+          </p>
+          <span className="shrink-0 rounded-full bg-chop-mboue-light px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-chop-mboue">
+            {formatRelative(order.scheduledFor)}
+          </span>
+        </div>
+        <p className="mt-1 text-lg font-extrabold tabular-nums">{formatXAF(order.totalXAF)}</p>
+        <p className="mt-0.5 truncate text-xs text-muted-foreground">
+          {itemCount} plat{itemCount > 1 ? 's' : ''} · {labelForPayment(order.paymentMethod)} · 📍{' '}
+          {order.deliveryQuartier}
+        </p>
+      </div>
+      <div className="flex items-center pl-1">
+        <ChevronRight
+          className="h-5 w-5 text-muted-foreground transition-transform group-hover:translate-x-0.5"
+          aria-hidden
+        />
+      </div>
+    </Link>
+  );
+}
+
+// "demain 12:30", "aujourd'hui 19:00", "dans 4h" — whichever is most readable.
+function formatRelative(iso: string | null): string {
+  if (!iso) return '';
+  const target = new Date(iso);
+  const now = new Date();
+  // Douala local time (UTC+1).
+  const targetLocal = new Date(target.getTime() + 3600_000);
+  const nowLocal = new Date(now.getTime() + 3600_000);
+  const sameDay = targetLocal.toISOString().slice(0, 10) === nowLocal.toISOString().slice(0, 10);
+  const hh = targetLocal.getUTCHours().toString().padStart(2, '0');
+  const mm = targetLocal.getUTCMinutes().toString().padStart(2, '0');
+  return sameDay ? `Auj. ${hh}:${mm}` : `${hh}:${mm}`;
 }
 
 // Two-tone synth chime via Web Audio. Survives autoplay restrictions because

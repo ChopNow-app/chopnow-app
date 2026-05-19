@@ -28,6 +28,10 @@ export interface VendorProfile {
   profilePhotoUrl: string | null;
   coverPhotoUrl: string | null;
   declaredCapacity: number | null;
+  // Pre-orders (#187): gates the "Pré-commandes" section on the dashboard +
+  // exposes the toggle in the consumer cart for this vendor. Defaults true
+  // for INFORMAL submissions at the backend; admin can flip per-vendor.
+  acceptsPreOrders: boolean;
   createdAt: string;
   updatedAt: string;
 }
