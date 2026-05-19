@@ -3,7 +3,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 
 import * as React from 'react';
-import { api, apiRaw, ApiClientError } from '@/lib/api/api-client';
+import { api } from '@/lib/api/api-client';
 
 export type OrderStatus =
   | 'PENDING'
@@ -93,18 +93,9 @@ export function useVendorOrders(
 
     const fetchOnce = async () => {
       try {
-        // Until the OpenAPI types regenerate to cover the new ?type query,
-        // skip the typed `api` client and go through apiRaw so we can pass
-        // the query string verbatim. Hand-rolled return type matches the
-        // VendorOrder shape declared above.
-        if (type === 'preorder') {
-          const data = await apiRaw.get<VendorOrder[]>('/api/orders/vendor/me?type=preorder');
-          if (cancelled) return;
-          setState({ status: 'ready', orders: data });
-          timer = setTimeout(fetchOnce, POLL_INTERVAL_MS);
-          return;
-        }
-        const { data, error, response } = await api.GET('/api/orders/vendor/me', {});
+        const { data, error, response } = await api.GET('/api/orders/vendor/me', {
+          params: { query: { type } },
+        });
         if (cancelled) return;
         if (response.status === 401) {
           setState({ status: 'unauthenticated' });
@@ -118,10 +109,6 @@ export function useVendorOrders(
         timer = setTimeout(fetchOnce, POLL_INTERVAL_MS);
       } catch (err: unknown) {
         if (cancelled) return;
-        if (err instanceof ApiClientError && err.status === 401) {
-          setState({ status: 'unauthenticated' });
-          return;
-        }
         setState({ status: 'error', message: (err as Error).message ?? 'Erreur réseau' });
       }
     };
