@@ -20,6 +20,9 @@ export interface PendingVendor {
   rccmNumber: string | null;
   niuNumber: string | null;
   enseignePhotoUrl: string | null;
+  // Pre-orders (#187): defaults true for INFORMAL at submission. Admin can
+  // override per-vendor via the toggle on the card.
+  acceptsPreOrders: boolean;
 }
 
 export interface PendingRider {
