@@ -3,7 +3,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 
 import * as React from 'react';
-import { api } from '@/lib/api/api-client';
+import { api, apiRaw, ApiClientError } from '@/lib/api/api-client';
 
 export type OrderStatus =
   | 'PENDING'
@@ -26,7 +26,7 @@ export interface VendorOrder {
   totalXAF: number;
   noteForVendor: string | null;
   paymentMethod: 'MTN_MOMO' | 'ORANGE_MONEY';
-  paymentStatus: 'PENDING' | 'PROCESSING' | 'PAID' | 'FAILED' | 'REFUNDED';
+  paymentStatus: 'PENDING' | 'PROCESSING' | 'PAID' | 'FAILED' | 'REFUND_PENDING' | 'REFUNDED';
   deliveryQuartier: string;
   deliveryLandmark: string | null;
   placedAt: string;
@@ -36,6 +36,11 @@ export interface VendorOrder {
   // cron flips status. The countdown screen uses this absolute deadline so
   // remaining time survives tab reloads.
   acceptanceDeadlineAt: string | null;
+  // Pre-orders (#187): null for immediate flow (today's behaviour). Set =
+  // scheduled pickup/delivery time. The "Pré-commandes" dashboard tab fetches
+  // these via ?type=preorder; cards show relative time ("dans 4h"); vendor
+  // cancel-after-accept on /vendor/preparation/[id] triggers the penalty.
+  scheduledFor: string | null;
   items: Array<{
     id: string;
     nameSnapshot: string;
@@ -61,23 +66,44 @@ export type OrdersState =
 const POLL_INTERVAL_MS = 10_000;
 
 /**
- * Story 3.7 — polls GET /orders/vendor/me every 10s. Vendor sees PENDING /
- * CONFIRMED (awaiting their decision) + ACCEPTED / IN_PREP / READY_PICKUP /
- * PICKED_UP (active courses) in one feed; the dashboard splits them client-
- * side.
+ * Story 3.7 + #187 pre-orders — polls GET /orders/vendor/me every 10s.
+ * `type=immediate` (default) returns today's flow (scheduledFor=null).
+ * `type=preorder` returns paid pre-orders sorted by scheduledFor ASC for the
+ * vendor's "Pré-commandes" tab.
  */
-export function useVendorOrders(): OrdersState & { reload: () => void } {
+export function useVendorOrders(
+  type: 'immediate' | 'preorder' = 'immediate',
+  enabled = true,
+): OrdersState & { reload: () => void } {
   const [state, setState] = React.useState<OrdersState>({ status: 'idle' });
   const [tick, setTick] = React.useState(0);
 
   const reload = React.useCallback(() => setTick((t) => t + 1), []);
 
   React.useEffect(() => {
+    if (!enabled) {
+      // When the caller doesn't want to fetch (e.g. a vendor who hasn't
+      // opted into pre-orders), return an empty ready state so the caller
+      // can render "0 items" without an error / loading flicker.
+      setState({ status: 'ready', orders: [] });
+      return;
+    }
     let cancelled = false;
     let timer: ReturnType<typeof setTimeout> | null = null;
 
     const fetchOnce = async () => {
       try {
+        // Until the OpenAPI types regenerate to cover the new ?type query,
+        // skip the typed `api` client and go through apiRaw so we can pass
+        // the query string verbatim. Hand-rolled return type matches the
+        // VendorOrder shape declared above.
+        if (type === 'preorder') {
+          const data = await apiRaw.get<VendorOrder[]>('/api/orders/vendor/me?type=preorder');
+          if (cancelled) return;
+          setState({ status: 'ready', orders: data });
+          timer = setTimeout(fetchOnce, POLL_INTERVAL_MS);
+          return;
+        }
         const { data, error, response } = await api.GET('/api/orders/vendor/me', {});
         if (cancelled) return;
         if (response.status === 401) {
@@ -92,6 +118,10 @@ export function useVendorOrders(): OrdersState & { reload: () => void } {
         timer = setTimeout(fetchOnce, POLL_INTERVAL_MS);
       } catch (err: unknown) {
         if (cancelled) return;
+        if (err instanceof ApiClientError && err.status === 401) {
+          setState({ status: 'unauthenticated' });
+          return;
+        }
         setState({ status: 'error', message: (err as Error).message ?? 'Erreur réseau' });
       }
     };
@@ -103,7 +133,7 @@ export function useVendorOrders(): OrdersState & { reload: () => void } {
       cancelled = true;
       if (timer) clearTimeout(timer);
     };
-  }, [tick]);
+  }, [tick, type, enabled]);
 
   return React.useMemo(() => ({ ...state, reload }), [state, reload]);
 }

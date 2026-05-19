@@ -24,6 +24,13 @@ export interface PlaceOrderInput {
   deliveryLandmark?: string;
   deliveryDescription?: string;
   deliveryPhone: string;
+  /**
+   * Pre-orders (#187): when set (ISO 8601), the order is scheduled for that
+   * time. Omit / undefined for immediate delivery (today's flow). Vendor must
+   * have `acceptsPreOrders: true` else the backend rejects with
+   * `pre_orders_not_accepted_by_this_vendor`.
+   */
+  scheduledFor?: string;
 }
 
 export interface PlacedOrder {

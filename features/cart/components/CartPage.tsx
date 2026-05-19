@@ -10,9 +10,11 @@ import { PaymentChip } from '@/components/PaymentChip';
 import { Skeleton } from '@/components/ui/skeleton';
 import { apiRaw } from '@/lib/api/api-client';
 import { auth } from '@/lib/auth';
+import { useVendorPublic } from '@/features/consumer/hooks/useVendorPublic';
 import { useCart } from '../store';
 import { useAddresses, type SavedAddress } from '../hooks/useAddresses';
 import { initiateMomo, placeOrder, type PaymentMethod } from '../api';
+import { PreOrderPicker } from './PreOrderPicker';
 
 /**
  * Fetch the authenticated user's phone once on mount. Used as the final
@@ -41,6 +43,14 @@ function useUserPhone(): string | null {
 
 const MIN_ORDER_XAF = 1200;
 const formatXAF = (n: number) => `${n.toLocaleString('fr-FR')} FCFA`;
+// Render a Date as HH:MM in Douala local time (UTC+1, no DST). Matches the
+// PreOrderPicker's slot labels so the sticky CTA echo is consistent.
+const formatLocalHHMM = (d: Date): string => {
+  const local = new Date(d.getTime() + 3600_000);
+  const hh = local.getUTCHours().toString().padStart(2, '0');
+  const mm = local.getUTCMinutes().toString().padStart(2, '0');
+  return `${hh}:${mm}`;
+};
 
 // Pilot is MoMo-only (MTN MoMo + Orange Money). The cash-on-delivery branch
 // + the PILOT_COD_ONLY flag were removed 2026-05-18 (chopnow-api issue #177).
@@ -63,6 +73,12 @@ export function CartPage() {
   const [userPickedAddressId, setUserPickedAddressId] = React.useState<string | null>(null);
   const [submitting, setSubmitting] = React.useState(false);
   const [submitError, setSubmitError] = React.useState<string | null>(null);
+  // Pre-orders (#187): null = immediate (today's flow). Set = scheduled time.
+  // Only available when the vendor has acceptsPreOrders=true.
+  const [scheduledFor, setScheduledFor] = React.useState<Date | null>(null);
+  const vendorView = useVendorPublic(cart.vendorId);
+  const acceptsPreOrders =
+    vendorView.status === 'ready' && vendorView.data.vendor.acceptsPreOrders === true;
 
   // Derived default selection — if the user hasn't picked one yet, fall back
   // to the marked-default or the first address. Cleaner than a useEffect +
@@ -127,6 +143,9 @@ export function CartPage() {
             (payerPhone.length > 0 ? payerPhone : undefined) ||
             userPhone ||
             '',
+          // Pre-orders (#187): only sent when the user picked "Plus tard"
+          // AND the vendor accepts pre-orders. Backend re-validates both.
+          scheduledFor: scheduledFor && acceptsPreOrders ? scheduledFor.toISOString() : undefined,
         },
         crypto.randomUUID(),
       );
@@ -219,6 +238,10 @@ export function CartPage() {
           onSelect={setSelectedAddressId}
         />
 
+        {acceptsPreOrders ? (
+          <PreOrderPicker value={scheduledFor} onChange={setScheduledFor} />
+        ) : null}
+
         <section role="radiogroup" aria-label="Mode de paiement">
           <h2 className="mb-2 text-sm font-semibold">Mode de paiement</h2>
           <div className="space-y-2">
@@ -281,6 +304,9 @@ export function CartPage() {
             <p className="truncate text-xs text-muted-foreground">
               {cart.lines.length} article{cart.lines.length > 1 ? 's' : ''} ·{' '}
               {paymentMethod === 'MTN_MOMO' ? 'MTN' : 'Orange'}
+              {scheduledFor && acceptsPreOrders
+                ? ` · pré-commande ${formatLocalHHMM(scheduledFor)}`
+                : ''}
             </p>
             <p className="text-base font-extrabold">{formatXAF(cart.subtotalXAF)}</p>
           </div>
@@ -291,7 +317,11 @@ export function CartPage() {
             onClick={onSubmit}
             className="max-w-[60%] flex-1"
           >
-            {submitting ? 'Envoi…' : 'Commander & payer'}
+            {submitting
+              ? 'Envoi…'
+              : scheduledFor && acceptsPreOrders
+                ? 'Pré-commander & payer'
+                : 'Commander & payer'}
           </Button>
         </div>
       </div>

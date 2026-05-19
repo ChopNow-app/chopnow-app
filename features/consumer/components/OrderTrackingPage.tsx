@@ -12,6 +12,19 @@ const RATING_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 const formatXAF = (n: number) => `${n.toLocaleString('fr-FR')} FCFA`;
 
+// Pre-orders (#187): render scheduledFor as "Aujourd'hui 12:30" or
+// "Demain 12:30" in Douala local time (UTC+1, no DST). Anything further is
+// out of v1 scope (same-day cap).
+function formatScheduledFor(iso: string): string {
+  const target = new Date(iso);
+  const local = new Date(target.getTime() + 3600_000);
+  const nowLocal = new Date(Date.now() + 3600_000);
+  const sameDay = local.toISOString().slice(0, 10) === nowLocal.toISOString().slice(0, 10);
+  const hh = local.getUTCHours().toString().padStart(2, '0');
+  const mm = local.getUTCMinutes().toString().padStart(2, '0');
+  return `${sameDay ? "Aujourd'hui" : 'Demain'} ${hh}:${mm}`;
+}
+
 export function OrderTrackingPage({ orderId }: { orderId: string }) {
   const state = useOrder(orderId);
 
@@ -42,7 +55,12 @@ export function OrderTrackingPage({ orderId }: { orderId: string }) {
 }
 
 function OrderContent({ order, onReload }: { order: OrderView; onReload: () => void }) {
-  const canCancel = order.status === 'PENDING' || order.status === 'CONFIRMED';
+  // Pre-orders (#187): consumer cannot cancel a paid pre-order — only the
+  // vendor can, and they pay a penalty for doing so. The cancel button is
+  // hidden entirely on pre-orders rather than disabled-with-tooltip so it
+  // doesn't tease an action the consumer can't take.
+  const isPreOrder = order.scheduledFor !== null;
+  const canCancel = !isPreOrder && (order.status === 'PENDING' || order.status === 'CONFIRMED');
 
   const onCancel = async () => {
     if (!window.confirm('Annuler cette commande ? Cette action est irréversible.')) return;
@@ -78,6 +96,21 @@ function OrderContent({ order, onReload }: { order: OrderView; onReload: () => v
           {/^chez\b/i.test(order.vendor.name) ? null : 'Chez '}
           <span className="font-semibold">{order.vendor.name}</span>
         </p>
+
+        {isPreOrder ? (
+          <div className="mt-3 rounded-2xl border border-chop-mboue/30 bg-chop-mboue-light p-4">
+            <p className="text-xs font-semibold uppercase tracking-wider text-chop-mboue">
+              Pré-commande
+            </p>
+            <p className="mt-1 text-base font-extrabold text-chop-ink">
+              Livraison prévue : {formatScheduledFor(order.scheduledFor!)}
+            </p>
+            <p className="mt-1 text-xs text-chop-ink-secondary">
+              Une pré-commande ne peut pas être annulée une fois payée. Si le restaurant doit
+              annuler, tu seras intégralement remboursé.
+            </p>
+          </div>
+        ) : null}
       </section>
 
       <section className="container mt-6">
