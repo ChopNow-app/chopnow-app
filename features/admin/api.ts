@@ -75,6 +75,10 @@ export const adminApi = {
   suspendVendor: (id: string, reason: string) =>
     apiRaw.post(`/api/admin/vendors/${id}/suspend`, { reason }),
   unsuspendVendor: (id: string) => apiRaw.post(`/api/admin/vendors/${id}/unsuspend`, {}),
+  // #187 follow-up — toggle the vendor's pre-order opt-in. Idempotent
+  // server-side, so retries / double-taps don't surprise.
+  setVendorPreOrders: (id: string, acceptsPreOrders: boolean) =>
+    apiRaw.patch(`/api/admin/vendors/${id}/pre-orders`, { acceptsPreOrders }),
 
   approveRider: (id: string) => apiRaw.post(`/api/admin/riders/${id}/approve`, {}),
   rejectRider: (id: string, reason: string) =>

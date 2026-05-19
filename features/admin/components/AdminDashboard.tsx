@@ -220,6 +220,8 @@ function VendorRow({ vendor, onChanged }: { vendor: PendingVendor; onChanged: ()
         </div>
       ) : null}
 
+      <PreOrdersToggle vendor={vendor} onChanged={onChanged} />
+
       <DecisionActions
         onApprove={() => adminApi.approveVendor(vendor.id)}
         onReject={(reason) => adminApi.rejectVendor(vendor.id, reason)}
@@ -227,6 +229,50 @@ function VendorRow({ vendor, onChanged }: { vendor: PendingVendor; onChanged: ()
         onChanged={onChanged}
       />
     </li>
+  );
+}
+
+// #187 follow-up — pre-orders opt-in toggle. INFORMAL vendors default to true
+// at submission; this lets admin override per vendor without code changes
+// (opt in a willing SEMI_FORMAL, opt out an INFORMAL whose kitchen doesn't fit).
+function PreOrdersToggle({ vendor, onChanged }: { vendor: PendingVendor; onChanged: () => void }) {
+  const [busy, setBusy] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+  const toggle = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      await adminApi.setVendorPreOrders(vendor.id, !vendor.acceptsPreOrders);
+      onChanged();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erreur');
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="mt-3 flex items-center justify-between gap-3 rounded-md border border-divider bg-chop-warm/40 p-2">
+      <div className="min-w-0">
+        <p className="text-xs font-semibold">Pré-commandes</p>
+        <p className="text-[11px] text-muted-foreground">
+          Le client peut programmer cette commande à l&apos;avance (≤24h).
+        </p>
+        {error ? <p className="mt-0.5 text-[11px] text-destructive">{error}</p> : null}
+      </div>
+      <button
+        type="button"
+        onClick={toggle}
+        disabled={busy}
+        className={`shrink-0 rounded-full border px-3 py-1 text-xs font-bold transition-colors disabled:opacity-50 ${
+          vendor.acceptsPreOrders
+            ? 'border-chop-mboue bg-chop-mboue text-white hover:bg-chop-mboue/90'
+            : 'border-divider bg-chop-card-white text-chop-ink-secondary hover:bg-chop-surface-gray'
+        }`}
+        aria-pressed={vendor.acceptsPreOrders}
+      >
+        {busy ? '…' : vendor.acceptsPreOrders ? 'Activé' : 'Désactivé'}
+      </button>
+    </div>
   );
 }
 
