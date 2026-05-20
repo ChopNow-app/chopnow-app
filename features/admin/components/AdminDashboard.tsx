@@ -62,6 +62,12 @@ export function AdminDashboard() {
         </div>
         <div className="flex items-center gap-2">
           <Link
+            href="/admin/finance"
+            className="rounded-md border px-3 py-1.5 text-xs font-semibold hover:bg-accent"
+          >
+            Finance
+          </Link>
+          <Link
             href="/admin/metrics"
             className="rounded-md border px-3 py-1.5 text-xs font-semibold hover:bg-accent"
           >
