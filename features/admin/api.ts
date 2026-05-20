@@ -88,6 +88,119 @@ export const adminApi = {
   unsuspendRider: (id: string) => apiRaw.post(`/api/admin/riders/${id}/unsuspend`, {}),
 };
 
+// ── Finance dashboard (ADR-0005, S2) ────────────────────────────────
+
+export interface VendorBalanceRow {
+  vendorId: string;
+  name: string;
+  type: 'INFORMAL' | 'SEMI_FORMAL' | 'RESTAURANT';
+  status: 'PENDING_REVIEW' | 'CORRECTION_REQUESTED' | 'ACTIVE' | 'SUSPENDED' | 'REJECTED';
+  balanceXAF: number;
+  isTrusted: boolean;
+  lastPayoutAt: string | null;
+}
+
+export interface RiderBalanceRow {
+  riderId: string;
+  name: string | null;
+  vehicleType: 'MOTO' | 'BICYCLE' | 'CAR' | 'ON_FOOT';
+  balanceXAF: number;
+  lastPayoutAt: string | null;
+}
+
+export interface RefundQueueRow {
+  orderId: string;
+  code: string;
+  vendorId: string;
+  vendorName: string;
+  userId: string;
+  totalXAF: number;
+  ageDays: number;
+  cancelledAt: string | null;
+}
+
+export type CashoutRequestStatus = 'PENDING_APPROVAL' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
+
+export interface CashoutRequestRow {
+  requestId: string;
+  vendorId: string;
+  vendorName: string;
+  vendorType: 'INFORMAL' | 'SEMI_FORMAL' | 'RESTAURANT';
+  requestedXAF: number;
+  status: CashoutRequestStatus;
+  createdAt: string;
+  ageHours: number;
+  isTrusted: boolean;
+}
+
+export interface PagedResult<T> {
+  total: number;
+  rows: T[];
+}
+
+export const adminFinanceApi = {
+  listVendorBalances: (params?: {
+    status?: string;
+    type?: string;
+    minBalanceXAF?: number;
+    limit?: number;
+    offset?: number;
+  }) => {
+    const qs = new URLSearchParams();
+    if (params?.status) qs.set('status', params.status);
+    if (params?.type) qs.set('type', params.type);
+    if (params?.minBalanceXAF !== undefined) qs.set('minBalanceXAF', String(params.minBalanceXAF));
+    if (params?.limit) qs.set('limit', String(params.limit));
+    if (params?.offset) qs.set('offset', String(params.offset));
+    const suffix = qs.toString() ? `?${qs}` : '';
+    return apiRaw.get<PagedResult<VendorBalanceRow>>(`/api/admin/finance/vendor-balances${suffix}`);
+  },
+  listRiderBalances: (params?: {
+    vehicleType?: string;
+    minBalanceXAF?: number;
+    limit?: number;
+    offset?: number;
+  }) => {
+    const qs = new URLSearchParams();
+    if (params?.vehicleType) qs.set('vehicleType', params.vehicleType);
+    if (params?.minBalanceXAF !== undefined) qs.set('minBalanceXAF', String(params.minBalanceXAF));
+    if (params?.limit) qs.set('limit', String(params.limit));
+    if (params?.offset) qs.set('offset', String(params.offset));
+    const suffix = qs.toString() ? `?${qs}` : '';
+    return apiRaw.get<PagedResult<RiderBalanceRow>>(`/api/admin/finance/rider-balances${suffix}`);
+  },
+  listRefundQueue: (params?: { limit?: number; offset?: number }) => {
+    const qs = new URLSearchParams();
+    if (params?.limit) qs.set('limit', String(params.limit));
+    if (params?.offset) qs.set('offset', String(params.offset));
+    const suffix = qs.toString() ? `?${qs}` : '';
+    return apiRaw.get<PagedResult<RefundQueueRow>>(`/api/admin/finance/refund-queue${suffix}`);
+  },
+  listCashoutRequests: (params?: {
+    status?: CashoutRequestStatus;
+    limit?: number;
+    offset?: number;
+  }) => {
+    const qs = new URLSearchParams();
+    if (params?.status) qs.set('status', params.status);
+    if (params?.limit) qs.set('limit', String(params.limit));
+    if (params?.offset) qs.set('offset', String(params.offset));
+    const suffix = qs.toString() ? `?${qs}` : '';
+    return apiRaw.get<PagedResult<CashoutRequestRow>>(
+      `/api/admin/finance/cashout-requests${suffix}`,
+    );
+  },
+  approveCashoutRequest: (requestId: string) =>
+    apiRaw.post<{ payoutId: string; netXAF: number }>(
+      `/api/admin/finance/cashout-requests/${requestId}/approve`,
+      {},
+    ),
+  rejectCashoutRequest: (requestId: string, reason: string) =>
+    apiRaw.post<{ ok: true }>(`/api/admin/finance/cashout-requests/${requestId}/reject`, {
+      reason,
+    }),
+};
+
 export interface PilotMetrics {
   window: { from: string; to: string };
   reorderRate: { reorderers: number; uniqueCustomers: number; percent: number };
