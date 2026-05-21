@@ -119,7 +119,7 @@ export function VendorDashboard() {
             </button>
           ) : null}
         </header>
-        {orders.status === 'loading' || orders.status === 'idle' ? (
+        {orders.status === 'loading' ? (
           <SkeletonList />
         ) : orders.status === 'error' ? (
           <p className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm">
@@ -212,7 +212,7 @@ export function VendorDashboard() {
 }
 
 function AvailabilitySection({ state }: { state: ReturnType<typeof useVendorAvailability> }) {
-  if (state.status === 'loading' || state.status === 'idle') {
+  if (state.status === 'loading') {
     return <div className="bg-card h-24 animate-pulse rounded-lg border" />;
   }
   if (state.status === 'error') {

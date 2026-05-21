@@ -60,7 +60,7 @@ export function MesGainsCard() {
   const balance = useRiderBalance();
   const [historyOpen, setHistoryOpen] = React.useState(false);
 
-  if (balance.status === 'loading' || balance.status === 'idle') {
+  if (balance.status === 'loading') {
     return (
       <section className="rounded-2xl border border-chop-dark-border bg-chop-dark-surface p-4 shadow-rider">
         <p className="text-xs text-white/60">Chargement de tes gains…</p>

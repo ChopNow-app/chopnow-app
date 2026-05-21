@@ -70,7 +70,7 @@ export function MonSoldeCard() {
   const balance = useVendorBalance();
   const [historyOpen, setHistoryOpen] = React.useState(false);
 
-  if (balance.status === 'loading' || balance.status === 'idle') {
+  if (balance.status === 'loading') {
     return (
       <section className="bg-card rounded-lg border p-4">
         <p className="text-xs text-muted-foreground">Chargement du solde…</p>

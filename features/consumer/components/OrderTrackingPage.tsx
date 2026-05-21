@@ -28,7 +28,7 @@ function formatScheduledFor(iso: string): string {
 export function OrderTrackingPage({ orderId }: { orderId: string }) {
   const state = useOrder(orderId);
 
-  if (state.status === 'idle' || state.status === 'loading') return <Skeleton />;
+  if (state.status === 'loading') return <Skeleton />;
   if (state.status === 'unauthenticated') return <AuthRequired orderId={orderId} />;
   if (state.status === 'not_found') {
     return (

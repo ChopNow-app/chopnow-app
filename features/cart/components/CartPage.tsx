@@ -338,7 +338,7 @@ function AddressPicker({
   selectedAddressId: string | null;
   onSelect: (id: string) => void;
 }) {
-  if (state.status === 'loading' || state.status === 'idle') {
+  if (state.status === 'loading') {
     return <Skeleton className="h-20 rounded-lg" />;
   }
   if (state.status === 'error') {

@@ -1,9 +1,8 @@
 'use client';
 
-/* eslint-disable react-hooks/set-state-in-effect */
-
-import * as React from 'react';
-import { api } from '@/lib/api/api-client';
+import { useQuery } from '@tanstack/react-query';
+import { ApiClientError, apiRaw } from '@/lib/api/api-client';
+import { queryKeys } from '@/lib/query/keys';
 
 export type OrderStatus =
   | 'PENDING'
@@ -44,7 +43,6 @@ export interface RiderCourse {
 }
 
 export type CoursesState =
-  | { status: 'idle' }
   | { status: 'loading' }
   | { status: 'unauthenticated' }
   | { status: 'ready'; courses: RiderCourse[] }
@@ -53,43 +51,26 @@ export type CoursesState =
 const POLL_INTERVAL_MS = 10_000;
 
 export function useRiderCourses(): CoursesState & { reload: () => void } {
-  const [state, setState] = React.useState<CoursesState>({ status: 'idle' });
-  const [tick, setTick] = React.useState(0);
+  const query = useQuery({
+    queryKey: queryKeys.rider.courses(),
+    queryFn: () => apiRaw.get('/api/riders/me/courses') as Promise<RiderCourse[]>,
+    refetchInterval: POLL_INTERVAL_MS,
+  });
 
-  const reload = React.useCallback(() => setTick((t) => t + 1), []);
+  const reload = () => {
+    void query.refetch();
+  };
 
-  React.useEffect(() => {
-    let cancelled = false;
-    let timer: ReturnType<typeof setTimeout> | null = null;
-
-    const fetchOnce = async () => {
-      try {
-        const { data, error, response } = await api.GET('/api/riders/me/courses', {});
-        if (cancelled) return;
-        if (response.status === 401) {
-          setState({ status: 'unauthenticated' });
-          return;
-        }
-        if (error || !data) {
-          setState({ status: 'error', message: `Erreur ${response.status}` });
-          return;
-        }
-        setState({ status: 'ready', courses: data as unknown as RiderCourse[] });
-        timer = setTimeout(fetchOnce, POLL_INTERVAL_MS);
-      } catch (err: unknown) {
-        if (cancelled) return;
-        setState({ status: 'error', message: (err as Error).message ?? 'Erreur réseau' });
-      }
-    };
-
-    setState({ status: 'loading' });
-    fetchOnce();
-
-    return () => {
-      cancelled = true;
-      if (timer) clearTimeout(timer);
-    };
-  }, [tick]);
-
-  return React.useMemo(() => ({ ...state, reload }), [state, reload]);
+  if (query.isError) {
+    if (query.error instanceof ApiClientError && query.error.status === 401) {
+      return { status: 'unauthenticated', reload };
+    }
+    const message =
+      query.error instanceof ApiClientError ? `Erreur ${query.error.status}` : 'Erreur réseau';
+    return { status: 'error', message, reload };
+  }
+  if (query.data) {
+    return { status: 'ready', courses: query.data, reload };
+  }
+  return { status: 'loading', reload };
 }

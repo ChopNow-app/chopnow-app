@@ -79,7 +79,7 @@ export function LivreurDashboard() {
           ) : null}
         </header>
 
-        {courses.status === 'loading' || courses.status === 'idle' ? (
+        {courses.status === 'loading' ? (
           <SkeletonList />
         ) : courses.status === 'error' ? (
           <p className="rounded-lg border border-red-500/40 bg-red-500/10 p-3 text-sm">

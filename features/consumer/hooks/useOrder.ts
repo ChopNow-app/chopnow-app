@@ -1,9 +1,8 @@
 'use client';
 
-/* eslint-disable react-hooks/set-state-in-effect */
-
-import * as React from 'react';
-import { api } from '@/lib/api/api-client';
+import { useQuery } from '@tanstack/react-query';
+import { ApiClientError, apiRaw } from '@/lib/api/api-client';
+import { queryKeys } from '@/lib/query/keys';
 
 // Mirror the backend's Order shape — narrow to what the tracking page renders.
 export type OrderStatus =
@@ -23,8 +22,6 @@ export type PaymentStatus =
   | 'PROCESSING'
   | 'PAID'
   | 'FAILED'
-  // Pre-order vendor cancel-after-accept (#187): order is awaiting refund
-  // via Campay; Story 3.8 will flip it to REFUNDED once the refund settles.
   | 'REFUND_PENDING'
   | 'REFUNDED';
 export type PaymentMethod = 'MTN_MOMO' | 'ORANGE_MONEY';
@@ -54,11 +51,6 @@ export interface OrderView {
   deliveryPhone: string;
   placedAt: string;
   paidAt: string | null;
-  /**
-   * Pre-orders (#187): the scheduled pickup/delivery window. ISO 8601. Null
-   * for immediate orders. Shown prominently on the tracking page; locks the
-   * cancel button (consumer cannot cancel a paid pre-order).
-   */
   scheduledFor: string | null;
   acceptedAt: string | null;
   refusedAt: string | null;
@@ -67,34 +59,21 @@ export interface OrderView {
   deliveredAt: string | null;
   cancelledAt: string | null;
   refusalReason: string | null;
-  // Set once dispatch assigns a rider (Story 4.1). Used by the consumer
-  // UI to enable the "Appeler le livreur" button (Story 4.17 follow-up).
   riderId?: string | null;
   vendor: { id: string; name: string; userId?: string };
   items: OrderItem[];
   rating: { id: string; vendorScore: number; riderScore: number; comment: string | null } | null;
-  // Story 4.13 — scoped by role. Consumer sees deliveryCode, vendor sees
-  // pickupCode; backend omits the field the viewer shouldn't see.
   pickupCode?: string;
   deliveryCode?: string;
 }
 
 export type OrderState =
-  | { status: 'idle' }
   | { status: 'loading' }
   | { status: 'unauthenticated' }
   | { status: 'not_found' }
   | { status: 'ready'; order: OrderView }
   | { status: 'error'; message: string };
 
-/**
- * Polls /api/orders/:id every 10s while the order is in a non-terminal
- * state. Stops polling on DELIVERED / CANCELLED / REFUSED / EXPIRED.
- *
- * We poll instead of WebSocket for MVP — the order lifecycle is slow
- * enough (~30-60min end to end) that a 10s cadence over HTTP is fine,
- * and avoids the WebSocket plumbing.
- */
 const TERMINAL_STATUSES: ReadonlySet<OrderStatus> = new Set([
   'DELIVERED',
   'CANCELLED',
@@ -104,54 +83,46 @@ const TERMINAL_STATUSES: ReadonlySet<OrderStatus> = new Set([
 
 const POLL_INTERVAL_MS = 10_000;
 
+/**
+ * Polls /api/orders/:id every 10s while the order is in a non-terminal
+ * state. Stops polling once status hits DELIVERED / CANCELLED / REFUSED /
+ * EXPIRED — the order lifecycle is slow enough (~30-60min end to end) that
+ * a 10s cadence over HTTP is fine, and we avoid the WebSocket plumbing.
+ */
 export function useOrder(orderId: string | null): OrderState & { reload: () => void } {
-  const [state, setState] = React.useState<OrderState>({ status: 'idle' });
-  const [tick, setTick] = React.useState(0);
-
-  const reload = React.useCallback(() => setTick((t) => t + 1), []);
-
-  React.useEffect(() => {
-    if (!orderId) return;
-    let cancelled = false;
-    let timer: ReturnType<typeof setTimeout> | null = null;
-
-    const fetchOnce = async () => {
-      try {
-        const { data, error, response } = await api.GET('/api/orders/{orderId}', {
-          params: { path: { orderId } },
-        });
-        if (cancelled) return;
-        if (response.status === 401) {
-          setState({ status: 'unauthenticated' });
-          return;
-        }
-        if (response.status === 404) {
-          setState({ status: 'not_found' });
-          return;
-        }
-        if (error || !data) {
-          setState({ status: 'error', message: `Erreur ${response.status}` });
-          return;
-        }
-        const order = data as unknown as OrderView;
-        setState({ status: 'ready', order });
-        if (!TERMINAL_STATUSES.has(order.status)) {
-          timer = setTimeout(fetchOnce, POLL_INTERVAL_MS);
-        }
-      } catch (err: unknown) {
-        if (cancelled) return;
-        setState({ status: 'error', message: (err as Error).message ?? 'Erreur réseau' });
+  const query = useQuery({
+    queryKey: queryKeys.order(orderId),
+    queryFn: () => apiRaw.get(`/api/orders/${orderId}`) as Promise<OrderView>,
+    enabled: !!orderId,
+    refetchInterval: (q) => {
+      const order = q.state.data as OrderView | undefined;
+      if (order && TERMINAL_STATUSES.has(order.status)) return false;
+      return POLL_INTERVAL_MS;
+    },
+    // 404 is part of the data domain (the link is stale, not a transient
+    // server error), so a single fetch is enough — don't burn retries.
+    retry: (count, err) => {
+      if (err instanceof ApiClientError && (err.status === 404 || err.status === 401)) {
+        return false;
       }
-    };
+      return count < 2;
+    },
+  });
 
-    setState({ status: 'loading' });
-    fetchOnce();
+  const reload = () => {
+    void query.refetch();
+  };
 
-    return () => {
-      cancelled = true;
-      if (timer) clearTimeout(timer);
-    };
-  }, [orderId, tick]);
-
-  return React.useMemo(() => ({ ...state, reload }), [state, reload]);
+  if (query.isError) {
+    if (query.error instanceof ApiClientError) {
+      if (query.error.status === 401) return { status: 'unauthenticated', reload };
+      if (query.error.status === 404) return { status: 'not_found', reload };
+      return { status: 'error', message: `Erreur ${query.error.status}`, reload };
+    }
+    return { status: 'error', message: 'Erreur réseau', reload };
+  }
+  if (query.data) {
+    return { status: 'ready', order: query.data, reload };
+  }
+  return { status: 'loading', reload };
 }

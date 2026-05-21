@@ -1,10 +1,9 @@
 'use client';
 
-/* eslint-disable react-hooks/set-state-in-effect */
-
-import * as React from 'react';
-import { apiRaw, ApiClientError } from '@/lib/api/api-client';
+import { useQuery } from '@tanstack/react-query';
+import { ApiClientError, apiRaw } from '@/lib/api/api-client';
 import { auth } from '@/lib/auth';
+import { queryKeys } from '@/lib/query/keys';
 import type { UserRole } from '@/lib/auth/role-redirect';
 
 export interface CurrentUser {
@@ -17,7 +16,6 @@ export interface CurrentUser {
 }
 
 export type CurrentUserState =
-  | { status: 'idle' }
   | { status: 'loading' }
   | { status: 'anonymous' }
   | { status: 'authenticated'; user: CurrentUser }
@@ -25,45 +23,35 @@ export type CurrentUserState =
 
 /**
  * Resolves the current user from the access token, or reports `anonymous` if
- * no token is present. Cached in-memory per session — fetched once on mount,
- * survives page transitions inside the SPA. A fresh tab triggers a refetch.
+ * no token is present. TanStack Query caches by `queryKey` so a fresh tab
+ * triggers a refetch but page-to-page nav inside the SPA reuses the cache.
  *
  * Used by the landing page to decide between role-picker (anonymous) and
  * auto-redirect (authenticated).
  */
 export function useCurrentUser(): CurrentUserState {
-  const [state, setState] = React.useState<CurrentUserState>({ status: 'idle' });
+  const hasToken = typeof window !== 'undefined' && auth.isAuthenticated();
 
-  React.useEffect(() => {
-    let cancelled = false;
-    if (!auth.isAuthenticated()) {
-      setState({ status: 'anonymous' });
-      return;
+  const query = useQuery({
+    queryKey: queryKeys.user.me(),
+    queryFn: () => apiRaw.get('/api/users/me') as Promise<CurrentUser>,
+    enabled: hasToken,
+    retry: (count, err) => {
+      if (err instanceof ApiClientError && err.status === 401) return false;
+      return count < 2;
+    },
+  });
+
+  if (!hasToken) return { status: 'anonymous' };
+  if (query.isError) {
+    if (query.error instanceof ApiClientError && query.error.status === 401) {
+      // Stale token — clear it so the next render is a clean anonymous.
+      auth.clear();
+      return { status: 'anonymous' };
     }
-    setState({ status: 'loading' });
-    apiRaw
-      .get<CurrentUser>('/api/users/me')
-      .then((user) => {
-        if (cancelled) return;
-        setState({ status: 'authenticated', user });
-      })
-      .catch((err: unknown) => {
-        if (cancelled) return;
-        if (err instanceof ApiClientError && err.status === 401) {
-          // Stale token — clear it so the next decision is a clean anonymous.
-          auth.clear();
-          setState({ status: 'anonymous' });
-          return;
-        }
-        setState({
-          status: 'error',
-          message: (err as Error).message ?? 'Erreur de chargement',
-        });
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  return state;
+    const message = query.error instanceof Error ? query.error.message : 'Erreur de chargement';
+    return { status: 'error', message };
+  }
+  if (query.data) return { status: 'authenticated', user: query.data };
+  return { status: 'loading' };
 }

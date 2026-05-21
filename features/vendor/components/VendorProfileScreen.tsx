@@ -76,7 +76,7 @@ export function VendorProfileScreen() {
     }
   }, [profile.status, reset]);
 
-  if (profile.status === 'idle' || profile.status === 'loading') {
+  if (profile.status === 'loading') {
     return (
       <Shell>
         <BackBar />

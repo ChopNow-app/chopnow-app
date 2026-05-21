@@ -52,7 +52,7 @@ export function AddressesPage() {
       </header>
 
       <section className="container space-y-3 py-2">
-        {state.status === 'loading' || state.status === 'idle' ? (
+        {state.status === 'loading' ? (
           <div className="space-y-2">
             {[1, 2].map((i) => (
               <div key={i} className="h-24 animate-pulse rounded-lg border bg-background" />

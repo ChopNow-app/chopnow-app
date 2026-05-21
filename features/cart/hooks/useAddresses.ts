@@ -1,9 +1,8 @@
 'use client';
 
-/* eslint-disable react-hooks/set-state-in-effect */
-
-import * as React from 'react';
-import { api } from '@/lib/api/api-client';
+import { useQuery } from '@tanstack/react-query';
+import { ApiClientError, apiRaw } from '@/lib/api/api-client';
+import { queryKeys } from '@/lib/query/keys';
 
 export interface SavedAddress {
   id: string;
@@ -18,43 +17,33 @@ export interface SavedAddress {
 }
 
 export type AddressesState =
-  | { status: 'idle' }
   | { status: 'loading' }
   | { status: 'unauthenticated' }
   | { status: 'ready'; addresses: SavedAddress[] }
   | { status: 'error'; message: string };
 
 export function useAddresses(): AddressesState & { reload: () => void } {
-  const [state, setState] = React.useState<AddressesState>({ status: 'idle' });
-  const [tick, setTick] = React.useState(0);
+  const query = useQuery({
+    queryKey: queryKeys.user.addresses(),
+    queryFn: () => apiRaw.get('/api/users/me/addresses') as Promise<SavedAddress[]>,
+    retry: (count, err) => {
+      if (err instanceof ApiClientError && err.status === 401) return false;
+      return count < 2;
+    },
+  });
 
-  const reload = React.useCallback(() => setTick((t) => t + 1), []);
+  const reload = () => {
+    void query.refetch();
+  };
 
-  React.useEffect(() => {
-    let cancelled = false;
-    setState({ status: 'loading' });
-    api
-      .GET('/api/users/me/addresses', {})
-      .then(({ data, error, response }) => {
-        if (cancelled) return;
-        if (response.status === 401) {
-          setState({ status: 'unauthenticated' });
-          return;
-        }
-        if (error || !data) {
-          setState({ status: 'error', message: `Erreur ${response.status}` });
-          return;
-        }
-        setState({ status: 'ready', addresses: data as unknown as SavedAddress[] });
-      })
-      .catch((err: unknown) => {
-        if (cancelled) return;
-        setState({ status: 'error', message: (err as Error).message ?? 'Erreur réseau' });
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [tick]);
-
-  return React.useMemo(() => ({ ...state, reload }), [state, reload]);
+  if (query.isError) {
+    if (query.error instanceof ApiClientError && query.error.status === 401) {
+      return { status: 'unauthenticated', reload };
+    }
+    const message =
+      query.error instanceof ApiClientError ? `Erreur ${query.error.status}` : 'Erreur réseau';
+    return { status: 'error', message, reload };
+  }
+  if (query.data) return { status: 'ready', addresses: query.data, reload };
+  return { status: 'loading', reload };
 }

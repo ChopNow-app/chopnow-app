@@ -70,7 +70,7 @@ export function VendorHoursScreen() {
     }
   }, [hoursState, rows]);
 
-  if (hoursState.status === 'loading' || hoursState.status === 'idle' || rows === null) {
+  if (hoursState.status === 'loading' || rows === null) {
     return (
       <Shell>
         <BackBar />

@@ -52,7 +52,7 @@ export function MenuManagementScreen() {
     );
   }
 
-  if (menu.status === 'idle' || menu.status === 'loading') {
+  if (menu.status === 'loading') {
     return (
       <Shell>
         <Header itemCount={null} />

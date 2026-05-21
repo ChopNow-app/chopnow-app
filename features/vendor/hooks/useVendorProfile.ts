@@ -1,9 +1,8 @@
 'use client';
 
-/* eslint-disable react-hooks/set-state-in-effect */
-
-import * as React from 'react';
-import { apiRaw, ApiClientError } from '@/lib/api/api-client';
+import { useQuery } from '@tanstack/react-query';
+import { ApiClientError, apiRaw } from '@/lib/api/api-client';
+import { queryKeys } from '@/lib/query/keys';
 
 export type VendorType = 'INFORMAL' | 'SEMI_FORMAL' | 'RESTAURANT';
 export type VendorStatus =
@@ -28,16 +27,12 @@ export interface VendorProfile {
   profilePhotoUrl: string | null;
   coverPhotoUrl: string | null;
   declaredCapacity: number | null;
-  // Pre-orders (#187): gates the "Pré-commandes" section on the dashboard +
-  // exposes the toggle in the consumer cart for this vendor. Defaults true
-  // for INFORMAL submissions at the backend; admin can flip per-vendor.
   acceptsPreOrders: boolean;
   createdAt: string;
   updatedAt: string;
 }
 
 export type VendorProfileState =
-  | { status: 'idle' }
   | { status: 'loading' }
   | { status: 'unauthenticated' }
   | { status: 'not_found' }
@@ -45,48 +40,41 @@ export type VendorProfileState =
   | { status: 'error'; message: string };
 
 /**
- * Reads `GET /api/vendors/me` (added in chopnow-api PR #166). Backs:
- *   - /vendor/profile editor (full data, edit name/description/momoPhone/photos)
- *   - /vendor/menu type-aware UI (INFORMAL keeps kind tabs, SEMI/RESTAURANT
- *     gets MenuCategory grouping)
- *
- * Deliberately minimal — no mutations here, just the read. The profile
- * editor wraps PATCH /vendors/me + /me/photo + /me/cover separately so a
- * partial save (e.g. only the cover photo changed) doesn't try to PATCH
- * empty text fields.
+ * Reads `GET /api/vendors/me`. Backs the /vendor/profile editor and the
+ * type-aware /vendor/menu UI. Mutations (PATCH /vendors/me, /me/photo,
+ * /me/cover) live in their respective components and call
+ * `queryClient.invalidateQueries({ queryKey: queryKeys.vendor.me() })`
+ * after success so the dashboard updates without a manual reload.
  */
 export function useVendorProfile(): VendorProfileState & { reload(): void } {
-  const [state, setState] = React.useState<VendorProfileState>({ status: 'idle' });
-  const [tick, setTick] = React.useState(0);
+  const query = useQuery({
+    queryKey: queryKeys.vendor.me(),
+    queryFn: () => apiRaw.get('/api/vendors/me') as Promise<VendorProfile>,
+    retry: (count, err) => {
+      if (err instanceof ApiClientError && (err.status === 401 || err.status === 404)) {
+        return false;
+      }
+      return count < 2;
+    },
+  });
 
-  const reload = React.useCallback(() => setTick((t) => t + 1), []);
+  const reload = () => {
+    void query.refetch();
+  };
 
-  React.useEffect(() => {
-    let cancelled = false;
-    setState({ status: 'loading' });
-    apiRaw
-      .get<VendorProfile>('/api/vendors/me')
-      .then((data) => {
-        if (cancelled) return;
-        setState({ status: 'ready', data });
-      })
-      .catch((err: unknown) => {
-        if (cancelled) return;
-        if (err instanceof ApiClientError) {
-          if (err.status === 401) return setState({ status: 'unauthenticated' });
-          if (err.status === 404) return setState({ status: 'not_found' });
-          const body = err.body as { message?: string } | undefined;
-          return setState({
-            status: 'error',
-            message: body?.message ?? `Erreur ${err.status}`,
-          });
-        }
-        setState({ status: 'error', message: (err as Error).message ?? 'Erreur réseau' });
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [tick]);
-
-  return React.useMemo(() => ({ ...state, reload }), [state, reload]);
+  if (query.isError) {
+    if (query.error instanceof ApiClientError) {
+      if (query.error.status === 401) return { status: 'unauthenticated', reload };
+      if (query.error.status === 404) return { status: 'not_found', reload };
+      const body = query.error.body as { message?: string } | undefined;
+      return {
+        status: 'error',
+        message: body?.message ?? `Erreur ${query.error.status}`,
+        reload,
+      };
+    }
+    return { status: 'error', message: 'Erreur réseau', reload };
+  }
+  if (query.data) return { status: 'ready', data: query.data, reload };
+  return { status: 'loading', reload };
 }
