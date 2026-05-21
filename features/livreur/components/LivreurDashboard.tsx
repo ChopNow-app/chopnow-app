@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { useRiderAvailability } from '../hooks/useRiderAvailability';
 import { useRiderCourses, type RiderCourse } from '../hooks/useRiderCourses';
 import { useRiderHeartbeat, type HeartbeatState } from '../hooks/useRiderHeartbeat';
+import { MesGainsCard } from './MesGainsCard';
 
 /**
  * Story 4.1 / 4.2 / 4.4 — rider dashboard.
@@ -61,6 +62,8 @@ export function LivreurDashboard() {
         ) : null}
         <HeartbeatStatusLine state={heartbeat} isOnline={availability.isOnline} />
       </section>
+
+      <MesGainsCard />
 
       <section>
         <header className="mb-3 flex items-center justify-between">
