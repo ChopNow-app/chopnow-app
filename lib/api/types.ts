@@ -376,6 +376,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/webhooks/campay/transfer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Campay outbound transfer status webhook */
+        post: operations["CampayTransferWebhookController_receive"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/webhooks/campay/refund": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Campay refund status webhook */
+        post: operations["CampayRefundWebhookController_receive"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/vendors": {
         parameters: {
             query?: never;
@@ -418,6 +452,26 @@ export interface paths {
          * @description Vendor-self-update for name, description, and momoPhone. Photo is a separate multipart endpoint (PATCH /vendors/me/photo). Quartier / landmark moves and commission edits stay admin-only.
          */
         patch: operations["VendorController_updateMe"];
+        trace?: never;
+    };
+    "/api/vendors/me/cashout-request": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Request an on-demand cashout (INFORMAL vendors only)
+         * @description Creates a VendorCashoutRequest. Admin must approve before payout fires. Refuses if a pending request already exists, vendor is not INFORMAL, or balance is non-positive. SEMI_FORMAL / RESTAURANT vendors use the Sunday cron.
+         */
+        post: operations["VendorController_requestCashout"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/vendors/me/photo": {
@@ -950,6 +1004,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/vendors/{vendorId}/pre-orders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Toggle Vendor.acceptsPreOrders (#187 follow-up)
+         * @description INFORMAL vendors get acceptsPreOrders=true at submission. This endpoint lets admin override per vendor without code changes — e.g. opting in a willing SEMI_FORMAL, or opting out an INFORMAL whose kitchen workflow does not support pre-orders. Idempotent: no DB write or audit log if the value is already what was requested.
+         */
+        patch: operations["AdminValidationController_setVendorPreOrders"];
+        trace?: never;
+    };
     "/api/admin/riders/pending": {
         parameters: {
             query?: never;
@@ -1055,6 +1129,311 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/vendors/{vendorId}/balance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Vendor balance — read from LedgerEntry, signed (positive = platform owes vendor)
+         * @description Returns the vendor's current balance plus per-component breakdown (gross, commission, penalty, adjustments) accumulated since the last paid VendorPayout (or vendor creation if none). Trusted flag drives the on-demand cashout admin UX per ADR-0005.
+         */
+        get: operations["AdminFinanceController_getVendorBalance"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/riders/{riderId}/balance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Rider balance — read from LedgerEntry, signed (positive = platform owes rider)
+         * @description Returns the rider's current balance plus per-component breakdown (gross, adjustments) accumulated since the last paid RiderPayout. Riders have no commission or penalty surface in v1 — they earn the rider share of the delivery fee directly. See ADR-0005.
+         */
+        get: operations["AdminFinanceController_getRiderBalance"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/finance/vendor-balances": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Paginated list of vendor balances (sorted by balance DESC)
+         * @description Drives the admin financial dashboard. Filter by VendorStatus, VendorType, and minimum balance. Pagination via offset/limit (pilot scope — switch to cursor-based when row counts demand it).
+         */
+        get: operations["AdminFinanceController_listVendorBalances"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/finance/rider-balances": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Paginated list of rider balances (sorted by balance DESC) */
+        get: operations["AdminFinanceController_listRiderBalances"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/finance/refund-queue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Refund worklist — orders in PaymentStatus.REFUND_PENDING, oldest first
+         * @description Manual ops worklist until Story 3.8 (Campay refund API) wires the automated refund flow. Surfaces order code, vendor name, total, and days since the refund was queued.
+         */
+        get: operations["AdminFinanceController_listRefundQueue"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/finance/cashout-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Cashout request queue — INFORMAL vendor on-demand cashouts (ADR-0005, 7.2b)
+         * @description Paginated list of vendor-side cashout requests, oldest first. Filter by CashoutRequestStatus. Each row carries vendor name, requested amount, age in hours, and the live isTrusted flag.
+         */
+        get: operations["AdminFinanceController_listCashoutRequests"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/finance/cashout-requests/{requestId}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve a cashout request — creates a VendorPayout via the 7.2a path
+         * @description Reads live balance, applies the same negative-balance + minimum-amount guards as the weekly cron, creates a VendorPayout (status PENDING) with paired VENDOR_PAYABLE / CAMPAY_FLOAT ledger entries. Refuses if balance changed below MIN_CASHOUT_XAF since request, or open dispute appeared.
+         */
+        post: operations["AdminFinanceController_approveCashoutRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/finance/cashout-requests/{requestId}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reject a cashout request with a reason */
+        post: operations["AdminFinanceController_rejectCashoutRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/finance/campay-circuit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Campay circuit breaker state (#92) — CLOSED / OPEN / HALF_OPEN
+         * @description Exposes the breaker state for the admin financial dashboard. When OPEN, every CampayService outbound call (collect, transfer, refund, balance) fails fast with code campay_circuit_open until the cool-down elapses. Useful when investigating a wave of FAILED payouts.
+         */
+        get: operations["AdminFinanceController_getCampayCircuitState"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/finance/escalations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List failed / stuck payouts + refunds needing admin attention
+         * @description Returns VendorPayout / RiderPayout in FAILED status or stuck IN_FLIGHT past the 30-min threshold, plus Orders in REFUND_PENDING with refundCampayRef set but no refundedAt after the same threshold. Sorted oldest first. Per ADR-0005 §S3 / #85.
+         */
+        get: operations["AdminFinanceController_listEscalations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/finance/vendor-payouts/{payoutId}/retry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Retry a FAILED vendor payout — flips it back to PENDING */
+        post: operations["AdminFinanceController_retryVendorPayout"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/finance/rider-payouts/{payoutId}/retry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Retry a FAILED rider payout — flips it back to PENDING */
+        post: operations["AdminFinanceController_retryRiderPayout"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/finance/vendor-payouts/{payoutId}/manual-mark-paid": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Manually mark a vendor payout PAID after firing it via the Campay UI
+         * @description Captures the Campay reference admin used in the manual fire so the audit trail stays connected. Sets status=PAID, paidAt=now. Refuses if the row is already PAID or CANCELLED.
+         */
+        post: operations["AdminFinanceController_manualMarkVendorPayoutPaid"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/finance/rider-payouts/{payoutId}/manual-mark-paid": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Manually mark a rider payout PAID after manual Campay fire */
+        post: operations["AdminFinanceController_manualMarkRiderPayoutPaid"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/orders/stuck-pickup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Orders stuck in PICKED_UP > 2h — admin rider-fraud triage queue
+         * @description Synchronous version of the StuckPickupDetectorService cron output. Returns orders where the rider scanned pickup but never marked delivered, oldest first. Powers the admin /admin/finance → Incidents livreurs tab.
+         */
+        get: operations["AdminRiderFraudController_listStuckPickups"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/orders/{orderId}/resolve-rider-fraud": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Resolve a rider-fraud incident (Order stuck in PICKED_UP)
+         * @description Atomic resolution flow for the scenario where a rider scanned pickup but never marked DELIVERED. Admin picks any combination of: queue a consumer refund (paymentStatus → REFUND_PENDING, RefundProcessor drains it), compensate the vendor via an ADJUSTMENT ledger entry, and either SUSPEND the rider (status flip + JWT revoke) or WARN them (reliabilityScore decrement). Order always ends CANCELLED with refusalReason set to "RIDER_FRAUD: <note>". Per ADR-0005 §S3.
+         */
+        post: operations["AdminRiderFraudController_resolveRiderFraud"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/orders/{orderId}/pay/momo": {
         parameters: {
             query?: never;
@@ -1101,11 +1480,76 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /**
-         * Start a masked rider → consumer call (Story 4.17)
-         * @description Twilio first calls the rider; on answer, it bridges to the order's deliveryPhone. Both legs see TchopNow caller ID. Hard 3-min cap. Returns the Twilio call SID for optional client-side polling.
-         */
-        post: operations["VoiceProxyController_callConsumer"];
+        /** Masked rider → consumer call (Story 4.17) */
+        post: operations["VoiceProxyController_riderCallConsumer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/orders/{orderId}/vendor-call-consumer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Masked vendor → consumer call (Story 3.17) */
+        post: operations["VoiceProxyController_vendorCallConsumer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/orders/{orderId}/vendor-call-rider": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Masked vendor → rider call (Story 3.17) */
+        post: operations["VoiceProxyController_vendorCallRider"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/orders/{orderId}/call-vendor": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Masked consumer → vendor call */
+        post: operations["VoiceProxyController_consumerCallVendor"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/orders/{orderId}/call-rider": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Masked consumer → rider call */
+        post: operations["VoiceProxyController_consumerCallRider"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1532,6 +1976,30 @@ export interface components {
              * @example Photo de pièce d'identité illisible
              */
             reason?: string;
+        };
+        SetVendorPreOrdersDto: {
+            /** @description Whether the vendor should accept pre-orders. */
+            acceptsPreOrders: boolean;
+        };
+        RejectCashoutRequestDto: Record<string, never>;
+        ManualMarkPaidDto: {
+            /** @description Campay transaction reference from the manual fire */
+            campayRef: string;
+            /** @description Free-text audit note */
+            note?: string;
+        };
+        ResolveRiderFraudDto: {
+            /**
+             * @description What to do with the rider
+             * @enum {string}
+             */
+            riderAction: "SUSPEND" | "WARN";
+            /** @description Whether to compensate the vendor for the lost food */
+            vendorCompensation: boolean;
+            /** @description Whether to queue a refund to the consumer */
+            consumerRefund: boolean;
+            /** @description Free-text note captured in refusalReason + audit log */
+            note: string;
         };
         InitiateMomoPaymentDto: {
             /**
@@ -2040,6 +2508,40 @@ export interface operations {
             };
         };
     };
+    CampayTransferWebhookController_receive: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CampayRefundWebhookController_receive: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     VendorController_submit: {
         parameters: {
             query?: never;
@@ -2092,6 +2594,23 @@ export interface operations {
         };
         responses: {
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    VendorController_requestCashout: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -2746,6 +3265,29 @@ export interface operations {
             };
         };
     };
+    AdminValidationController_setVendorPreOrders: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                vendorId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetVendorPreOrdersDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     AdminValidationController_listPendingRiders: {
         parameters: {
             query?: never;
@@ -2867,6 +3409,332 @@ export interface operations {
             };
         };
     };
+    AdminFinanceController_getVendorBalance: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                vendorId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminFinanceController_getRiderBalance: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                riderId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminFinanceController_listVendorBalances: {
+        parameters: {
+            query?: {
+                status?: "PENDING_REVIEW" | "CORRECTION_REQUESTED" | "ACTIVE" | "SUSPENDED" | "REJECTED";
+                type?: "INFORMAL" | "SEMI_FORMAL" | "RESTAURANT";
+                /** @description Minimum balance in FCFA (signed) */
+                minBalanceXAF?: number;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminFinanceController_listRiderBalances: {
+        parameters: {
+            query?: {
+                vehicleType?: "MOTO" | "BICYCLE" | "CAR" | "ON_FOOT";
+                /** @description Minimum balance in FCFA (signed) */
+                minBalanceXAF?: number;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminFinanceController_listRefundQueue: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminFinanceController_listCashoutRequests: {
+        parameters: {
+            query?: {
+                status?: "PENDING_APPROVAL" | "APPROVED" | "REJECTED" | "CANCELLED";
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminFinanceController_approveCashoutRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                requestId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminFinanceController_rejectCashoutRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                requestId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RejectCashoutRequestDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminFinanceController_getCampayCircuitState: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminFinanceController_listEscalations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminFinanceController_retryVendorPayout: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                payoutId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminFinanceController_retryRiderPayout: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                payoutId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminFinanceController_manualMarkVendorPayoutPaid: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                payoutId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ManualMarkPaidDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminFinanceController_manualMarkRiderPayoutPaid: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                payoutId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ManualMarkPaidDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminRiderFraudController_listStuckPickups: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminRiderFraudController_resolveRiderFraud: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                orderId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResolveRiderFraudDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     PaymentsController_initiateMomo: {
         parameters: {
             query?: never;
@@ -2907,7 +3775,83 @@ export interface operations {
             };
         };
     };
-    VoiceProxyController_callConsumer: {
+    VoiceProxyController_riderCallConsumer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                orderId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    VoiceProxyController_vendorCallConsumer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                orderId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    VoiceProxyController_vendorCallRider: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                orderId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    VoiceProxyController_consumerCallVendor: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                orderId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    VoiceProxyController_consumerCallRider: {
         parameters: {
             query?: never;
             header?: never;
@@ -2930,6 +3874,7 @@ export interface operations {
         parameters: {
             query: {
                 orderId: string;
+                to: string;
             };
             header?: never;
             path?: never;
@@ -2949,6 +3894,7 @@ export interface operations {
         parameters: {
             query: {
                 orderId: string;
+                to: string;
             };
             header?: never;
             path?: never;
