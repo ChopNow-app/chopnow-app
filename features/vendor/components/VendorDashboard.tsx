@@ -6,6 +6,7 @@ import { ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useVendorAvailability } from '../hooks/useVendorAvailability';
+import { useVendorCashout } from '../hooks/useVendorCashout';
 import { useVendorOrders, type VendorOrder } from '../hooks/useVendorOrders';
 import { useMenuItems } from '../hooks/useMenuItems';
 import { useVendorProfile } from '../hooks/useVendorProfile';
@@ -72,6 +73,9 @@ export function VendorDashboard() {
     <div className="space-y-4">
       <VendorPushPermissionBanner />
       <AvailabilitySection state={availability} />
+      {profile.status === 'ready' && profile.data.type === 'INFORMAL' ? (
+        <CashoutRequestSection />
+      ) : null}
 
       {acceptsPreOrders && preOrders.status === 'ready' && preOrders.orders.length > 0 ? (
         <section>
@@ -440,4 +444,72 @@ function playChime(): void {
   } catch {
     // No-op — chime is decorative.
   }
+}
+
+// On-demand cashout (ADR-0005 §S2). INFORMAL only — gated at the
+// call-site. Admin must approve before money moves; vendor sees the
+// request status via the WhatsApp notification on approve/reject.
+function CashoutRequestSection() {
+  const cashout = useVendorCashout();
+  const [confirming, setConfirming] = React.useState(false);
+
+  const onConfirm = async () => {
+    setConfirming(false);
+    await cashout.requestCashout();
+  };
+
+  if (cashout.status === 'success' && cashout.result) {
+    return (
+      <section className="rounded-lg border border-chop-mboue/30 bg-chop-mboue/10 p-4">
+        <p className="text-sm font-semibold text-chop-mboue">✅ Demande envoyée à l’admin</p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Solde demandé : <strong>{formatXAF(cashout.result.requestedXAF)}</strong>
+          {cashout.result.isTrusted ? ' · Compte vérifié — décision rapide attendue' : ''}
+        </p>
+        <Button type="button" variant="outline" size="sm" className="mt-3" onClick={cashout.reset}>
+          OK
+        </Button>
+      </section>
+    );
+  }
+
+  return (
+    <section className="bg-card rounded-lg border p-4">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <h2 className="text-base font-extrabold">Virement</h2>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            Demande un virement de ton solde MoMo à tout moment
+          </p>
+        </div>
+        {confirming ? (
+          <div className="flex gap-2">
+            <Button type="button" size="sm" variant="outline" onClick={() => setConfirming(false)}>
+              Annuler
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              onClick={onConfirm}
+              disabled={cashout.status === 'submitting'}
+            >
+              {cashout.status === 'submitting' ? '…' : 'Confirmer'}
+            </Button>
+          </div>
+        ) : (
+          <Button
+            type="button"
+            size="sm"
+            onClick={() => setConfirming(true)}
+            disabled={cashout.status === 'submitting'}
+          >
+            Demander un virement
+          </Button>
+        )}
+      </div>
+      {cashout.error ? (
+        <p className="mt-2 text-xs text-destructive">{cashout.error.message}</p>
+      ) : null}
+    </section>
+  );
 }
