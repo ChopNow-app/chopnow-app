@@ -232,6 +232,49 @@ export interface EscalationItem {
   ageMinutes: number;
 }
 
+export interface StuckPickupItem {
+  orderId: string;
+  code: string;
+  vendorId: string;
+  vendorName: string;
+  riderId: string | null;
+  riderName: string | null;
+  userId: string;
+  totalXAF: number;
+  pickedUpAt: string | null;
+  minutesStuck: number;
+}
+
+export interface ResolveRiderFraudBody {
+  riderAction: 'SUSPEND' | 'WARN';
+  vendorCompensation: boolean;
+  consumerRefund: boolean;
+  note: string;
+}
+
+export interface ResolveRiderFraudResult {
+  orderStatus: string;
+  consumerRefundQueued: boolean;
+  vendorCompensationXAF: number;
+  riderSuspended: boolean;
+}
+
+export interface CampayCircuitState {
+  state: 'CLOSED' | 'OPEN' | 'HALF_OPEN';
+  consecutiveFailures: number;
+  openedAt: number;
+}
+
+export const adminRiderFraudApi = {
+  listStuckPickups: () => apiRaw.get<StuckPickupItem[]>('/api/admin/orders/stuck-pickup'),
+  resolve: (orderId: string, body: ResolveRiderFraudBody) =>
+    apiRaw.post<ResolveRiderFraudResult>(`/api/admin/orders/${orderId}/resolve-rider-fraud`, body),
+};
+
+export const adminCampayApi = {
+  getCircuitState: () => apiRaw.get<CampayCircuitState>('/api/admin/finance/campay-circuit'),
+};
+
 export interface PilotMetrics {
   window: { from: string; to: string };
   reorderRate: { reorderers: number; uniqueCustomers: number; percent: number };
