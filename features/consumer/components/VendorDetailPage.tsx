@@ -3,6 +3,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
 import { useCart } from '@/features/cart/store';
 import { useVendorPublic } from '../hooks/useVendorPublic';
 import type { PublicVendorView } from '../types';
@@ -129,6 +130,14 @@ function VendorContent({ view }: { view: PublicVendorView }) {
       </section>
 
       <div className="container mt-8 space-y-8">
+        {grouped.length === 0 ? (
+          <EmptyState
+            icon="🍳"
+            title="Menu en préparation"
+            body="Ce vendeur n'a pas encore publié ses plats. Reviens dans un instant — ou explore d'autres restaurants en attendant."
+            cta={{ label: "Voir d'autres restaurants", href: '/restaurants' }}
+          />
+        ) : null}
         {grouped.map((section) => (
           <section key={section.id}>
             <h2 className="mb-3 text-lg font-bold">{section.name}</h2>

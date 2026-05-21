@@ -3,6 +3,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
 import { apiRaw, ApiClientError } from '@/lib/api/api-client';
 import { useAddresses, type SavedAddress } from '@/features/cart/hooks/useAddresses';
 import { AddressEditor } from './AddressEditor';
@@ -63,9 +64,12 @@ export function AddressesPage() {
             {state.message}
           </p>
         ) : addresses.length === 0 && !creating ? (
-          <p className="rounded-lg border bg-background p-4 text-sm text-muted-foreground">
-            Aucune adresse enregistrée. Ajoute-en une pour passer ta première commande.
-          </p>
+          <EmptyState
+            icon="📍"
+            title="Aucune adresse enregistrée"
+            body="Ajoute une adresse pour passer ta première commande — on s'en souviendra pour les prochaines fois."
+            cta={{ label: 'Ajouter une adresse', onClick: () => setCreating(true) }}
+          />
         ) : (
           <ul className="space-y-3">
             {addresses.map((addr) => (

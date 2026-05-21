@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { useCatalogue } from '../hooks/useCatalogue';
 import { DOUALA_FALLBACK, useGeolocation } from '../hooks/useGeolocation';
 import { VendorCard } from './VendorCard';
+import { VendorCardSkeleton } from './VendorCardSkeleton';
 import { GpsHelpDialog } from './GpsHelpDialog';
 import { HomeHeader } from './HomeHeader';
 import { SearchBar } from './SearchBar';
@@ -230,18 +231,20 @@ function Section({
 }
 
 function SectionHeaderSkeleton() {
+  // Match the loaded layout: section-header line + the same responsive
+  // grid (1 / 2 / 3 / 4 cols) so the transition to data is a content
+  // swap, not a layout shift. Six skeletons cover at least one full
+  // row on every breakpoint up to xl.
   return (
     <div className="space-y-4 px-5 pt-7 md:px-8 lg:px-12">
       <div className="h-8 w-2/3 animate-pulse rounded-md bg-chop-surface-gray" />
-      <div className="space-y-4">
-        {[0, 1, 2].map((i) => (
-          <div
-            key={i}
-            className="h-64 animate-pulse rounded-3xl bg-chop-surface-gray"
-            style={{ animationDelay: `${i * 80}ms` }}
-          />
+      <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-5 xl:grid-cols-4 xl:gap-6">
+        {[0, 1, 2, 3, 4, 5].map((i) => (
+          <li key={i} style={{ animationDelay: `${i * 80}ms` }}>
+            <VendorCardSkeleton />
+          </li>
         ))}
-      </div>
+      </ul>
     </div>
   );
 }
