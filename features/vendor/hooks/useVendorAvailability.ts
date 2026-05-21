@@ -1,10 +1,9 @@
 'use client';
 
-/* eslint-disable react-hooks/set-state-in-effect */
-
 import * as React from 'react';
-import { api } from '@/lib/api/api-client';
-import { apiRaw, ApiClientError } from '@/lib/api/api-client';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { ApiClientError, apiRaw } from '@/lib/api/api-client';
+import { queryKeys } from '@/lib/query/keys';
 
 export interface AvailabilityView {
   isOpen: boolean;
@@ -13,7 +12,6 @@ export interface AvailabilityView {
 }
 
 export type AvailabilityState =
-  | { status: 'idle' }
   | { status: 'loading' }
   | { status: 'unauthenticated' }
   | { status: 'ready'; data: AvailabilityView; saving: boolean; error: string | null }
@@ -22,71 +20,64 @@ export type AvailabilityState =
 /**
  * Story 2.4 — single-source-of-truth for vendor availability + hours on the
  * dashboard. GET /vendors/me/availability on mount, PATCH same path to flip
- * the toggle.
+ * the toggle. Mutation invalidates the query so isOpenNow updates instantly.
  */
 export function useVendorAvailability(): AvailabilityState & {
   setOpen(next: boolean): Promise<void>;
   reload(): void;
 } {
-  const [state, setState] = React.useState<AvailabilityState>({ status: 'idle' });
-  const [tick, setTick] = React.useState(0);
+  const qc = useQueryClient();
 
-  const reload = React.useCallback(() => setTick((t) => t + 1), []);
+  const query = useQuery({
+    queryKey: queryKeys.vendor.availability(),
+    queryFn: () => apiRaw.get('/api/vendors/me/availability') as Promise<AvailabilityView>,
+    retry: (count, err) => {
+      if (err instanceof ApiClientError && err.status === 401) return false;
+      return count < 2;
+    },
+  });
 
-  React.useEffect(() => {
-    let cancelled = false;
-    setState({ status: 'loading' });
-    api
-      .GET('/api/vendors/me/availability', {})
-      .then(({ data, error, response }) => {
-        if (cancelled) return;
-        if (response.status === 401) {
-          setState({ status: 'unauthenticated' });
-          return;
-        }
-        if (error || !data) {
-          setState({ status: 'error', message: `Erreur ${response.status}` });
-          return;
-        }
-        setState({
-          status: 'ready',
-          data: data as unknown as AvailabilityView,
-          saving: false,
-          error: null,
-        });
-      })
-      .catch((err: unknown) => {
-        if (cancelled) return;
-        setState({ status: 'error', message: (err as Error).message ?? 'Erreur réseau' });
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [tick]);
+  const mutation = useMutation({
+    mutationFn: (next: boolean) => apiRaw.patch('/api/vendors/me/availability', { isOpen: next }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: queryKeys.vendor.availability() });
+    },
+  });
 
   const setOpen = React.useCallback(
     async (next: boolean) => {
-      setState((prev) => {
-        if (prev.status !== 'ready') return prev;
-        return { ...prev, saving: true, error: null };
-      });
-      try {
-        await apiRaw.patch('/api/vendors/me/availability', { isOpen: next });
-        // Re-fetch to get the updated isOpenNow flag from the server.
-        reload();
-      } catch (err) {
-        const msg =
-          err instanceof ApiClientError
-            ? ((err.body as { message?: string } | undefined)?.message ?? `Erreur ${err.status}`)
-            : (err as Error).message;
-        setState((prev) => {
-          if (prev.status !== 'ready') return prev;
-          return { ...prev, saving: false, error: msg };
-        });
-      }
+      await mutation.mutateAsync(next).catch(() => undefined);
     },
-    [reload],
+    [mutation],
   );
+  const reload = React.useCallback(() => {
+    void query.refetch();
+  }, [query]);
 
-  return React.useMemo(() => ({ ...state, setOpen, reload }), [state, setOpen, reload]);
+  const mutationError = mutation.error
+    ? mutation.error instanceof ApiClientError
+      ? ((mutation.error.body as { message?: string } | undefined)?.message ??
+        `Erreur ${mutation.error.status}`)
+      : mutation.error.message
+    : null;
+
+  if (query.isError) {
+    if (query.error instanceof ApiClientError && query.error.status === 401) {
+      return { status: 'unauthenticated', setOpen, reload };
+    }
+    const message =
+      query.error instanceof ApiClientError ? `Erreur ${query.error.status}` : 'Erreur réseau';
+    return { status: 'error', message, setOpen, reload };
+  }
+  if (query.data) {
+    return {
+      status: 'ready',
+      data: query.data,
+      saving: mutation.isPending,
+      error: mutationError,
+      setOpen,
+      reload,
+    };
+  }
+  return { status: 'loading', setOpen, reload };
 }

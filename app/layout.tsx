@@ -5,6 +5,7 @@ import { getLocale, getMessages } from 'next-intl/server';
 import { ConsumerBottomNav } from '@/components/ConsumerBottomNav';
 import { PilotBanner } from '@/components/PilotBanner';
 import { RegisterServiceWorker } from '@/components/RegisterServiceWorker';
+import { QueryProvider } from '@/lib/query/QueryProvider';
 import './globals.css';
 
 const jakarta = Plus_Jakarta_Sans({
@@ -50,11 +51,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang={locale} className={jakarta.variable}>
       <body>
         <NextIntlClientProvider locale={locale} messages={messages}>
-          <PilotBanner />
-          {/* pb-20 = 80px reserve for bottom nav (64px + safe-area-inset). */}
-          {/* ConsumerBottomNav hides itself on admin/livreur/vendor routes. */}
-          <div className="min-h-dvh pb-20 lg:pb-0">{children}</div>
-          <ConsumerBottomNav />
+          <QueryProvider>
+            <PilotBanner />
+            {/* pb-20 = 80px reserve for bottom nav (64px + safe-area-inset). */}
+            {/* ConsumerBottomNav hides itself on admin/livreur/vendor routes. */}
+            <div className="min-h-dvh pb-20 lg:pb-0">{children}</div>
+            <ConsumerBottomNav />
+          </QueryProvider>
         </NextIntlClientProvider>
         <RegisterServiceWorker />
       </body>

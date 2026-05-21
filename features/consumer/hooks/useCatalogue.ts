@@ -1,13 +1,8 @@
 'use client';
 
-// React 19's `react-hooks/set-state-in-effect` rule bites the standard
-// "fetch-on-mount + setState transitions" pattern this hook implements.
-// Disabling at the file level — when we move the catalogue to swr / react-
-// query post-MVP, this hook goes away entirely.
-/* eslint-disable react-hooks/set-state-in-effect */
-
-import * as React from 'react';
-import { api } from '@/lib/api/api-client';
+import { useQuery } from '@tanstack/react-query';
+import { ApiClientError, apiRaw } from '@/lib/api/api-client';
+import { queryKeys } from '@/lib/query/keys';
 import type { CatalogueResponse } from '../types';
 
 export type CatalogueState =
@@ -17,9 +12,8 @@ export type CatalogueState =
   | { status: 'error'; message: string };
 
 /**
- * Fetches /api/catalogue once for the given coords. Re-fires on
- * lat/lng change so flipping from the Douala fallback to a real GPS
- * position refetches the list.
+ * Fetches /api/catalogue for the given coords. Re-fires on lat/lng change
+ * so flipping from the Douala fallback to a real GPS position refetches.
  *
  * `null` coords keep the hook in `idle` — call `useGeolocation().request()`
  * first to populate them.
@@ -28,36 +22,29 @@ export function useCatalogue(
   coords: { lat: number; lng: number } | null,
   radiusKm = 10,
 ): CatalogueState {
-  const [state, setState] = React.useState<CatalogueState>({ status: 'idle' });
+  const query = useQuery({
+    queryKey: [...queryKeys.catalogue(), coords?.lat, coords?.lng, radiusKm],
+    queryFn: () => {
+      const lat = coords!.lat;
+      const lng = coords!.lng;
+      return apiRaw.get(
+        `/api/catalogue?lat=${lat}&lng=${lng}&radiusKm=${radiusKm}`,
+      ) as Promise<CatalogueResponse>;
+    },
+    enabled: !!coords,
+    // Catalogue doesn't change often during a session — keep cached for 1 min
+    // between refetches so back-nav from a vendor detail is instant.
+    staleTime: 60_000,
+  });
 
-  React.useEffect(() => {
-    if (!coords) return;
-    let cancelled = false;
-    setState({ status: 'loading' });
-    api
-      .GET('/api/catalogue', { params: { query: { lat: coords.lat, lng: coords.lng, radiusKm } } })
-      .then(({ data, error, response }) => {
-        if (cancelled) return;
-        if (error || !data) {
-          setState({
-            status: 'error',
-            message: `Erreur ${response.status} — réessaye dans un instant`,
-          });
-          return;
-        }
-        // openapi-fetch returns `data` typed as `unknown` since our backend
-        // doesn't emit response schemas yet; cast to the local view shape.
-        const vendors = (data as unknown as CatalogueResponse).vendors;
-        setState({ status: 'ready', vendors });
-      })
-      .catch((err: unknown) => {
-        if (cancelled) return;
-        setState({ status: 'error', message: (err as Error).message ?? 'Erreur réseau' });
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [coords, radiusKm]);
-
-  return state;
+  if (!coords) return { status: 'idle' };
+  if (query.isError) {
+    const message =
+      query.error instanceof ApiClientError
+        ? `Erreur ${query.error.status} — réessaye dans un instant`
+        : 'Erreur réseau';
+    return { status: 'error', message };
+  }
+  if (query.data) return { status: 'ready', vendors: query.data.vendors };
+  return { status: 'loading' };
 }

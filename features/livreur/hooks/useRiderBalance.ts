@@ -1,9 +1,8 @@
 'use client';
 
-/* eslint-disable react-hooks/set-state-in-effect */
-
-import * as React from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { ApiClientError, apiRaw } from '@/lib/api/api-client';
+import { queryKeys } from '@/lib/query/keys';
 import type { components } from '@/lib/api/types';
 
 type ApiRiderBalance = components['schemas']['RiderSelfBalanceDto'];
@@ -30,13 +29,10 @@ export interface PayoutSummary {
 }
 
 export type RiderBalanceState =
-  | { status: 'idle' }
   | { status: 'loading' }
   | { status: 'unauthenticated' }
   | { status: 'ready'; balance: RiderBalanceView }
   | { status: 'error'; message: string };
-
-const POLL_INTERVAL_MS = 30_000;
 
 function normalize(raw: ApiRiderBalance): RiderBalanceView {
   return {
@@ -59,40 +55,27 @@ function normalize(raw: ApiRiderBalance): RiderBalanceView {
 }
 
 export function useRiderBalance(): RiderBalanceState & { reload: () => void } {
-  const [state, setState] = React.useState<RiderBalanceState>({ status: 'idle' });
-  const [tick, setTick] = React.useState(0);
+  const query = useQuery({
+    queryKey: queryKeys.rider.balance(),
+    queryFn: () => apiRaw.get('/api/riders/me/balance') as Promise<ApiRiderBalance>,
+    refetchInterval: 30_000,
+    select: normalize,
+  });
 
-  const reload = React.useCallback(() => setTick((t) => t + 1), []);
+  const reload = () => {
+    void query.refetch();
+  };
 
-  React.useEffect(() => {
-    let cancelled = false;
-    let timer: ReturnType<typeof setTimeout> | null = null;
-
-    const fetchOnce = async () => {
-      try {
-        const raw = await apiRaw.get('/api/riders/me/balance');
-        if (cancelled) return;
-        setState({ status: 'ready', balance: normalize(raw) });
-        timer = setTimeout(fetchOnce, POLL_INTERVAL_MS);
-      } catch (err: unknown) {
-        if (cancelled) return;
-        if (err instanceof ApiClientError && err.status === 401) {
-          setState({ status: 'unauthenticated' });
-          return;
-        }
-        const message = err instanceof ApiClientError ? `Erreur ${err.status}` : 'Erreur réseau';
-        setState({ status: 'error', message });
-      }
-    };
-
-    setState({ status: 'loading' });
-    fetchOnce();
-
-    return () => {
-      cancelled = true;
-      if (timer) clearTimeout(timer);
-    };
-  }, [tick]);
-
-  return React.useMemo(() => ({ ...state, reload }), [state, reload]);
+  if (query.isError) {
+    if (query.error instanceof ApiClientError && query.error.status === 401) {
+      return { status: 'unauthenticated', reload };
+    }
+    const message =
+      query.error instanceof ApiClientError ? `Erreur ${query.error.status}` : 'Erreur réseau';
+    return { status: 'error', message, reload };
+  }
+  if (query.data) {
+    return { status: 'ready', balance: query.data, reload };
+  }
+  return { status: 'loading', reload };
 }

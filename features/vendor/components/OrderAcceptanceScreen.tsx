@@ -5,7 +5,9 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Bell, ChevronLeft, MapPin, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useQueryClient } from '@tanstack/react-query';
 import { apiRaw, ApiClientError } from '@/lib/api/api-client';
+import { queryKeys } from '@/lib/query/keys';
 import { cn } from '@/lib/utils';
 import { useVendorOrder } from '../hooks/useVendorOrder';
 import type { VendorOrder } from '../hooks/useVendorOrders';
@@ -30,7 +32,7 @@ interface Props {
 export function OrderAcceptanceScreen({ orderId }: Props) {
   const orderState = useVendorOrder(orderId);
 
-  if (orderState.status === 'loading' || orderState.status === 'idle') {
+  if (orderState.status === 'loading') {
     return (
       <Shell>
         <div className="mt-16 flex flex-col items-center gap-3">
@@ -249,15 +251,24 @@ function DecisionButtons({
   onDone: () => void;
   onError: (msg: string) => void;
 }) {
+  const qc = useQueryClient();
   const [busy, setBusy] = React.useState<null | 'accept' | 'refuse'>(null);
   const [refusing, setRefusing] = React.useState(false);
   const [reason, setReason] =
     React.useState<(typeof REFUSAL_REASONS)[number]['value']>('ITEM_OUT_OF_STOCK');
 
+  const invalidateOrders = () => {
+    // Vendor list (both immediate + preorder tabs) and the single-order
+    // detail both reflect a status change here.
+    void qc.invalidateQueries({ queryKey: ['vendor', 'orders'] });
+    void qc.invalidateQueries({ queryKey: queryKeys.vendor.order(orderId) });
+  };
+
   const accept = async () => {
     setBusy('accept');
     try {
       await apiRaw.patch(`/api/orders/${orderId}/accept`, {});
+      invalidateOrders();
       onDone();
     } catch (err) {
       onError(extract(err) ?? 'Acceptation échouée');
@@ -270,6 +281,7 @@ function DecisionButtons({
     setBusy('refuse');
     try {
       await apiRaw.patch(`/api/orders/${orderId}/refuse`, { reason });
+      invalidateOrders();
       onDone();
     } catch (err) {
       onError(extract(err) ?? 'Refus échoué');

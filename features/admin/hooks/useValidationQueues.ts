@@ -1,9 +1,8 @@
 'use client';
 
-/* eslint-disable react-hooks/set-state-in-effect */
-
-import * as React from 'react';
-import { api } from '@/lib/api/api-client';
+import { useQuery } from '@tanstack/react-query';
+import { ApiClientError, apiRaw } from '@/lib/api/api-client';
+import { queryKeys } from '@/lib/query/keys';
 
 export interface PendingVendor {
   id: string;
@@ -15,13 +14,9 @@ export interface PendingVendor {
   declaredCapacity: number | null;
   profilePhotoUrl: string | null;
   submittedAt: string;
-  // Restaurant KYC — null on INFORMAL + SEMI_FORMAL rows; admin reviews
-  // them inline before approving the application.
   rccmNumber: string | null;
   niuNumber: string | null;
   enseignePhotoUrl: string | null;
-  // Pre-orders (#187): defaults true for INFORMAL at submission. Admin can
-  // override per-vendor via the toggle on the card.
   acceptsPreOrders: boolean;
 }
 
@@ -39,7 +34,6 @@ export interface PendingRider {
 }
 
 type QueueState<T> =
-  | { status: 'idle' }
   | { status: 'loading' }
   | { status: 'unauthenticated' }
   | { status: 'forbidden' }
@@ -51,46 +45,35 @@ export type RiderQueueState = QueueState<PendingRider>;
 
 function useQueue<T>(
   path: '/api/admin/vendors/pending' | '/api/admin/riders/pending',
-): QueueState<T> & {
-  reload: () => void;
-} {
-  const [state, setState] = React.useState<QueueState<T>>({ status: 'idle' });
-  const [tick, setTick] = React.useState(0);
+  scope: 'vendors' | 'riders',
+): QueueState<T> & { reload: () => void } {
+  const query = useQuery({
+    queryKey: [...queryKeys.admin.validationQueues(), scope],
+    queryFn: () => apiRaw.get(path) as Promise<T[]>,
+    retry: (count, err) => {
+      if (err instanceof ApiClientError && (err.status === 401 || err.status === 403)) {
+        return false;
+      }
+      return count < 2;
+    },
+  });
 
-  const reload = React.useCallback(() => setTick((t) => t + 1), []);
+  const reload = () => {
+    void query.refetch();
+  };
 
-  React.useEffect(() => {
-    let cancelled = false;
-    setState({ status: 'loading' });
-    api
-      .GET(path, {})
-      .then(({ data, error, response }) => {
-        if (cancelled) return;
-        if (response.status === 401) {
-          setState({ status: 'unauthenticated' });
-          return;
-        }
-        if (response.status === 403) {
-          setState({ status: 'forbidden' });
-          return;
-        }
-        if (error || !data) {
-          setState({ status: 'error', message: `Erreur ${response.status}` });
-          return;
-        }
-        setState({ status: 'ready', rows: data as unknown as T[] });
-      })
-      .catch((err: unknown) => {
-        if (cancelled) return;
-        setState({ status: 'error', message: (err as Error).message ?? 'Erreur réseau' });
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [tick, path]);
-
-  return React.useMemo(() => ({ ...state, reload }), [state, reload]);
+  if (query.isError) {
+    if (query.error instanceof ApiClientError) {
+      if (query.error.status === 401) return { status: 'unauthenticated', reload };
+      if (query.error.status === 403) return { status: 'forbidden', reload };
+      return { status: 'error', message: `Erreur ${query.error.status}`, reload };
+    }
+    return { status: 'error', message: 'Erreur réseau', reload };
+  }
+  if (query.data) return { status: 'ready', rows: query.data, reload };
+  return { status: 'loading', reload };
 }
 
-export const usePendingVendors = () => useQueue<PendingVendor>('/api/admin/vendors/pending');
-export const usePendingRiders = () => useQueue<PendingRider>('/api/admin/riders/pending');
+export const usePendingVendors = () =>
+  useQueue<PendingVendor>('/api/admin/vendors/pending', 'vendors');
+export const usePendingRiders = () => useQueue<PendingRider>('/api/admin/riders/pending', 'riders');

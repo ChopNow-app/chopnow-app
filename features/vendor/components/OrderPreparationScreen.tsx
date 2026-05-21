@@ -4,7 +4,9 @@ import * as React from 'react';
 import Link from 'next/link';
 import { ChevronLeft, Check, Clock, ChefHat } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useQueryClient } from '@tanstack/react-query';
 import { apiRaw, ApiClientError } from '@/lib/api/api-client';
+import { queryKeys } from '@/lib/query/keys';
 import { cn } from '@/lib/utils';
 import { useVendorOrder } from '../hooks/useVendorOrder';
 import type { VendorOrder } from '../hooks/useVendorOrders';
@@ -19,7 +21,7 @@ interface Props {
 export function OrderPreparationScreen({ orderId }: Props) {
   const orderState = useVendorOrder(orderId);
 
-  if (orderState.status === 'loading' || orderState.status === 'idle') {
+  if (orderState.status === 'loading') {
     return (
       <Shell>
         <div className="mt-20 flex flex-col items-center gap-3">
@@ -403,6 +405,7 @@ function ReadyCta({
   onDone: () => void;
   onError: (msg: string) => void;
 }) {
+  const qc = useQueryClient();
   const [busy, setBusy] = React.useState(false);
 
   if (isReady) {
@@ -420,6 +423,11 @@ function ReadyCta({
     setBusy(true);
     try {
       await apiRaw.patch(`/api/orders/${orderId}/ready`, {});
+      // Mark-ready flips status → READY_PICKUP. Refresh the dashboard
+      // list + the detail view immediately instead of waiting on the
+      // next poll.
+      void qc.invalidateQueries({ queryKey: ['vendor', 'orders'] });
+      void qc.invalidateQueries({ queryKey: queryKeys.vendor.order(orderId) });
       onDone();
     } catch (err) {
       const msg =

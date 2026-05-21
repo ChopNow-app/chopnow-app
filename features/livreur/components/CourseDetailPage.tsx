@@ -24,7 +24,7 @@ export function CourseDetailPage({ orderId }: { orderId: string }) {
       </div>
     );
   }
-  if (courses.status === 'idle' || courses.status === 'loading') return <Skeleton />;
+  if (courses.status === 'loading') return <Skeleton />;
   if (courses.status === 'error') {
     return <p className="text-red-300">{courses.message}</p>;
   }
