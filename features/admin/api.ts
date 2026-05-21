@@ -199,7 +199,38 @@ export const adminFinanceApi = {
     apiRaw.post<{ ok: true }>(`/api/admin/finance/cashout-requests/${requestId}/reject`, {
       reason,
     }),
+
+  // ── Escalations (ADR-0005 §S3 / #85) ─────────────────────────────
+
+  listEscalations: () => apiRaw.get<EscalationItem[]>('/api/admin/finance/escalations'),
+  retryVendorPayout: (payoutId: string) =>
+    apiRaw.post<{ status: 'PENDING' }>(`/api/admin/finance/vendor-payouts/${payoutId}/retry`, {}),
+  retryRiderPayout: (payoutId: string) =>
+    apiRaw.post<{ status: 'PENDING' }>(`/api/admin/finance/rider-payouts/${payoutId}/retry`, {}),
+  manualMarkVendorPayoutPaid: (payoutId: string, body: { campayRef: string; note?: string }) =>
+    apiRaw.post<{ status: 'PAID' }>(
+      `/api/admin/finance/vendor-payouts/${payoutId}/manual-mark-paid`,
+      body,
+    ),
+  manualMarkRiderPayoutPaid: (payoutId: string, body: { campayRef: string; note?: string }) =>
+    apiRaw.post<{ status: 'PAID' }>(
+      `/api/admin/finance/rider-payouts/${payoutId}/manual-mark-paid`,
+      body,
+    ),
 };
+
+export interface EscalationItem {
+  kind: 'vendor_payout' | 'rider_payout' | 'refund';
+  id: string;
+  contextId: string;
+  status: 'PENDING' | 'IN_FLIGHT' | 'PAID' | 'FAILED' | 'CANCELLED' | 'STALE_REFUND';
+  netXAF: number;
+  momoPhone: string | null;
+  failureReason: string | null;
+  scheduledFor: string | null;
+  sentAt: string | null;
+  ageMinutes: number;
+}
 
 export interface PilotMetrics {
   window: { from: string; to: string };

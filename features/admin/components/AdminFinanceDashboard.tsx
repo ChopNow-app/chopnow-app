@@ -10,15 +10,17 @@ import {
   adminFinanceApi,
   type CashoutRequestRow,
   type CashoutRequestStatus,
+  type EscalationItem,
   type PagedResult,
   type RefundQueueRow,
   type RiderBalanceRow,
   type VendorBalanceRow,
 } from '../api';
 
-type Tab = 'vendors' | 'riders' | 'refunds' | 'cashouts';
+type Tab = 'escalations' | 'vendors' | 'riders' | 'refunds' | 'cashouts';
 
 const TABS: { id: Tab; label: string }[] = [
+  { id: 'escalations', label: 'Escalations' },
   { id: 'cashouts', label: 'Demandes de virement' },
   { id: 'vendors', label: 'Soldes vendeurs' },
   { id: 'riders', label: 'Soldes livreurs' },
@@ -35,7 +37,7 @@ function formatDate(iso: string | null): string {
 }
 
 export function AdminFinanceDashboard() {
-  const [tab, setTab] = React.useState<Tab>('cashouts');
+  const [tab, setTab] = React.useState<Tab>('escalations');
 
   return (
     <div className="space-y-6">
@@ -68,6 +70,7 @@ export function AdminFinanceDashboard() {
         ))}
       </nav>
 
+      {tab === 'escalations' && <EscalationsPanel />}
       {tab === 'cashouts' && <CashoutRequestsPanel />}
       {tab === 'vendors' && <VendorBalancesPanel />}
       {tab === 'riders' && <RiderBalancesPanel />}
@@ -505,4 +508,201 @@ function EmptyState({ message }: { message: string }) {
       {message}
     </div>
   );
+}
+
+// ── Escalations (ADR-0005 §S3 / #85) ────────────────────────────────
+
+function EscalationsPanel() {
+  const [state, setState] = React.useState<
+    | { status: 'loading' }
+    | { status: 'unauthenticated' }
+    | { status: 'error'; message: string }
+    | { status: 'ready'; rows: EscalationItem[] }
+  >({ status: 'loading' });
+
+  const load = React.useCallback(() => {
+    setState({ status: 'loading' });
+    adminFinanceApi
+      .listEscalations()
+      .then((rows) => setState({ status: 'ready', rows }))
+      .catch((err: unknown) => {
+        if (err instanceof ApiClientError && err.status === 401) {
+          setState({ status: 'unauthenticated' });
+          return;
+        }
+        setState({
+          status: 'error',
+          message: err instanceof Error ? err.message : 'Erreur',
+        });
+      });
+  }, []);
+
+  React.useEffect(load, [load]);
+
+  if (state.status === 'unauthenticated') return <AuthGate label="Connexion admin requise." />;
+  if (state.status === 'loading') return <LoadingSkeleton rows={3} />;
+  if (state.status === 'error')
+    return <p className="text-sm text-destructive">Erreur : {state.message}</p>;
+
+  return (
+    <section>
+      <p className="mb-2 text-xs text-muted-foreground">
+        {state.rows.length} ligne{state.rows.length > 1 ? 's' : ''} en attente d&apos;action
+      </p>
+      {state.rows.length === 0 ? (
+        <EmptyState message="Aucune escalation. ✨" />
+      ) : (
+        <ul className="space-y-2">
+          {state.rows.map((row) => (
+            <EscalationRow key={`${row.kind}:${row.id}`} row={row} onActionComplete={load} />
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+function EscalationRow({
+  row,
+  onActionComplete,
+}: {
+  row: EscalationItem;
+  onActionComplete: () => void;
+}) {
+  const [busy, setBusy] = React.useState<'retry' | 'mark-paid' | null>(null);
+  const [error, setError] = React.useState<string | null>(null);
+  const [showMarkPaid, setShowMarkPaid] = React.useState(false);
+  const [campayRef, setCampayRef] = React.useState('');
+  const [note, setNote] = React.useState('');
+
+  const canRetry = row.status === 'FAILED' && row.kind !== 'refund';
+  const canMarkPaid = row.kind !== 'refund'; // Refunds are flipped via webhook, not manually marked here
+
+  const retry = async () => {
+    if (
+      !confirm(
+        `Réessayer ce ${row.kind === 'vendor_payout' ? 'virement vendeur' : 'virement livreur'} ?`,
+      )
+    )
+      return;
+    setBusy('retry');
+    setError(null);
+    try {
+      if (row.kind === 'vendor_payout') await adminFinanceApi.retryVendorPayout(row.id);
+      else if (row.kind === 'rider_payout') await adminFinanceApi.retryRiderPayout(row.id);
+      onActionComplete();
+    } catch (err) {
+      setError(extractErrorMessage(err));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const markPaid = async () => {
+    if (campayRef.trim().length < 3) {
+      setError('Référence Campay requise (3 caractères min).');
+      return;
+    }
+    setBusy('mark-paid');
+    setError(null);
+    try {
+      const body = { campayRef: campayRef.trim(), note: note.trim() || undefined };
+      if (row.kind === 'vendor_payout')
+        await adminFinanceApi.manualMarkVendorPayoutPaid(row.id, body);
+      else if (row.kind === 'rider_payout')
+        await adminFinanceApi.manualMarkRiderPayoutPaid(row.id, body);
+      onActionComplete();
+    } catch (err) {
+      setError(extractErrorMessage(err));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  return (
+    <li className="bg-card rounded-lg border px-4 py-3">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="flex items-center gap-2 text-xs">
+            <span className="rounded-full bg-muted px-2 py-0.5 uppercase tracking-wider">
+              {row.kind === 'vendor_payout'
+                ? 'Vendeur'
+                : row.kind === 'rider_payout'
+                  ? 'Livreur'
+                  : 'Remboursement'}
+            </span>
+            <StatusPill status={row.status} />
+            <span className="text-muted-foreground">{row.ageMinutes} min</span>
+          </div>
+          <p className="mt-1 text-sm font-semibold">{formatXAF(row.netXAF)}</p>
+          <p className="text-xs text-muted-foreground">
+            {row.momoPhone ?? '—'}
+            {row.failureReason ? ` · ${row.failureReason}` : ''}
+          </p>
+          <p className="mt-0.5 font-mono text-[10px] text-muted-foreground">{row.id}</p>
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          {canRetry && (
+            <Button size="sm" variant="outline" onClick={retry} disabled={busy !== null}>
+              {busy === 'retry' ? '…' : 'Réessayer'}
+            </Button>
+          )}
+          {canMarkPaid && (
+            <Button size="sm" onClick={() => setShowMarkPaid((v) => !v)} disabled={busy !== null}>
+              Marquer payé
+            </Button>
+          )}
+        </div>
+      </div>
+      {showMarkPaid && canMarkPaid && (
+        <div className="mt-3 space-y-2 border-t pt-3">
+          <input
+            type="text"
+            value={campayRef}
+            onChange={(e) => setCampayRef(e.target.value)}
+            placeholder="Référence Campay (ex. CP-12345)"
+            className="w-full rounded-md border px-3 py-1.5 text-xs"
+            maxLength={120}
+          />
+          <input
+            type="text"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="Note (optionnel)"
+            className="w-full rounded-md border px-3 py-1.5 text-xs"
+            maxLength={200}
+          />
+          <Button size="sm" variant="destructive" onClick={markPaid} disabled={busy !== null}>
+            {busy === 'mark-paid' ? '…' : 'Confirmer'}
+          </Button>
+        </div>
+      )}
+      {error && <p className="mt-2 text-xs text-destructive">{error}</p>}
+    </li>
+  );
+}
+
+function StatusPill({ status }: { status: EscalationItem['status'] }) {
+  const styles: Record<string, string> = {
+    FAILED: 'bg-red-100 text-red-800',
+    IN_FLIGHT: 'bg-amber-100 text-amber-800',
+    STALE_REFUND: 'bg-amber-100 text-amber-800',
+  };
+  return (
+    <span
+      className={`rounded-full px-2 py-0.5 text-[10px] uppercase tracking-wider ${
+        styles[status] ?? 'bg-muted'
+      }`}
+    >
+      {status}
+    </span>
+  );
+}
+
+function extractErrorMessage(err: unknown): string {
+  if (err instanceof ApiClientError) {
+    const body = err.body as { code?: string; message?: string } | undefined;
+    return body?.message ?? `Erreur ${err.status}`;
+  }
+  return err instanceof Error ? err.message : 'Erreur inconnue';
 }
