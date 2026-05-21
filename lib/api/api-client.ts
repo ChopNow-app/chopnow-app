@@ -93,7 +93,12 @@ const authMiddleware: Middleware = {
   async onResponse({ response, request }) {
     if (response.status !== 401) return response;
     const url = new URL(request.url);
-    if (url.pathname.startsWith('/api/auth/')) return response;
+    // Don't refresh on auth endpoints themselves (login, refresh, OTP), nor on
+    // admin auth (separate session). Refresh would either loop or use the wrong
+    // token type.
+    if (url.pathname.startsWith('/api/auth/') || url.pathname.startsWith('/api/admin/auth/')) {
+      return response;
+    }
 
     const ok = await refreshOnce();
     if (!ok) return response;
@@ -114,44 +119,136 @@ const authMiddleware: Middleware = {
 export const api = createClient<paths>({ baseUrl: API_URL });
 api.use(authMiddleware);
 
-/**
- * Lightweight legacy wrapper kept for the rare case where we need direct fetch
- * (file uploads, streaming). Prefer `api.GET / api.POST` for everything else.
- *
- * Note: does NOT participate in the refresh-on-401 flow — callers that need
- * that should use `api` instead.
- */
-async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const token = readAccess();
-  const res = await fetch(`${API_URL}${path}`, {
-    ...init,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(init.headers ?? {}),
-    },
-  });
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    throw new ApiClientError(res.status, body);
-  }
-  return res.json() as Promise<T>;
+// === apiRaw — throw-based wrapper around the typed `api` client ===
+//
+// Why this exists alongside `api`:
+//   - `api.GET/POST/...` returns `{ data, error, response }` — the OpenAPI-correct
+//     shape, but verbose for one-liners and not ergonomic with try/catch.
+//   - `apiRaw.get/post/...` keeps the original "await, then handle thrown
+//     ApiClientError" style. ~68 call sites depend on this contract.
+//
+// As of the typing pass, `apiRaw` is overloaded:
+//   1. When the path is a string literal known to the OpenAPI spec, the body
+//      and response are fully typed from `paths` (and the explicit `<T>`
+//      generic becomes redundant).
+//   2. When the path is a template literal (e.g. `/api/admin/vendors/${id}`),
+//      TS falls through to the legacy `<T = unknown>` signature — same runtime,
+//      same throw, just no compile-time check on body/response.
+//
+// All `apiRaw` calls now route through the typed `api` client internally, so
+// they participate in the refresh-on-401 middleware that `api` already has.
+// This fixes a latent bug where apiRaw users got booted on token expiry.
+
+type Paths = keyof paths;
+type Method = 'get' | 'post' | 'put' | 'patch' | 'delete';
+
+type PathsForMethod<M extends Method> = {
+  [P in Paths]: M extends keyof paths[P] ? P : never;
+}[Paths];
+
+type ReqJsonBody<P extends Paths, M extends Method> = M extends keyof paths[P]
+  ? paths[P][M] extends { requestBody: { content: { 'application/json': infer B } } }
+    ? B
+    : paths[P][M] extends { requestBody?: { content: { 'application/json': infer B } } }
+      ? B | undefined
+      : undefined
+  : undefined;
+
+type ResJson<P extends Paths, M extends Method> = M extends keyof paths[P]
+  ? paths[P][M] extends { responses: infer R }
+    ? R extends { 200: { content: { 'application/json': infer T } } }
+      ? T
+      : R extends { 201: { content: { 'application/json': infer T } } }
+        ? T
+        : R extends { 204: unknown }
+          ? void
+          : unknown
+    : unknown
+  : unknown;
+
+const METHOD_MAP: Record<Method, 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'> = {
+  get: 'GET',
+  post: 'POST',
+  put: 'PUT',
+  patch: 'PATCH',
+  delete: 'DELETE',
+};
+
+// Per-call overrides — currently just custom headers (e.g. Idempotency-Key on
+// order placement). Intentionally narrow; new fields should be added explicitly
+// rather than passing through a full RequestInit.
+export interface ApiRawInit {
+  headers?: Record<string, string>;
 }
 
-export const apiRaw = {
-  get: <T>(path: string, init?: RequestInit) => request<T>(path, { ...init, method: 'GET' }),
-  post: <T>(path: string, body: unknown, init?: RequestInit) =>
-    request<T>(path, { ...init, method: 'POST', body: JSON.stringify(body) }),
-  put: <T>(path: string, body: unknown, init?: RequestInit) =>
-    request<T>(path, { ...init, method: 'PUT', body: JSON.stringify(body) }),
-  patch: <T>(path: string, body: unknown, init?: RequestInit) =>
-    request<T>(path, { ...init, method: 'PATCH', body: JSON.stringify(body) }),
-  delete: <T>(path: string, init?: RequestInit) => request<T>(path, { ...init, method: 'DELETE' }),
-  /**
-   * Multipart upload — used for vendor item photos. Does NOT set Content-Type
-   * so the browser fills in the boundary. Auth bearer is read from the same
-   * storage key as `request`. Skips the refresh-on-401 flow.
-   */
+async function callTyped(
+  method: Method,
+  path: string,
+  body?: unknown,
+  init?: ApiRawInit,
+): Promise<unknown> {
+  const opts: Record<string, unknown> = {};
+  if (body !== undefined) opts.body = body;
+  if (init?.headers) opts.headers = init.headers;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const fn = (api as any)[METHOD_MAP[method]] as (
+    p: string,
+    o: Record<string, unknown>,
+  ) => Promise<{ data: unknown; error: unknown; response: Response }>;
+  const result = await fn(path, opts);
+  if (!result.response.ok) {
+    throw new ApiClientError(result.response.status, result.error ?? result.data ?? {});
+  }
+  return result.data;
+}
+
+export interface ApiRawClient {
+  get<P extends PathsForMethod<'get'>>(path: P, init?: ApiRawInit): Promise<ResJson<P, 'get'>>;
+  get<T = unknown>(path: string, init?: ApiRawInit): Promise<T>;
+
+  post<P extends PathsForMethod<'post'>>(
+    path: P,
+    body: ReqJsonBody<P, 'post'>,
+    init?: ApiRawInit,
+  ): Promise<ResJson<P, 'post'>>;
+  post<T = unknown>(path: string, body: unknown, init?: ApiRawInit): Promise<T>;
+
+  put<P extends PathsForMethod<'put'>>(
+    path: P,
+    body: ReqJsonBody<P, 'put'>,
+    init?: ApiRawInit,
+  ): Promise<ResJson<P, 'put'>>;
+  put<T = unknown>(path: string, body: unknown, init?: ApiRawInit): Promise<T>;
+
+  patch<P extends PathsForMethod<'patch'>>(
+    path: P,
+    body: ReqJsonBody<P, 'patch'>,
+    init?: ApiRawInit,
+  ): Promise<ResJson<P, 'patch'>>;
+  patch<T = unknown>(path: string, body: unknown, init?: ApiRawInit): Promise<T>;
+
+  delete<P extends PathsForMethod<'delete'>>(
+    path: P,
+    init?: ApiRawInit,
+  ): Promise<ResJson<P, 'delete'>>;
+  delete<T = unknown>(path: string, init?: ApiRawInit): Promise<T>;
+
+  // Multipart upload — used for vendor item photos. Browser sets Content-Type
+  // boundary itself; auth bearer attached manually. Bypasses the typed client.
+  upload<T>(path: string, form: FormData, method?: 'POST' | 'PATCH'): Promise<T>;
+}
+
+export const apiRaw: ApiRawClient = {
+  get: ((path: string, init?: ApiRawInit) =>
+    callTyped('get', path, undefined, init)) as ApiRawClient['get'],
+  post: ((path: string, body: unknown, init?: ApiRawInit) =>
+    callTyped('post', path, body, init)) as ApiRawClient['post'],
+  put: ((path: string, body: unknown, init?: ApiRawInit) =>
+    callTyped('put', path, body, init)) as ApiRawClient['put'],
+  patch: ((path: string, body: unknown, init?: ApiRawInit) =>
+    callTyped('patch', path, body, init)) as ApiRawClient['patch'],
+  delete: ((path: string, init?: ApiRawInit) =>
+    callTyped('delete', path, undefined, init)) as ApiRawClient['delete'],
   upload: async <T>(
     path: string,
     form: FormData,
