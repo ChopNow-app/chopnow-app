@@ -454,6 +454,26 @@ export interface paths {
         patch: operations["VendorController_updateMe"];
         trace?: never;
     };
+    "/api/vendors/me/balance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get own balance + payout history
+         * @description Read-only self-service view of the vendor's ledger position. Surfaces balanceXAF, isTrusted (drives same-day vs 24h cashout for INFORMAL), the last 5 payouts, and the next scheduled payout estimate. RESTAURANT and SEMI_FORMAL vendors see the next Sunday 02:00 Africa/Douala estimate; INFORMAL vendors see ON_DEMAND with no estimatedAt.
+         */
+        get: operations["VendorController_getMyBalance"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/vendors/me/cashout-request": {
         parameters: {
             query?: never;
@@ -771,6 +791,26 @@ export interface paths {
          * @description Rider-self-update for preferredZone and momoPhone. vehicleType, photos, and licensePlate changes trigger admin re-validation and live in Story 6.2.
          */
         patch: operations["RidersController_updateMe"];
+        trace?: never;
+    };
+    "/api/riders/me/balance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get own balance + payout history
+         * @description Read-only self-service view of the rider's ledger position. Balance is the sum of RIDER_PAYABLE entries since the last successful payout; the next scheduled payout is the next 06:00 Africa/Douala (or null if balance is zero — cron would skip).
+         */
+        get: operations["RidersController_getMyBalance"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/riders/me/availability": {
@@ -1835,6 +1875,36 @@ export interface components {
             /** @description New MoMo number. No OTP-on-new-number confirmation in MVP — admin oversight handles fraud cases at launch. */
             momoPhone?: string;
         };
+        NextScheduledPayoutDto: {
+            /** @enum {string} */
+            cadence: "WEEKLY_SUNDAY" | "DAILY_MORNING" | "ON_DEMAND";
+            /** Format: date-time */
+            estimatedAt: Record<string, never> | null;
+        };
+        PayoutSummaryDto: {
+            id: string;
+            /** Format: date-time */
+            periodStart: string;
+            /** Format: date-time */
+            periodEnd: string;
+            netXAF: number;
+            /** @enum {string} */
+            status: "PENDING" | "IN_FLIGHT" | "PAID" | "FAILED" | "CANCELLED";
+            /** Format: date-time */
+            paidAt: Record<string, never> | null;
+        };
+        VendorSelfBalanceDto: {
+            balanceXAF: number;
+            isTrusted: boolean;
+            /** @enum {string} */
+            vendorType: "INFORMAL" | "SEMI_FORMAL" | "RESTAURANT";
+            /** Format: date-time */
+            lastPayoutAt: Record<string, never> | null;
+            lastPayoutXAF: Record<string, never> | null;
+            nextScheduledPayout: components["schemas"]["NextScheduledPayoutDto"];
+            recentPayouts: components["schemas"]["PayoutSummaryDto"][];
+            pendingCashoutRequestId: Record<string, never> | null;
+        };
         UpsertItemDto: {
             /** @example Poulet DG */
             name: string;
@@ -1943,6 +2013,14 @@ export interface components {
             /** @example Bonamoussadi */
             preferredZone?: string;
             momoPhone?: string;
+        };
+        RiderSelfBalanceDto: {
+            balanceXAF: number;
+            /** Format: date-time */
+            lastPayoutAt: Record<string, never> | null;
+            lastPayoutXAF: Record<string, never> | null;
+            nextScheduledPayout: components["schemas"]["NextScheduledPayoutDto"];
+            recentPayouts: components["schemas"]["PayoutSummaryDto"][];
         };
         RiderAvailabilityDto: {
             /** @example true */
@@ -2601,6 +2679,25 @@ export interface operations {
             };
         };
     };
+    VendorController_getMyBalance: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VendorSelfBalanceDto"];
+                };
+            };
+        };
+    };
     VendorController_requestCashout: {
         parameters: {
             query?: never;
@@ -3015,6 +3112,25 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    RidersController_getMyBalance: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RiderSelfBalanceDto"];
+                };
             };
         };
     };

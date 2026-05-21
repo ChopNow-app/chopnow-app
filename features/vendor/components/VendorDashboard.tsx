@@ -10,6 +10,7 @@ import { useVendorCashout } from '../hooks/useVendorCashout';
 import { useVendorOrders, type VendorOrder } from '../hooks/useVendorOrders';
 import { useMenuItems } from '../hooks/useMenuItems';
 import { useVendorProfile } from '../hooks/useVendorProfile';
+import { MonSoldeCard } from './MonSoldeCard';
 import { VendorPushPermissionBanner } from './VendorPushPermissionBanner';
 
 const formatXAF = (n: number) => `${n.toLocaleString('fr-FR')} FCFA`;
@@ -73,6 +74,7 @@ export function VendorDashboard() {
     <div className="space-y-4">
       <VendorPushPermissionBanner />
       <AvailabilitySection state={availability} />
+      <MonSoldeCard />
       {profile.status === 'ready' && profile.data.type === 'INFORMAL' ? (
         <CashoutRequestSection />
       ) : null}
