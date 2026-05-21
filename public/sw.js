@@ -14,8 +14,21 @@
 // page auto-reloads → user sees latest deploy. Total update propagation
 // is one page load instead of "until next browser restart."
 
-const CACHE_VERSION = 'v0.3.0';
+// Bumping CACHE_VERSION on every deploy that touches the SW evicts all old
+// cached entries on activation (see the `activate` handler below — it deletes
+// any cache whose key doesn't match the current version). Doing this on
+// every deploy that ships a new manifest, asset strategy, or push payload
+// shape guarantees PWA installs converge to the new behavior within one
+// page load instead of "until the browser feels like checking 24h later".
+const CACHE_VERSION = 'v0.4.0';
 const APP_SHELL = ['/'];
+
+// Network-first paths beyond navigation requests. `/manifest.json` lives
+// here because manifest updates need to reach installs as fast as the HTML
+// does — caching it stale-first means a brand color tweak takes weeks to
+// propagate (iOS even bakes some manifest fields at install, separate
+// problem). Future first-class-citizen network-first paths get added here.
+const NETWORK_FIRST_PATHS = new Set(['/manifest.json']);
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE_VERSION).then((cache) => cache.addAll(APP_SHELL)));
@@ -47,19 +60,24 @@ self.addEventListener('fetch', (event) => {
 
   const isNavigation =
     req.mode === 'navigate' || (req.headers.get('accept') || '').includes('text/html');
+  const isExplicitlyNetworkFirst = NETWORK_FIRST_PATHS.has(url.pathname);
 
-  if (isNavigation) {
-    // Network-first: fresh HTML on every visit; fall back to cached shell
-    // only when offline. This is what lets a deploy propagate fast.
+  if (isNavigation || isExplicitlyNetworkFirst) {
+    // Network-first: fresh content on every visit; fall back to cached
+    // shell only when offline. This is what lets a deploy propagate fast.
+    // Same strategy for `/manifest.json` so a brand colour / shortcut
+    // tweak reaches installs within one page load.
     event.respondWith(
       fetch(req)
         .then((res) => {
-          // Keep the latest navigation response in cache for offline use.
+          // Keep the latest response in cache for offline use.
           const clone = res.clone();
           caches.open(CACHE_VERSION).then((c) => c.put(req, clone));
           return res;
         })
-        .catch(() => caches.match(req).then((cached) => cached || caches.match('/'))),
+        .catch(() =>
+          caches.match(req).then((cached) => cached || (isNavigation ? caches.match('/') : undefined)),
+        ),
     );
     return;
   }
