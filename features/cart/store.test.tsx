@@ -1,11 +1,6 @@
 import { act, renderHook } from '@testing-library/react';
-import * as React from 'react';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { CartProvider, useCart } from './store';
-
-const wrapper = ({ children }: { children: React.ReactNode }) => (
-  <CartProvider>{children}</CartProvider>
-);
+import { useCart, useCartStore } from './store';
 
 const sampleLine = (overrides?: Partial<{ itemId: string; name: string; priceXAF: number }>) => ({
   itemId: 'i-1',
@@ -17,18 +12,21 @@ const sampleLine = (overrides?: Partial<{ itemId: string; name: string; priceXAF
 
 describe('useCart', () => {
   beforeEach(() => {
+    // Zustand store survives between renders (it's module-level), so reset
+    // it manually + clear the persist layer before each case.
     if (typeof window !== 'undefined') window.localStorage.clear();
+    useCartStore.setState({ vendorId: null, vendorName: null, lines: [] });
   });
 
   it('starts empty', () => {
-    const { result } = renderHook(() => useCart(), { wrapper });
+    const { result } = renderHook(() => useCart());
     expect(result.current.isEmpty).toBe(true);
     expect(result.current.itemCount).toBe(0);
     expect(result.current.subtotalXAF).toBe(0);
   });
 
   it('addLine accepts the first item from a vendor', () => {
-    const { result } = renderHook(() => useCart(), { wrapper });
+    const { result } = renderHook(() => useCart());
     act(() => {
       const r = result.current.addLine('v-1', 'Chez Maman', sampleLine());
       expect(r).toEqual({ ok: true });
@@ -39,7 +37,7 @@ describe('useCart', () => {
   });
 
   it('addLine increments an existing line', () => {
-    const { result } = renderHook(() => useCart(), { wrapper });
+    const { result } = renderHook(() => useCart());
     act(() => {
       result.current.addLine('v-1', 'Chez Maman', sampleLine({ priceXAF: 1500 }));
       result.current.addLine('v-1', 'Chez Maman', sampleLine({ priceXAF: 1500 }));
@@ -50,7 +48,7 @@ describe('useCart', () => {
   });
 
   it('addLine refuses an item from a different vendor', () => {
-    const { result } = renderHook(() => useCart(), { wrapper });
+    const { result } = renderHook(() => useCart());
     act(() => {
       result.current.addLine('v-1', 'Chez Maman', sampleLine());
     });
@@ -70,7 +68,7 @@ describe('useCart', () => {
   });
 
   it('replaceVendor swaps the cart wholesale', () => {
-    const { result } = renderHook(() => useCart(), { wrapper });
+    const { result } = renderHook(() => useCart());
     act(() => {
       result.current.addLine('v-1', 'Chez Maman', sampleLine());
     });
@@ -85,7 +83,7 @@ describe('useCart', () => {
   });
 
   it('setQuantity(0) removes the line; emptying resets vendor', () => {
-    const { result } = renderHook(() => useCart(), { wrapper });
+    const { result } = renderHook(() => useCart());
     act(() => {
       result.current.addLine('v-1', 'Chez Maman', sampleLine());
     });
@@ -97,7 +95,7 @@ describe('useCart', () => {
   });
 
   it('setQuantity changes the count and subtotal', () => {
-    const { result } = renderHook(() => useCart(), { wrapper });
+    const { result } = renderHook(() => useCart());
     act(() => {
       result.current.addLine('v-1', 'Chez Maman', sampleLine());
     });
@@ -109,7 +107,7 @@ describe('useCart', () => {
   });
 
   it('clear() empties everything', () => {
-    const { result } = renderHook(() => useCart(), { wrapper });
+    const { result } = renderHook(() => useCart());
     act(() => {
       result.current.addLine('v-1', 'Chez Maman', sampleLine());
     });
