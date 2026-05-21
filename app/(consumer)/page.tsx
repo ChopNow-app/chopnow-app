@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { PwaInstallModal } from '@/components/PwaInstallModal';
+import { PwaRedirector } from '@/features/auth/components/PwaRedirector';
 import { RoleRedirector } from '@/features/auth/components/RoleRedirector';
 import { MobileOnboarding } from '@/features/onboarding/components/MobileOnboarding';
 
@@ -34,6 +35,12 @@ export default function HomePage() {
           Anonymous visitors see the splash below. Renders an overlay while
           fetching /users/me to hide the splash-flicker. */}
       <RoleRedirector />
+
+      {/* Anonymous PWA users skip the splash too. The marketing pitch is
+          for web visitors; once someone's installed the app they've
+          already accepted it. Logged-in PWA users are caught by
+          RoleRedirector above before reaching this. */}
+      <PwaRedirector />
 
       {/* First-visit mobile onboarding carousel — only shows for anonymous
           visitors on narrow viewports who haven't dismissed it yet. Decides

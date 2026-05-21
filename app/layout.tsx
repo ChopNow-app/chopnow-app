@@ -41,6 +41,10 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 5,
+  // `cover` lets the app paint under the iOS notch + home indicator so
+  // PWA chrome looks edge-to-edge. Components that need to dodge the
+  // notch use safe-area-inset-* in their padding.
+  viewportFit: 'cover',
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {

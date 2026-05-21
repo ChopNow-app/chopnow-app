@@ -2,7 +2,7 @@
   "name": "TChopNow",
   "short_name": "TChopNow",
   "description": "Mange sans attendre. De la rue à ta porte.",
-  "start_url": "/",
+  "start_url": "/restaurants?source=pwa",
   "display": "standalone",
   "background_color": "#FAFAF7",
   "theme_color": "#E11D2A",
