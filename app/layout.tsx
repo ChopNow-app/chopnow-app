@@ -53,6 +53,21 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   return (
     <html lang={locale} className={jakarta.variable}>
+      <head>
+        {/* PWA flash-killer. Runs synchronously in <head> BEFORE the first
+            paint — so a PWA user who somehow lands on `/` (refresh in
+            standalone mode, stale-manifest install, deep-link gone wrong)
+            never sees the marketing splash flash. The corresponding
+            React-side `PwaRedirector` was firing after hydration which
+            was too late — visible content for ~1 frame. This script is
+            the synchronous fix; PwaRedirector stays as a fallback for
+            engines that block inline scripts. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{if(location.pathname!=="/")return;var s=window.matchMedia&&window.matchMedia("(display-mode: standalone)").matches;var i=window.navigator&&window.navigator.standalone===true;if(s||i)location.replace("/launch?source=pwa");}catch(e){}})();`,
+          }}
+        />
+      </head>
       <body>
         <NextIntlClientProvider locale={locale} messages={messages}>
           <QueryProvider>
