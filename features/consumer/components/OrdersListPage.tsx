@@ -7,6 +7,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
 import { apiRaw, ApiClientError } from '@/lib/api/api-client';
 import type { OrderStatus, PaymentMethod, PaymentStatus } from '../hooks/useOrder';
 
@@ -96,16 +97,13 @@ export function OrdersListPage() {
           <h1 className="text-[28px] font-extrabold leading-tight tracking-tight md:text-[36px]">
             Mes commandes
           </h1>
-          <div className="mt-8 rounded-3xl bg-chop-card-white p-8 text-center shadow-card">
-            <div className="text-5xl">🍽️</div>
-            <h2 className="mt-3 text-[18px] font-extrabold">Aucune commande pour l&apos;instant</h2>
-            <p className="mx-auto mt-1 max-w-[280px] text-[13px] font-medium text-chop-ink-secondary">
-              Quand tu commanderas un plat, tu le retrouveras ici.
-            </p>
-            <Button asChild className="mt-6">
-              <Link href="/restaurants">Découvrir les vendeurs</Link>
-            </Button>
-          </div>
+          <EmptyState
+            className="mt-8"
+            icon="🍽️"
+            title="Aucune commande pour l'instant"
+            body="Quand tu commanderas un plat, tu le retrouveras ici."
+            cta={{ label: 'Découvrir les vendeurs', href: '/restaurants' }}
+          />
         </div>
       </main>
     );
