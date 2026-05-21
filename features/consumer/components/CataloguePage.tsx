@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { Button } from '@/components/ui/button';
+import { useCurrentUser } from '@/features/auth/hooks/useCurrentUser';
 import { useCatalogue } from '../hooks/useCatalogue';
 import { DOUALA_FALLBACK, useGeolocation } from '../hooks/useGeolocation';
 import { VendorCard } from './VendorCard';
@@ -37,10 +38,18 @@ const PLAN_LABEL: Record<1 | 2 | 3, { title: string; subtitle: string }> = {
 
 export function CataloguePage() {
   const geo = useGeolocation();
+  const user = useCurrentUser();
   const [query, setQuery] = React.useState('');
   const [category, setCategory] = React.useState<CategoryId>('all');
   const [showPlan3, setShowPlan3] = React.useState(false);
   const [showGpsHelp, setShowGpsHelp] = React.useState(false);
+
+  // Pull the user's first word from displayName for the home greeting. Splits
+  // on whitespace so multi-word display names render as just "Kouamé" in the
+  // greeting rather than "Kouamé Nguele Mbappé". Empty / whitespace-only
+  // names fall back to null so the greeting renders without a name.
+  const firstName =
+    user.status === 'authenticated' ? user.user.displayName?.trim().split(/\s+/)[0] || null : null;
 
   React.useEffect(() => {
     if (geo.status === 'idle') geo.request();
@@ -99,7 +108,7 @@ export function CataloguePage() {
       <div className="relative z-10 mx-auto max-w-md pb-8 md:max-w-3xl lg:max-w-6xl xl:max-w-7xl">
         <HomeHeader
           geo={geo}
-          firstName={null}
+          firstName={firstName}
           onLocationClick={() => {
             if (geo.status === 'denied' || geo.status === 'unsupported') setShowGpsHelp(true);
             else geo.request();
