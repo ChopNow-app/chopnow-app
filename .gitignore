@@ -14,3 +14,6 @@ coverage/
 *.tsbuildinfo
 next-env.d.ts
 .eslintcache
+
+# Local Claude Code project context — never committed
+CLAUDE.md
