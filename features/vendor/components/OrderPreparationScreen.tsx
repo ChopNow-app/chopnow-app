@@ -126,6 +126,8 @@ function PreparationView({ order, reload }: { order: VendorOrder; reload: () => 
 
       <OrderStepper className="mt-5" status={order.status} />
 
+      <VendorCallActions order={order} />
+
       {isReady ? (
         <PickupCodePanel order={order} />
       ) : (
@@ -551,6 +553,62 @@ function EmptyState({
       <p className="mt-1 max-w-xs text-sm text-muted-foreground">{message}</p>
       <Button asChild className="mt-5">
         <Link href={ctaHref}>{ctaLabel}</Link>
+      </Button>
+    </div>
+  );
+}
+
+// Masked call buttons for the vendor — both go through the Twilio voice
+// proxy (Story 3.17). Customer call always available during prep; rider
+// call only after dispatch assigns one.
+function VendorCallActions({ order }: { order: VendorOrder }) {
+  const [busy, setBusy] = React.useState<'consumer' | 'rider' | null>(null);
+
+  const call = async (target: 'consumer' | 'rider') => {
+    setBusy(target);
+    try {
+      const endpoint =
+        target === 'consumer'
+          ? `/api/orders/${order.id}/vendor-call-consumer`
+          : `/api/orders/${order.id}/vendor-call-rider`;
+      await apiRaw.post(endpoint, {});
+      window.alert(
+        target === 'consumer'
+          ? 'Le client reçoit ton appel. Ton téléphone va sonner.'
+          : 'Le livreur reçoit ton appel. Ton téléphone va sonner.',
+      );
+    } catch (err) {
+      const msg = err instanceof ApiClientError ? `Erreur ${err.status}` : (err as Error).message;
+      window.alert(`Appel impossible : ${msg}`);
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const riderAssigned = Boolean(order.riderId);
+
+  return (
+    <div className="mt-4 flex gap-2">
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        className="flex-1"
+        onClick={() => call('consumer')}
+        disabled={busy !== null}
+      >
+        {busy === 'consumer' ? 'Appel…' : '📞 Appeler le client'}
+      </Button>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        className="flex-1"
+        onClick={() => call('rider')}
+        disabled={busy !== null || !riderAssigned}
+        title={riderAssigned ? '' : 'Livreur pas encore assigné'}
+      >
+        {busy === 'rider' ? 'Appel…' : '🛵 Appeler le livreur'}
       </Button>
     </div>
   );

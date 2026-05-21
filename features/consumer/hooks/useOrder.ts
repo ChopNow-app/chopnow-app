@@ -67,6 +67,9 @@ export interface OrderView {
   deliveredAt: string | null;
   cancelledAt: string | null;
   refusalReason: string | null;
+  // Set once dispatch assigns a rider (Story 4.1). Used by the consumer
+  // UI to enable the "Appeler le livreur" button (Story 4.17 follow-up).
+  riderId?: string | null;
   vendor: { id: string; name: string; userId?: string };
   items: OrderItem[];
   rating: { id: string; vendorScore: number; riderScore: number; comment: string | null } | null;

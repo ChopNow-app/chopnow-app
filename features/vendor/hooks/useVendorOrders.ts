@@ -54,6 +54,9 @@ export interface VendorOrder {
   // Story 4.13 — vendor's 4-digit pickup code shown to the rider at pickup.
   // Backend strips the consumer's deliveryCode from this list response.
   pickupCode?: string;
+  // Story 4.17 — set once dispatch assigns a rider. Used by the vendor
+  // UI to enable the "Appeler le livreur" button.
+  riderId?: string | null;
 }
 
 export type OrdersState =

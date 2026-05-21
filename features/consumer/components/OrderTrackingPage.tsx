@@ -113,6 +113,7 @@ function OrderContent({ order, onReload }: { order: OrderView; onReload: () => v
         ) : null}
 
         <RefundStatusCallout order={order} />
+        <ConsumerCallActions order={order} />
       </section>
 
       <section className="container mt-6">
@@ -331,6 +332,71 @@ function AuthRequired({ orderId }: { orderId: string }) {
         <Link href={`/login?next=/orders/${orderId}`}>Se connecter</Link>
       </Button>
     </main>
+  );
+}
+
+// Masked call buttons for the consumer (Story 4.17 follow-up). Vendor
+// call is available anytime the order is in the live window. Rider call
+// only after dispatch has assigned one. Both go through the same Twilio
+// voice proxy — neither party ever sees the consumer's real number.
+function ConsumerCallActions({ order }: { order: OrderView }) {
+  const [busy, setBusy] = React.useState<'vendor' | 'rider' | null>(null);
+
+  // Eligibility window mirrors the backend's ALL_LIVE_STATUSES.
+  const inLiveWindow =
+    order.status === 'ACCEPTED' ||
+    order.status === 'IN_PREP' ||
+    order.status === 'READY_PICKUP' ||
+    order.status === 'PICKED_UP';
+  if (!inLiveWindow) return null;
+
+  const riderAssigned = Boolean(order.riderId);
+
+  const call = async (target: 'vendor' | 'rider') => {
+    setBusy(target);
+    try {
+      const endpoint =
+        target === 'vendor'
+          ? `/api/orders/${order.id}/call-vendor`
+          : `/api/orders/${order.id}/call-rider`;
+      await apiRaw.post(endpoint, {});
+      window.alert(
+        target === 'vendor'
+          ? 'Le restaurant reçoit ton appel. Ton téléphone va sonner.'
+          : 'Le livreur reçoit ton appel. Ton téléphone va sonner.',
+      );
+    } catch (err) {
+      const msg = err instanceof ApiClientError ? `Erreur ${err.status}` : (err as Error).message;
+      window.alert(`Appel impossible : ${msg}`);
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  return (
+    <div className="mt-3 flex gap-2">
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        className="flex-1"
+        onClick={() => call('vendor')}
+        disabled={busy !== null}
+      >
+        {busy === 'vendor' ? 'Appel…' : '🍲 Appeler le restaurant'}
+      </Button>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        className="flex-1"
+        onClick={() => call('rider')}
+        disabled={busy !== null || !riderAssigned}
+        title={riderAssigned ? '' : 'Livreur pas encore assigné'}
+      >
+        {busy === 'rider' ? 'Appel…' : '🛵 Appeler le livreur'}
+      </Button>
+    </div>
   );
 }
 
