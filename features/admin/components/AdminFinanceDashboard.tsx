@@ -8,19 +8,23 @@ import { Button } from '@/components/ui/button';
 import { ApiClientError } from '@/lib/api/api-client';
 import {
   adminFinanceApi,
+  adminRiderFraudApi,
   type CashoutRequestRow,
   type CashoutRequestStatus,
   type EscalationItem,
   type PagedResult,
   type RefundQueueRow,
+  type ResolveRiderFraudBody,
   type RiderBalanceRow,
+  type StuckPickupItem,
   type VendorBalanceRow,
 } from '../api';
 
-type Tab = 'escalations' | 'vendors' | 'riders' | 'refunds' | 'cashouts';
+type Tab = 'escalations' | 'incidents' | 'vendors' | 'riders' | 'refunds' | 'cashouts';
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'escalations', label: 'Escalations' },
+  { id: 'incidents', label: 'Incidents livreurs' },
   { id: 'cashouts', label: 'Demandes de virement' },
   { id: 'vendors', label: 'Soldes vendeurs' },
   { id: 'riders', label: 'Soldes livreurs' },
@@ -71,6 +75,7 @@ export function AdminFinanceDashboard() {
       </nav>
 
       {tab === 'escalations' && <EscalationsPanel />}
+      {tab === 'incidents' && <RiderIncidentsPanel />}
       {tab === 'cashouts' && <CashoutRequestsPanel />}
       {tab === 'vendors' && <VendorBalancesPanel />}
       {tab === 'riders' && <RiderBalancesPanel />}
@@ -705,4 +710,170 @@ function extractErrorMessage(err: unknown): string {
     return body?.message ?? `Erreur ${err.status}`;
   }
   return err instanceof Error ? err.message : 'Erreur inconnue';
+}
+
+// ── Rider incidents (S3 #213 / #220 — stuck-PICKED_UP triage) ─────
+
+function RiderIncidentsPanel() {
+  const [state, setState] = React.useState<
+    | { status: 'loading' }
+    | { status: 'unauthenticated' }
+    | { status: 'error'; message: string }
+    | { status: 'ready'; rows: StuckPickupItem[] }
+  >({ status: 'loading' });
+
+  const load = React.useCallback(() => {
+    setState({ status: 'loading' });
+    adminRiderFraudApi
+      .listStuckPickups()
+      .then((rows) => setState({ status: 'ready', rows }))
+      .catch((err: unknown) => {
+        if (err instanceof ApiClientError && err.status === 401) {
+          setState({ status: 'unauthenticated' });
+          return;
+        }
+        setState({
+          status: 'error',
+          message: err instanceof Error ? err.message : 'Erreur',
+        });
+      });
+  }, []);
+
+  React.useEffect(load, [load]);
+
+  if (state.status === 'unauthenticated') return <AuthGate label="Connexion admin requise." />;
+  if (state.status === 'loading') return <LoadingSkeleton rows={3} />;
+  if (state.status === 'error')
+    return <p className="text-sm text-destructive">Erreur : {state.message}</p>;
+
+  return (
+    <section>
+      <p className="mb-2 text-xs text-muted-foreground">
+        {state.rows.length} commande{state.rows.length > 1 ? 's' : ''} bloquée
+        {state.rows.length > 1 ? 's' : ''} en PICKED_UP &gt; 2h
+      </p>
+      {state.rows.length === 0 ? (
+        <EmptyState message="Aucun incident livreur." />
+      ) : (
+        <ul className="space-y-2">
+          {state.rows.map((row) => (
+            <RiderIncidentRow key={row.orderId} row={row} onActionComplete={load} />
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+function RiderIncidentRow({
+  row,
+  onActionComplete,
+}: {
+  row: StuckPickupItem;
+  onActionComplete: () => void;
+}) {
+  const [open, setOpen] = React.useState(false);
+  const [busy, setBusy] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+  const [body, setBody] = React.useState<ResolveRiderFraudBody>({
+    riderAction: 'SUSPEND',
+    vendorCompensation: true,
+    consumerRefund: true,
+    note: '',
+  });
+
+  const resolve = async () => {
+    if (body.note.trim().length < 3) {
+      setError('Note requise (3 caractères min).');
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      await adminRiderFraudApi.resolve(row.orderId, { ...body, note: body.note.trim() });
+      onActionComplete();
+    } catch (err) {
+      setError(extractErrorMessage(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <li className="bg-card rounded-lg border px-4 py-3">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 text-xs">
+            <span className="rounded-full bg-amber-100 px-2 py-0.5 uppercase tracking-wider text-amber-800">
+              {row.minutesStuck} min
+            </span>
+            <span className="font-mono text-[11px]">{row.code}</span>
+          </div>
+          <p className="mt-1 text-sm font-semibold">{formatXAF(row.totalXAF)}</p>
+          <p className="text-xs text-muted-foreground">
+            Vendeur: <strong>{row.vendorName}</strong> · Livreur:{' '}
+            <strong>{row.riderName ?? '—'}</strong>
+          </p>
+        </div>
+        <Button
+          size="sm"
+          variant={open ? 'outline' : 'default'}
+          onClick={() => setOpen((v) => !v)}
+          disabled={busy}
+        >
+          {open ? 'Annuler' : 'Résoudre'}
+        </Button>
+      </div>
+      {open && (
+        <div className="mt-3 space-y-3 border-t pt-3">
+          <div>
+            <label className="block text-xs font-semibold">Action livreur</label>
+            <div className="mt-1 flex gap-3">
+              {(['SUSPEND', 'WARN'] as const).map((action) => (
+                <label key={action} className="flex items-center gap-1.5 text-xs">
+                  <input
+                    type="radio"
+                    name={`rider-action-${row.orderId}`}
+                    checked={body.riderAction === action}
+                    onChange={() => setBody((b) => ({ ...b, riderAction: action }))}
+                  />
+                  {action === 'SUSPEND' ? 'Suspendre' : 'Avertir'}
+                </label>
+              ))}
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <label className="flex items-center gap-2 text-xs">
+              <input
+                type="checkbox"
+                checked={body.vendorCompensation}
+                onChange={(e) => setBody((b) => ({ ...b, vendorCompensation: e.target.checked }))}
+              />
+              Compenser le vendeur (food cost)
+            </label>
+            <label className="flex items-center gap-2 text-xs">
+              <input
+                type="checkbox"
+                checked={body.consumerRefund}
+                onChange={(e) => setBody((b) => ({ ...b, consumerRefund: e.target.checked }))}
+              />
+              Rembourser le consommateur
+            </label>
+          </div>
+          <textarea
+            value={body.note}
+            onChange={(e) => setBody((b) => ({ ...b, note: e.target.value }))}
+            placeholder="Note (visible en audit log)"
+            className="w-full rounded-md border px-3 py-1.5 text-xs"
+            maxLength={200}
+            rows={2}
+          />
+          <Button size="sm" variant="destructive" onClick={resolve} disabled={busy}>
+            {busy ? '…' : 'Confirmer la résolution'}
+          </Button>
+          {error && <p className="text-xs text-destructive">{error}</p>}
+        </div>
+      )}
+    </li>
+  );
 }

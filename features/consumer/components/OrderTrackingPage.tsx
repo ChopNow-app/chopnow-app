@@ -111,6 +111,8 @@ function OrderContent({ order, onReload }: { order: OrderView; onReload: () => v
             </p>
           </div>
         ) : null}
+
+        <RefundStatusCallout order={order} />
       </section>
 
       <section className="container mt-6">
@@ -298,9 +300,11 @@ function PaymentStatusBadge({ status }: { status: OrderView['paymentStatus'] }) 
         ? 'Paiement en cours…'
         : status === 'FAILED'
           ? 'Paiement échoué'
-          : status === 'REFUNDED'
-            ? 'Remboursé'
-            : 'En attente';
+          : status === 'REFUND_PENDING'
+            ? 'Remboursement en cours 💸'
+            : status === 'REFUNDED'
+              ? 'Remboursé ✅'
+              : 'En attente';
   return <span>{label}</span>;
 }
 
@@ -328,4 +332,41 @@ function AuthRequired({ orderId }: { orderId: string }) {
       </Button>
     </main>
   );
+}
+
+// Refund-flow surfacing — when paymentStatus is REFUND_PENDING the
+// platform has accepted the refund but Campay hasn't settled yet
+// (RefundProcessor + webhook flow per ADR-0005 §S3 / #90). REFUNDED
+// means the money is back. Visible regardless of order status (covers
+// both the vendor-cancelled-pre-order case + the rider-fraud case).
+function RefundStatusCallout({ order }: { order: OrderView }) {
+  if (order.paymentStatus === 'REFUND_PENDING') {
+    return (
+      <div className="mt-3 rounded-2xl border border-chop-mboue/30 bg-chop-mboue-light p-4">
+        <p className="text-xs font-semibold uppercase tracking-wider text-chop-mboue">
+          Remboursement en cours
+        </p>
+        <p className="mt-1 text-base font-extrabold text-chop-ink">
+          {formatXAF(order.totalXAF)} en route vers ton MoMo
+        </p>
+        <p className="mt-1 text-xs text-chop-ink-secondary">
+          Tu recevras une notification quand le remboursement sera confirmé. Les virements MoMo
+          prennent généralement quelques minutes.
+        </p>
+      </div>
+    );
+  }
+  if (order.paymentStatus === 'REFUNDED') {
+    return (
+      <div className="mt-3 rounded-2xl border border-green-300 bg-green-50 p-4">
+        <p className="text-xs font-semibold uppercase tracking-wider text-green-800">
+          Remboursé ✅
+        </p>
+        <p className="mt-1 text-base font-extrabold text-chop-ink">
+          {formatXAF(order.totalXAF)} reçus sur ton MoMo
+        </p>
+      </div>
+    );
+  }
+  return null;
 }
