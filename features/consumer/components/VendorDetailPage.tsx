@@ -4,6 +4,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
+import { CartSheet } from '@/features/cart/components/CartSheet';
 import { useCart } from '@/features/cart/store';
 import { useVendorPublic } from '../hooks/useVendorPublic';
 import type { PublicVendorView } from '../types';
@@ -200,18 +201,31 @@ function VendorContent({ view }: { view: PublicVendorView }) {
 function CartFooter() {
   const cart = useCart();
   if (cart.isEmpty) return null;
+
+  // The whole footer row is the SheetTrigger — tap anywhere on the bar
+  // opens the cart sheet. Better hit-target than just the "Voir" button,
+  // and matches the Uber Eats / Glovo gesture (entire bar is interactive).
   return (
     <div className="fixed inset-x-0 bottom-0 z-50 border-t bg-background shadow-lg">
-      <div className="container flex items-center justify-between gap-3 py-3">
-        <div className="text-sm">
-          <span className="font-semibold">{cart.itemCount} plat(s)</span>
-          <span className="ml-2 text-muted-foreground">
-            {cart.subtotalXAF.toLocaleString('fr-FR')} FCFA
-          </span>
-        </div>
-        <Button asChild>
-          <Link href="/cart">Voir le panier →</Link>
-        </Button>
+      <div className="container py-3">
+        <CartSheet
+          trigger={
+            <button
+              type="button"
+              className="flex w-full items-center justify-between gap-3 rounded-2xl px-2 py-1.5 text-left transition-colors hover:bg-chop-surface-gray"
+            >
+              <div className="text-sm">
+                <span className="font-semibold">{cart.itemCount} plat(s)</span>
+                <span className="ml-2 text-muted-foreground">
+                  {cart.subtotalXAF.toLocaleString('fr-FR')} FCFA
+                </span>
+              </div>
+              <span className="rounded-full bg-chop-red px-4 py-2 text-sm font-bold text-white">
+                Voir le panier →
+              </span>
+            </button>
+          }
+        />
       </div>
     </div>
   );
