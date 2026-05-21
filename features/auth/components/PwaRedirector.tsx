@@ -34,7 +34,12 @@ export function PwaRedirector() {
       // of the media query — cover the older devices too.
       (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
     if (isStandalone) {
-      router.replace('/restaurants?source=pwa');
+      // Go through /launch (the branded splash) for the proper
+      // OS-splash → app-splash → catalogue handoff. Matches what the
+      // inline head script in app/layout.tsx does for the synchronous
+      // case; this is the post-hydration fallback for environments
+      // that blocked the inline script (strict CSP, etc).
+      router.replace('/launch?source=pwa');
     }
   }, [router]);
 
