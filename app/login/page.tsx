@@ -4,7 +4,7 @@ import * as React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, MessageCircle, ShieldCheck, Zap } from 'lucide-react';
 
 import { OtpRequestForm } from '@/features/auth/components/OtpRequestForm';
 import { OtpVerifyForm } from '@/features/auth/components/OtpVerifyForm';
@@ -14,19 +14,17 @@ import { redirectPathForRole, type UserRole } from '@/lib/auth/role-redirect';
 
 /**
  * Story 1.1 — full OTP login flow with PWA-friendly back navigation
- * and a branded header.
+ * and a branded, viewport-filling layout.
  *
- * Two screens stacked in one route: request a code (phone in), verify
- * it (6-digit code in). On success we redirect to:
- *   - the `?next=` path if provided (e.g. checkout came here to
- *     authenticate and wants its caller back)
- *   - otherwise the role-specific surface (vendor → /vendor, rider →
- *     /livreur, consumer → /restaurants) so a vendor opening a fresh
- *     tab never sees the consumer marketing splash again
+ * Layout: three flex-column bands fill the entire dvh:
+ *   1. Compact header (chevron + wordmark)
+ *   2. Title + form (anchored upper-middle)
+ *   3. Bottom band that grows to fill: trust pills (mobile) + register
+ *      section pinned to the bottom edge
  *
- * Next 16 build-time prerender bails out of CSR pages that read
- * `useSearchParams()` without a Suspense boundary — we provide one
- * here.
+ * `min-h-dvh flex flex-col` ensures the bottom band reaches the safe-
+ * area-inset of a PWA-installed screen even on tall iPhones, killing
+ * the dead space we used to leave below the form.
  */
 function LoginScreen() {
   const router = useRouter();
@@ -35,15 +33,8 @@ function LoginScreen() {
 
   const [phone, setPhone] = React.useState<string | null>(null);
 
-  // Back navigation that works inside a standalone PWA where the
-  // browser back button is hidden. Honors `?next=` (so /vendor → /login
-  // sends them back to /vendor on cancel), falls back to history.back()
-  // when the back stack is non-empty (normal in-app nav), or hard-routes
-  // to /restaurants when the user landed directly on /login (e.g. a
-  // saved bookmark or a cold home-screen tap that hit /login somehow).
   const goBack = React.useCallback(() => {
     if (phone) {
-      // Mid-verify step: "back" means re-enter phone number, not leave the page
       setPhone(null);
       return;
     }
@@ -65,14 +56,9 @@ function LoginScreen() {
     }
     try {
       const me = await apiRaw.get<{ role: UserRole }>('/api/users/me');
-      // Persist the role so the next PWA cold-launch routes vendors /
-      // riders to their dashboards instantly (LaunchRedirector reads
-      // this via auth.getRole() and avoids a /users/me roundtrip).
       auth.saveRole(me.role);
       router.replace(redirectPathForRole(me.role));
     } catch {
-      // /users/me failed (network blip just after login). Fall back to
-      // the consumer surface — it's the safest universal landing.
       router.replace('/restaurants');
     }
   };
@@ -82,9 +68,8 @@ function LoginScreen() {
   };
 
   return (
-    <>
-      {/* Header band: chevron-back (PWA-essential), brand mark centred,
-          empty slot on the right keeps the logo optically centred. */}
+    <div className="flex min-h-dvh flex-col">
+      {/* ── Header band ──────────────────────────────────────────── */}
       <header className="px-5 pt-5 md:px-8 md:pt-6">
         <div className="mx-auto flex w-full max-w-md items-center justify-between gap-3">
           <button
@@ -108,27 +93,32 @@ function LoginScreen() {
         </div>
       </header>
 
-      <section className="container max-w-md py-8 md:py-10">
-        <h1 className="text-3xl font-extrabold tracking-tight md:text-4xl">
+      {/* ── Hero + form band — anchored upper-middle ─────────────── */}
+      <section className="container mx-auto w-full max-w-md px-5 pt-8 md:px-8 md:pt-12">
+        <h1 className="text-4xl font-extrabold leading-[1.05] tracking-tight md:text-5xl">
           {phone ? (
             <>
-              Code de <span className="text-chop-red">vérification.</span>
+              Code de
+              <br />
+              <span className="text-chop-red">vérification.</span>
             </>
           ) : (
             <>
-              Bon <span className="text-chop-red">retour.</span>
+              Bon
+              <br />
+              <span className="text-chop-red">retour.</span>
             </>
           )}
         </h1>
-        <p className="mt-2 text-sm text-chop-ink-secondary">
+        <p className="mt-4 text-base text-chop-ink-secondary">
           {phone
-            ? `Saisis le code reçu sur WhatsApp au +237 ${phone.slice(-9, -6)} ${phone.slice(-6, -3)} ${phone.slice(-3)}.`
-            : "Entre ton numéro de téléphone — nous t'envoyons un code par WhatsApp en quelques secondes."}
+            ? `Code envoyé sur WhatsApp au +237 ${phone.slice(-9, -6)} ${phone.slice(-6, -3)} ${phone.slice(-3)}.`
+            : "Ton numéro de téléphone — on t'envoie un code par WhatsApp en quelques secondes."}
         </p>
 
-        <div className="mt-6">
+        <div className="mt-8">
           {phone ? (
-            <div className="space-y-4">
+            <div className="space-y-5">
               <OtpVerifyForm phone={phone} onVerified={onVerified} onResend={resend} />
               <button
                 type="button"
@@ -139,43 +129,78 @@ function LoginScreen() {
               </button>
             </div>
           ) : (
-            <>
-              <OtpRequestForm onRequested={setPhone} />
-
-              {/* Discovery for users who tapped "Se connecter" but actually
-                  want to register as a vendor or rider. The OTP form above
-                  auto-creates a new consumer account on first verify, so
-                  this section is specifically for the two paid-side roles
-                  whose registration is a separate form, not just an OTP. */}
-              <div className="mt-10 border-t border-divider pt-6">
-                <p className="text-xs font-bold uppercase tracking-[0.2em] text-chop-ink-secondary">
-                  Pas encore inscrit&nbsp;?
-                </p>
-                <p className="mt-1 text-sm text-chop-ink-secondary">
-                  Si tu veux <strong className="text-chop-ink">vendre tes plats</strong> ou{' '}
-                  <strong className="text-chop-ink">livrer à moto</strong>, il faut d&apos;abord
-                  déposer un dossier&nbsp;:
-                </p>
-                <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-                  <Link
-                    href="/vendre"
-                    className="inline-flex flex-1 items-center justify-center rounded-full bg-chop-ink px-4 py-3 text-sm font-bold text-white transition-colors hover:bg-chop-red"
-                  >
-                    Devenir vendeur
-                  </Link>
-                  <Link
-                    href="/livrer"
-                    className="inline-flex flex-1 items-center justify-center rounded-full bg-chop-ink px-4 py-3 text-sm font-bold text-white transition-colors hover:bg-chop-red"
-                  >
-                    Devenir livreur
-                  </Link>
-                </div>
-              </div>
-            </>
+            <OtpRequestForm onRequested={setPhone} />
           )}
         </div>
       </section>
-    </>
+
+      {/* ── Filler / trust band — only on phone-entry step ───────── */}
+      {phone ? (
+        <div className="flex-1" aria-hidden />
+      ) : (
+        <section className="mx-auto mt-10 w-full max-w-md flex-1 px-5 md:px-8">
+          <ul className="grid grid-cols-3 gap-3">
+            <TrustPill icon={<Zap className="h-4 w-4" strokeWidth={2.4} aria-hidden />}>
+              Connexion en quelques secondes
+            </TrustPill>
+            <TrustPill icon={<MessageCircle className="h-4 w-4" strokeWidth={2.4} aria-hidden />}>
+              Code par WhatsApp
+            </TrustPill>
+            <TrustPill icon={<ShieldCheck className="h-4 w-4" strokeWidth={2.4} aria-hidden />}>
+              Pas de mot de passe à retenir
+            </TrustPill>
+          </ul>
+        </section>
+      )}
+
+      {/* ── Bottom band — register entry points, pinned to bottom ── */}
+      {phone ? null : (
+        <footer className="mx-auto w-full max-w-md px-5 pb-[max(env(safe-area-inset-bottom),24px)] pt-8 md:px-8">
+          <div className="rounded-3xl bg-chop-card-white p-5 shadow-card">
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-chop-ink-secondary">
+              Pas encore inscrit&nbsp;?
+            </p>
+            <p className="mt-1 text-sm text-chop-ink-secondary">
+              Pour <strong className="text-chop-ink">vendre tes plats</strong> ou{' '}
+              <strong className="text-chop-ink">livrer à moto</strong>, dépose ton dossier&nbsp;:
+            </p>
+            <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+              <Link
+                href="/vendre"
+                className="inline-flex flex-1 items-center justify-center rounded-full bg-chop-ink px-4 py-3 text-sm font-bold text-white transition-colors hover:bg-chop-red"
+              >
+                Devenir vendeur
+              </Link>
+              <Link
+                href="/livrer"
+                className="inline-flex flex-1 items-center justify-center rounded-full bg-chop-ink px-4 py-3 text-sm font-bold text-white transition-colors hover:bg-chop-red"
+              >
+                Devenir livreur
+              </Link>
+            </div>
+          </div>
+        </footer>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Compact 3-up trust signal block that lives between the form and the
+ * register section. Fills the otherwise-dead middle of the screen on
+ * tall phones with content that supports the conversion ("c'est rapide,
+ * c'est WhatsApp, pas de mot de passe") rather than padding.
+ */
+function TrustPill({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <li className="flex flex-col items-center gap-2 rounded-2xl bg-chop-surface-gray px-2 py-3 text-center">
+      <span className="flex h-8 w-8 items-center justify-center rounded-full bg-chop-card-white text-chop-red">
+        {icon}
+      </span>
+      <span className="text-[10px] font-bold uppercase leading-[1.15] tracking-wide text-chop-ink-secondary">
+        {children}
+      </span>
+    </li>
   );
 }
 
