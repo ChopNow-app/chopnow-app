@@ -34,7 +34,14 @@ export function useCurrentUser(): CurrentUserState {
 
   const query = useQuery({
     queryKey: queryKeys.user.me(),
-    queryFn: () => apiRaw.get('/api/users/me') as Promise<CurrentUser>,
+    queryFn: async () => {
+      const user = (await apiRaw.get('/api/users/me')) as CurrentUser;
+      // Persist the role to localStorage so the next PWA cold-launch
+      // routes vendors / riders to their dashboards instantly via
+      // LaunchRedirector (no /users/me roundtrip during the splash).
+      auth.saveRole(user.role);
+      return user;
+    },
     enabled: hasToken,
     retry: (count, err) => {
       if (err instanceof ApiClientError && err.status === 401) return false;
