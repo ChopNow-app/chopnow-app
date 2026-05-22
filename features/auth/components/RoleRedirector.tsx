@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { apiRaw, ApiClientError } from '@/lib/api/api-client';
 import { auth } from '@/lib/auth';
 import { redirectPathForRole, type UserRole } from '@/lib/auth/role-redirect';
+import { useSession } from '@/lib/auth/useSession';
 
 interface Props {
   /**
@@ -34,10 +35,14 @@ interface Props {
  */
 export function RoleRedirector({ fallbackHref }: Props) {
   const router = useRouter();
+  const session = useSession();
   const [phase, setPhase] = React.useState<'idle' | 'checking' | 'anonymous'>('idle');
 
   React.useEffect(() => {
-    if (!auth.isAuthenticated()) {
+    // Wait for the boot refresh to settle so we don't classify a
+    // returning user as anonymous mid-rehydrate.
+    if (session.status === 'booting') return;
+    if (session.status === 'anonymous') {
       setPhase('anonymous');
       return;
     }
@@ -75,7 +80,7 @@ export function RoleRedirector({ fallbackHref }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [router, fallbackHref]);
+  }, [router, fallbackHref, session.status]);
 
   if (phase !== 'checking') return null;
 

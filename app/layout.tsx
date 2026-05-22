@@ -5,6 +5,7 @@ import { getLocale, getMessages } from 'next-intl/server';
 import { ConsumerBottomNav } from '@/components/ConsumerBottomNav';
 import { PilotBanner } from '@/components/PilotBanner';
 import { RegisterServiceWorker } from '@/components/RegisterServiceWorker';
+import { SessionBoot } from '@/lib/auth/SessionBoot';
 import { QueryProvider } from '@/lib/query/QueryProvider';
 import './globals.css';
 
@@ -71,6 +72,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body>
         <NextIntlClientProvider locale={locale} messages={messages}>
           <QueryProvider>
+            {/* Phase B1 — fires /auth/refresh on app start, populates the
+                in-memory access token from the HttpOnly refresh cookie.
+                Must mount before any auth-gated UI so useSession() can
+                resolve booting → authenticated without a flash of
+                "logged out". */}
+            <SessionBoot />
             <PilotBanner />
             {/* pb-20 = 80px reserve for bottom nav (64px + safe-area-inset). */}
             {/* ConsumerBottomNav hides itself on admin/livreur/vendor routes. */}
