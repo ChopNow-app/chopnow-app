@@ -40,6 +40,10 @@ function LoginScreen() {
     }
     try {
       const me = await apiRaw.get<{ role: UserRole }>('/api/users/me');
+      // Persist the role so the next PWA cold-launch routes vendors /
+      // riders to their dashboards instantly (LaunchRedirector reads
+      // this via auth.getRole() and avoids a /users/me roundtrip).
+      auth.saveRole(me.role);
       router.replace(redirectPathForRole(me.role));
     } catch {
       // /users/me failed (network blip just after login). Fall back to the

@@ -54,6 +54,9 @@ export function RoleRedirector({ fallbackHref }: Props) {
       .get<{ role: UserRole }>('/api/users/me')
       .then((me) => {
         if (cancelled) return;
+        // Persist for the next PWA cold-launch (LaunchRedirector reads
+        // this to route vendors / riders to their dashboards instantly).
+        auth.saveRole(me.role);
         router.replace(redirectPathForRole(me.role));
       })
       .catch((err: unknown) => {
