@@ -49,7 +49,7 @@ export function useVendorCashout() {
 
   const mutation = useMutation({
     mutationFn: () =>
-      apiRaw.post('/api/vendors/me/cashout-request', {}) as Promise<CashoutRequestResult>,
+      apiRaw.post('/api/v1/vendors/me/cashout-request', {}) as Promise<CashoutRequestResult>,
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: queryKeys.vendor.balance() });
     },

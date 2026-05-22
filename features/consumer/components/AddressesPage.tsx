@@ -34,7 +34,7 @@ export function AddressesPage() {
   const onDelete = async (id: string) => {
     if (!window.confirm('Supprimer cette adresse ?')) return;
     try {
-      await apiRaw.delete(`/api/users/me/addresses/${id}`);
+      await apiRaw.delete(`/api/v1/users/me/addresses/${id}`);
       reload();
     } catch (err) {
       const msg = err instanceof ApiClientError ? `Erreur ${err.status}` : (err as Error).message;

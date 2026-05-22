@@ -249,7 +249,7 @@ export function VendorOnboardingForm() {
         if (enseignePhoto) form.append('enseignePhoto', enseignePhoto);
       }
 
-      const res = await fetch(`${API_URL}/api/vendors`, { method: 'POST', body: form });
+      const res = await fetch(`${API_URL}/api/v1/vendors`, { method: 'POST', body: form });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         throw new ApiClientError(res.status, body);

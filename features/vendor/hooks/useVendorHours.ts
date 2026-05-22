@@ -30,8 +30,8 @@ export type HoursState =
   | { status: 'ready'; data: HoursPayload; saving: boolean; error: string | null }
   | { status: 'error'; message: string };
 
-const READ_ENDPOINT = '/api/vendors/me/availability';
-const WRITE_ENDPOINT = '/api/vendors/me/hours';
+const READ_ENDPOINT = '/api/v1/vendors/me/availability';
+const WRITE_ENDPOINT = '/api/v1/vendors/me/hours';
 
 interface AvailabilityResponse {
   isOpen: boolean;

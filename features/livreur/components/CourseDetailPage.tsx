@@ -66,7 +66,7 @@ function CourseContent({
     setBusy('pickup');
     setError(null);
     try {
-      await apiRaw.patch(`/api/riders/me/courses/${course.id}/picked-up`, {
+      await apiRaw.patch(`/api/v1/riders/me/courses/${course.id}/picked-up`, {
         code: pickupCodeInput,
       });
       setPickupCodeInput('');
@@ -82,7 +82,7 @@ function CourseContent({
     setBusy('deliver');
     setError(null);
     try {
-      await apiRaw.patch(`/api/riders/me/courses/${course.id}/delivered`, {
+      await apiRaw.patch(`/api/v1/riders/me/courses/${course.id}/delivered`, {
         code: deliveryCodeInput,
       });
       router.replace('/livreur');
@@ -96,7 +96,7 @@ function CourseContent({
     setBusy('call');
     setError(null);
     try {
-      await apiRaw.post(`/api/orders/${course.id}/call-consumer`, {});
+      await apiRaw.post(`/api/v1/orders/${course.id}/call-consumer`, {});
       window.alert(
         "Appel en cours — décroche ton téléphone. Le client va recevoir l'appel après que tu auras décroché.",
       );

@@ -108,7 +108,7 @@ export function usePushSubscription(): UsePushSubscription {
 
       const fingerprint = getOrCreateDeviceFingerprint();
       const json = subscription.toJSON();
-      await apiRaw.post('/api/notifications/push/subscribe', {
+      await apiRaw.post('/api/v1/notifications/push/subscribe', {
         endpoint: json.endpoint,
         keys: json.keys, // { p256dh, auth }
         deviceFingerprint: fingerprint,

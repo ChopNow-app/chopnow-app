@@ -47,7 +47,7 @@ export function RatingForm({
     setSubmitting(true);
     setError(null);
     try {
-      await apiRaw.post(`/api/orders/${orderId}/rating`, {
+      await apiRaw.post(`/api/v1/orders/${orderId}/rating`, {
         vendorScore,
         riderScore,
         comment: comment.trim() || undefined,

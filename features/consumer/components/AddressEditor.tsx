@@ -90,8 +90,8 @@ export function AddressEditor({ initial, onSaved, onCancel }: AddressEditorProps
     };
     try {
       const saved = initial
-        ? await apiRaw.patch<SavedAddress>(`/api/users/me/addresses/${initial.id}`, payload)
-        : await apiRaw.post<SavedAddress>('/api/users/me/addresses', payload);
+        ? await apiRaw.patch<SavedAddress>(`/api/v1/users/me/addresses/${initial.id}`, payload)
+        : await apiRaw.post<SavedAddress>('/api/v1/users/me/addresses', payload);
       onSaved(saved);
     } catch (err) {
       const msg =

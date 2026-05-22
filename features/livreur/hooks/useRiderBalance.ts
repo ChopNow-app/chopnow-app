@@ -57,7 +57,7 @@ function normalize(raw: ApiRiderBalance): RiderBalanceView {
 export function useRiderBalance(): RiderBalanceState & { reload: () => void } {
   const query = useQuery({
     queryKey: queryKeys.rider.balance(),
-    queryFn: () => apiRaw.get('/api/riders/me/balance') as Promise<ApiRiderBalance>,
+    queryFn: () => apiRaw.get('/api/v1/riders/me/balance') as Promise<ApiRiderBalance>,
     refetchInterval: 30_000,
     select: normalize,
   });

@@ -175,7 +175,7 @@ function PreOrderCancelCta({ order, onDone }: { order: VendorOrder; onDone: () =
     setBusy(true);
     setError(null);
     try {
-      await apiRaw.patch(`/api/orders/${order.id}/vendor-cancel-preorder`, {
+      await apiRaw.patch(`/api/v1/orders/${order.id}/vendor-cancel-preorder`, {
         note: note.trim() || undefined,
       });
       setOpen(false);
@@ -267,7 +267,7 @@ function PrepChecklistPanel({
     setOptimistic((m) => ({ ...m, [itemId]: next }));
     setBusy((s) => new Set(s).add(itemId));
     try {
-      await apiRaw.patch(`/api/orders/${order.id}/items/${itemId}/prepared`, { prepared: next });
+      await apiRaw.patch(`/api/v1/orders/${order.id}/items/${itemId}/prepared`, { prepared: next });
       onChange(); // pull authoritative state in the next tick
     } catch (err) {
       // Revert
@@ -422,7 +422,7 @@ function ReadyCta({
   const submit = async () => {
     setBusy(true);
     try {
-      await apiRaw.patch(`/api/orders/${orderId}/ready`, {});
+      await apiRaw.patch(`/api/v1/orders/${orderId}/ready`, {});
       // Mark-ready flips status → READY_PICKUP. Refresh the dashboard
       // list + the detail view immediately instead of waiting on the
       // next poll.
@@ -576,8 +576,8 @@ function VendorCallActions({ order }: { order: VendorOrder }) {
     try {
       const endpoint =
         target === 'consumer'
-          ? `/api/orders/${order.id}/vendor-call-consumer`
-          : `/api/orders/${order.id}/vendor-call-rider`;
+          ? `/api/v1/orders/${order.id}/vendor-call-consumer`
+          : `/api/v1/orders/${order.id}/vendor-call-rider`;
       await apiRaw.post(endpoint, {});
       window.alert(
         target === 'consumer'

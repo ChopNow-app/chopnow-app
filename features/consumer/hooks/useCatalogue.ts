@@ -28,7 +28,7 @@ export function useCatalogue(
       const lat = coords!.lat;
       const lng = coords!.lng;
       return apiRaw.get(
-        `/api/catalogue?lat=${lat}&lng=${lng}&radiusKm=${radiusKm}`,
+        `/api/v1/catalogue?lat=${lat}&lng=${lng}&radiusKm=${radiusKm}`,
       ) as Promise<CatalogueResponse>;
     },
     enabled: !!coords,

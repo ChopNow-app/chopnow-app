@@ -19,7 +19,7 @@ const ACCESS_KEY = 'chopnow.access';
  */
 export async function adminLogin(email: string, password: string): Promise<AdminLoginResult> {
   try {
-    const result = await apiRaw.post<AdminLoginResult>('/api/admin/auth/login', {
+    const result = await apiRaw.post<AdminLoginResult>('/api/v1/admin/auth/login', {
       email,
       password,
     });
@@ -69,23 +69,23 @@ export interface DecisionPayload {
 }
 
 export const adminApi = {
-  approveVendor: (id: string) => apiRaw.post(`/api/admin/vendors/${id}/approve`, {}),
+  approveVendor: (id: string) => apiRaw.post(`/api/v1/admin/vendors/${id}/approve`, {}),
   rejectVendor: (id: string, reason: string) =>
-    apiRaw.post(`/api/admin/vendors/${id}/reject`, { reason }),
+    apiRaw.post(`/api/v1/admin/vendors/${id}/reject`, { reason }),
   suspendVendor: (id: string, reason: string) =>
-    apiRaw.post(`/api/admin/vendors/${id}/suspend`, { reason }),
-  unsuspendVendor: (id: string) => apiRaw.post(`/api/admin/vendors/${id}/unsuspend`, {}),
+    apiRaw.post(`/api/v1/admin/vendors/${id}/suspend`, { reason }),
+  unsuspendVendor: (id: string) => apiRaw.post(`/api/v1/admin/vendors/${id}/unsuspend`, {}),
   // #187 follow-up — toggle the vendor's pre-order opt-in. Idempotent
   // server-side, so retries / double-taps don't surprise.
   setVendorPreOrders: (id: string, acceptsPreOrders: boolean) =>
-    apiRaw.patch(`/api/admin/vendors/${id}/pre-orders`, { acceptsPreOrders }),
+    apiRaw.patch(`/api/v1/admin/vendors/${id}/pre-orders`, { acceptsPreOrders }),
 
-  approveRider: (id: string) => apiRaw.post(`/api/admin/riders/${id}/approve`, {}),
+  approveRider: (id: string) => apiRaw.post(`/api/v1/admin/riders/${id}/approve`, {}),
   rejectRider: (id: string, reason: string) =>
-    apiRaw.post(`/api/admin/riders/${id}/reject`, { reason }),
+    apiRaw.post(`/api/v1/admin/riders/${id}/reject`, { reason }),
   suspendRider: (id: string, reason: string) =>
-    apiRaw.post(`/api/admin/riders/${id}/suspend`, { reason }),
-  unsuspendRider: (id: string) => apiRaw.post(`/api/admin/riders/${id}/unsuspend`, {}),
+    apiRaw.post(`/api/v1/admin/riders/${id}/suspend`, { reason }),
+  unsuspendRider: (id: string) => apiRaw.post(`/api/v1/admin/riders/${id}/unsuspend`, {}),
 };
 
 // ── Finance dashboard (ADR-0005, S2) ────────────────────────────────
@@ -153,7 +153,9 @@ export const adminFinanceApi = {
     if (params?.limit) qs.set('limit', String(params.limit));
     if (params?.offset) qs.set('offset', String(params.offset));
     const suffix = qs.toString() ? `?${qs}` : '';
-    return apiRaw.get<PagedResult<VendorBalanceRow>>(`/api/admin/finance/vendor-balances${suffix}`);
+    return apiRaw.get<PagedResult<VendorBalanceRow>>(
+      `/api/v1/admin/finance/vendor-balances${suffix}`,
+    );
   },
   listRiderBalances: (params?: {
     vehicleType?: string;
@@ -167,14 +169,16 @@ export const adminFinanceApi = {
     if (params?.limit) qs.set('limit', String(params.limit));
     if (params?.offset) qs.set('offset', String(params.offset));
     const suffix = qs.toString() ? `?${qs}` : '';
-    return apiRaw.get<PagedResult<RiderBalanceRow>>(`/api/admin/finance/rider-balances${suffix}`);
+    return apiRaw.get<PagedResult<RiderBalanceRow>>(
+      `/api/v1/admin/finance/rider-balances${suffix}`,
+    );
   },
   listRefundQueue: (params?: { limit?: number; offset?: number }) => {
     const qs = new URLSearchParams();
     if (params?.limit) qs.set('limit', String(params.limit));
     if (params?.offset) qs.set('offset', String(params.offset));
     const suffix = qs.toString() ? `?${qs}` : '';
-    return apiRaw.get<PagedResult<RefundQueueRow>>(`/api/admin/finance/refund-queue${suffix}`);
+    return apiRaw.get<PagedResult<RefundQueueRow>>(`/api/v1/admin/finance/refund-queue${suffix}`);
   },
   listCashoutRequests: (params?: {
     status?: CashoutRequestStatus;
@@ -187,34 +191,37 @@ export const adminFinanceApi = {
     if (params?.offset) qs.set('offset', String(params.offset));
     const suffix = qs.toString() ? `?${qs}` : '';
     return apiRaw.get<PagedResult<CashoutRequestRow>>(
-      `/api/admin/finance/cashout-requests${suffix}`,
+      `/api/v1/admin/finance/cashout-requests${suffix}`,
     );
   },
   approveCashoutRequest: (requestId: string) =>
     apiRaw.post<{ payoutId: string; netXAF: number }>(
-      `/api/admin/finance/cashout-requests/${requestId}/approve`,
+      `/api/v1/admin/finance/cashout-requests/${requestId}/approve`,
       {},
     ),
   rejectCashoutRequest: (requestId: string, reason: string) =>
-    apiRaw.post<{ ok: true }>(`/api/admin/finance/cashout-requests/${requestId}/reject`, {
+    apiRaw.post<{ ok: true }>(`/api/v1/admin/finance/cashout-requests/${requestId}/reject`, {
       reason,
     }),
 
   // ── Escalations (ADR-0005 §S3 / #85) ─────────────────────────────
 
-  listEscalations: () => apiRaw.get<EscalationItem[]>('/api/admin/finance/escalations'),
+  listEscalations: () => apiRaw.get<EscalationItem[]>('/api/v1/admin/finance/escalations'),
   retryVendorPayout: (payoutId: string) =>
-    apiRaw.post<{ status: 'PENDING' }>(`/api/admin/finance/vendor-payouts/${payoutId}/retry`, {}),
+    apiRaw.post<{ status: 'PENDING' }>(
+      `/api/v1/admin/finance/vendor-payouts/${payoutId}/retry`,
+      {},
+    ),
   retryRiderPayout: (payoutId: string) =>
-    apiRaw.post<{ status: 'PENDING' }>(`/api/admin/finance/rider-payouts/${payoutId}/retry`, {}),
+    apiRaw.post<{ status: 'PENDING' }>(`/api/v1/admin/finance/rider-payouts/${payoutId}/retry`, {}),
   manualMarkVendorPayoutPaid: (payoutId: string, body: { campayRef: string; note?: string }) =>
     apiRaw.post<{ status: 'PAID' }>(
-      `/api/admin/finance/vendor-payouts/${payoutId}/manual-mark-paid`,
+      `/api/v1/admin/finance/vendor-payouts/${payoutId}/manual-mark-paid`,
       body,
     ),
   manualMarkRiderPayoutPaid: (payoutId: string, body: { campayRef: string; note?: string }) =>
     apiRaw.post<{ status: 'PAID' }>(
-      `/api/admin/finance/rider-payouts/${payoutId}/manual-mark-paid`,
+      `/api/v1/admin/finance/rider-payouts/${payoutId}/manual-mark-paid`,
       body,
     ),
 };
@@ -266,13 +273,16 @@ export interface CampayCircuitState {
 }
 
 export const adminRiderFraudApi = {
-  listStuckPickups: () => apiRaw.get<StuckPickupItem[]>('/api/admin/orders/stuck-pickup'),
+  listStuckPickups: () => apiRaw.get<StuckPickupItem[]>('/api/v1/admin/orders/stuck-pickup'),
   resolve: (orderId: string, body: ResolveRiderFraudBody) =>
-    apiRaw.post<ResolveRiderFraudResult>(`/api/admin/orders/${orderId}/resolve-rider-fraud`, body),
+    apiRaw.post<ResolveRiderFraudResult>(
+      `/api/v1/admin/orders/${orderId}/resolve-rider-fraud`,
+      body,
+    ),
 };
 
 export const adminCampayApi = {
-  getCircuitState: () => apiRaw.get<CampayCircuitState>('/api/admin/finance/campay-circuit'),
+  getCircuitState: () => apiRaw.get<CampayCircuitState>('/api/v1/admin/finance/campay-circuit'),
 };
 
 export interface DispatchFunnel {
@@ -300,5 +310,5 @@ export async function getPilotMetrics(params?: {
   if (params?.from) qs.set('from', params.from);
   if (params?.to) qs.set('to', params.to);
   const suffix = qs.toString() ? `?${qs}` : '';
-  return apiRaw.get<PilotMetrics>(`/api/admin/metrics${suffix}`);
+  return apiRaw.get<PilotMetrics>(`/api/v1/admin/metrics${suffix}`);
 }

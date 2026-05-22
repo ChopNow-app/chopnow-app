@@ -54,7 +54,7 @@ export function useMenuItems(): MenuState & {
 
   const query = useQuery({
     queryKey: key,
-    queryFn: () => apiRaw.get('/api/vendors/me/items') as Promise<MenuItem[]>,
+    queryFn: () => apiRaw.get('/api/v1/vendors/me/items') as Promise<MenuItem[]>,
     retry: (count, err) => {
       if (err instanceof ApiClientError && err.status === 401) return false;
       return count < 2;
@@ -66,7 +66,7 @@ export function useMenuItems(): MenuState & {
   // body is the same shape (`{ stockLevel }`).
   const stockMutation = useMutation({
     mutationFn: ({ itemId, level }: { itemId: string; level: StockLevel }) =>
-      apiRaw.patch(`/api/vendors/me/items/${itemId}/stock`, { stockLevel: level }),
+      apiRaw.patch(`/api/v1/vendors/me/items/${itemId}/stock`, { stockLevel: level }),
     onMutate: async ({ itemId, level }) => {
       await qc.cancelQueries({ queryKey: key });
       const snapshot = qc.getQueryData<MenuItem[]>(key);
@@ -103,7 +103,7 @@ export function useMenuItems(): MenuState & {
 
   const createMutation = useMutation({
     mutationFn: (input: MenuItemInput) =>
-      apiRaw.post('/api/vendors/me/items', input) as Promise<MenuItem>,
+      apiRaw.post('/api/v1/vendors/me/items', input) as Promise<MenuItem>,
     onSuccess: (created) => {
       qc.setQueryData<MenuItem[]>(key, (prev) => (prev ? [...prev, created] : [created]));
     },
@@ -111,7 +111,7 @@ export function useMenuItems(): MenuState & {
 
   const updateMutation = useMutation({
     mutationFn: ({ itemId, input }: { itemId: string; input: MenuItemInput }) =>
-      apiRaw.put(`/api/vendors/me/items/${itemId}`, input) as Promise<MenuItem>,
+      apiRaw.put(`/api/v1/vendors/me/items/${itemId}`, input) as Promise<MenuItem>,
     onSuccess: (updated) => {
       qc.setQueryData<MenuItem[]>(key, (prev) =>
         prev?.map((it) => (it.id === updated.id ? updated : it)),
@@ -120,7 +120,7 @@ export function useMenuItems(): MenuState & {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (itemId: string) => apiRaw.delete(`/api/vendors/me/items/${itemId}`),
+    mutationFn: (itemId: string) => apiRaw.delete(`/api/v1/vendors/me/items/${itemId}`),
     onSuccess: (_data, itemId) => {
       qc.setQueryData<MenuItem[]>(key, (prev) => prev?.filter((it) => it.id !== itemId));
     },
@@ -130,7 +130,7 @@ export function useMenuItems(): MenuState & {
     mutationFn: async ({ itemId, file }: { itemId: string; file: File }) => {
       const form = new FormData();
       form.append('photo', file);
-      return apiRaw.upload<MenuItem>(`/api/vendors/me/items/${itemId}/photo`, form, 'PATCH');
+      return apiRaw.upload<MenuItem>(`/api/v1/vendors/me/items/${itemId}/photo`, form, 'PATCH');
     },
     onSuccess: (updated) => {
       qc.setQueryData<MenuItem[]>(key, (prev) =>

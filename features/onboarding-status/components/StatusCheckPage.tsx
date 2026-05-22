@@ -84,7 +84,7 @@ export function StatusCheckPage() {
     }
     setState({ kind: 'checking' });
     try {
-      const path = role === 'vendor' ? '/api/vendors/status' : '/api/riders/status';
+      const path = role === 'vendor' ? '/api/v1/vendors/status' : '/api/v1/riders/status';
       const res = await fetch(`${API_URL}${path}?phone=${encodeURIComponent(phone)}`);
       if (res.status === 404) {
         setState({ kind: 'not_found' });

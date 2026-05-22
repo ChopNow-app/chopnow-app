@@ -51,7 +51,7 @@ export function RoleRedirector({ fallbackHref }: Props) {
     }
 
     apiRaw
-      .get<{ role: UserRole }>('/api/users/me')
+      .get<{ role: UserRole }>('/api/v1/users/me')
       .then((me) => {
         if (cancelled) return;
         // Persist for the next PWA cold-launch (LaunchRedirector reads

@@ -45,7 +45,7 @@ export function OrdersListPage() {
   const load = React.useCallback(() => {
     setState({ status: 'loading' });
     apiRaw
-      .get<OrderListItem[]>('/api/orders')
+      .get<OrderListItem[]>('/api/v1/orders')
       .then((orders) => setState({ status: 'ready', orders }))
       .catch((err: unknown) => {
         if (err instanceof ApiClientError && err.status === 401) {

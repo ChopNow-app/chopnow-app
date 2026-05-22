@@ -25,7 +25,7 @@ export type AddressesState =
 export function useAddresses(): AddressesState & { reload: () => void } {
   const query = useQuery({
     queryKey: queryKeys.user.addresses(),
-    queryFn: () => apiRaw.get('/api/users/me/addresses') as Promise<SavedAddress[]>,
+    queryFn: () => apiRaw.get('/api/v1/users/me/addresses') as Promise<SavedAddress[]>,
     retry: (count, err) => {
       if (err instanceof ApiClientError && err.status === 401) return false;
       return count < 2;

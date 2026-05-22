@@ -30,7 +30,7 @@ export function useVendorAvailability(): AvailabilityState & {
 
   const query = useQuery({
     queryKey: queryKeys.vendor.availability(),
-    queryFn: () => apiRaw.get('/api/vendors/me/availability') as Promise<AvailabilityView>,
+    queryFn: () => apiRaw.get('/api/v1/vendors/me/availability') as Promise<AvailabilityView>,
     retry: (count, err) => {
       if (err instanceof ApiClientError && err.status === 401) return false;
       return count < 2;
@@ -38,7 +38,8 @@ export function useVendorAvailability(): AvailabilityState & {
   });
 
   const mutation = useMutation({
-    mutationFn: (next: boolean) => apiRaw.patch('/api/vendors/me/availability', { isOpen: next }),
+    mutationFn: (next: boolean) =>
+      apiRaw.patch('/api/v1/vendors/me/availability', { isOpen: next }),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: queryKeys.vendor.availability() });
     },

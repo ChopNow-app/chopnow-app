@@ -84,7 +84,7 @@ export function useRiderHeartbeat(isOnline: boolean): HeartbeatState {
         }
         lastPostRef.current = now;
         apiRaw
-          .post('/api/riders/me/location', {
+          .post('/api/v1/riders/me/location', {
             lat: pos.coords.latitude,
             lng: pos.coords.longitude,
           })

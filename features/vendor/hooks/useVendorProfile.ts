@@ -49,7 +49,7 @@ export type VendorProfileState =
 export function useVendorProfile(): VendorProfileState & { reload(): void } {
   const query = useQuery({
     queryKey: queryKeys.vendor.me(),
-    queryFn: () => apiRaw.get('/api/vendors/me') as Promise<VendorProfile>,
+    queryFn: () => apiRaw.get('/api/v1/vendors/me') as Promise<VendorProfile>,
     retry: (count, err) => {
       if (err instanceof ApiClientError && (err.status === 401 || err.status === 404)) {
         return false;

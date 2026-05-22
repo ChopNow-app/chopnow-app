@@ -44,7 +44,7 @@ export type VendorQueueState = QueueState<PendingVendor>;
 export type RiderQueueState = QueueState<PendingRider>;
 
 function useQueue<T>(
-  path: '/api/admin/vendors/pending' | '/api/admin/riders/pending',
+  path: '/api/v1/admin/vendors/pending' | '/api/v1/admin/riders/pending',
   scope: 'vendors' | 'riders',
 ): QueueState<T> & { reload: () => void } {
   const query = useQuery({
@@ -75,5 +75,6 @@ function useQueue<T>(
 }
 
 export const usePendingVendors = () =>
-  useQueue<PendingVendor>('/api/admin/vendors/pending', 'vendors');
-export const usePendingRiders = () => useQueue<PendingRider>('/api/admin/riders/pending', 'riders');
+  useQueue<PendingVendor>('/api/v1/admin/vendors/pending', 'vendors');
+export const usePendingRiders = () =>
+  useQueue<PendingRider>('/api/v1/admin/riders/pending', 'riders');

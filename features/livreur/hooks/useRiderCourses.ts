@@ -53,7 +53,7 @@ const POLL_INTERVAL_MS = 10_000;
 export function useRiderCourses(): CoursesState & { reload: () => void } {
   const query = useQuery({
     queryKey: queryKeys.rider.courses(),
-    queryFn: () => apiRaw.get('/api/riders/me/courses') as Promise<RiderCourse[]>,
+    queryFn: () => apiRaw.get('/api/v1/riders/me/courses') as Promise<RiderCourse[]>,
     refetchInterval: POLL_INTERVAL_MS,
   });
 
