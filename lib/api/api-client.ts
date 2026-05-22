@@ -1,14 +1,22 @@
 import createClient, { type Middleware } from 'openapi-fetch';
 import type { paths } from './types';
+import { accessTokenStore } from '@/lib/auth/access-token-store';
 
 /**
  * Typed fetch client — uses the OpenAPI spec generated from chopnow-api.
  * Re-run `npm run codegen:api` after the backend ships new endpoints.
  *
  * Usage:
- *   const { data, error } = await api.POST('/api/auth/request-otp', {
+ *   const { data, error } = await api.POST('/api/v1/auth/request-otp', {
  *     body: { phone: '670000000' },
  *   });
+ *
+ * Phase B1 — the access token now lives in `accessTokenStore` (memory,
+ * not localStorage) and the refresh token lives in the HttpOnly
+ * `chopnow_rt` cookie set by the backend. Every request goes out with
+ * `credentials: 'include'` so the cookie travels with cross-origin calls
+ * to api-staging.tchopnow.app from app.tchopnow.app (same eTLD+1, but the
+ * browser still needs the explicit opt-in).
  */
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
 
@@ -27,45 +35,235 @@ export class ApiClientError extends Error {
   }
 }
 
-// Auth bearer middleware — reads from the auth helper (lib/auth) at request time
-// so token refresh is transparent to callers.
+// Every fetch the openapi-fetch client makes goes through this wrapper —
+// the original Request has `credentials: 'same-origin'`, which on a
+// cross-subdomain staging setup (app.* → api.*) means the cookie does NOT
+// flow. Cloning the Request with credentials override fixes that.
+const fetchWithCredentials = (input: Request): Promise<Response> =>
+  globalThis.fetch(new Request(input, { credentials: 'include' }));
+
+// Story 1.2 — refresh-on-401. A single in-flight refresh shared across
+// concurrent 401s so a fan-out of expired requests doesn't fire N parallel
+// /auth/refresh calls.
+let refreshInflight: Promise<boolean> | null = null;
+
+async function refreshOnce(): Promise<boolean> {
+  // Phase B1: the refresh token is in the HttpOnly cookie — sending an
+  // empty body is fine. We MUST use credentials:'include' so the cookie
+  // travels with the request.
+  if (!refreshInflight) {
+    refreshInflight = (async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/v1/auth/refresh`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: '{}',
+        });
+        if (!res.ok) {
+          accessTokenStore.clear();
+          return false;
+        }
+        const body = (await res.json()) as { accessToken: string };
+        accessTokenStore.set(body.accessToken);
+        return true;
+      } catch {
+        accessTokenStore.clear();
+        return false;
+      } finally {
+        refreshInflight = null;
+      }
+    })();
+  }
+  return refreshInflight;
+}
+
+// Auth bearer middleware. Reads the access token at request time AND retries
+// once after a successful refresh on 401. Skips /api/auth/* to avoid loops.
 const authMiddleware: Middleware = {
   async onRequest({ request }) {
-    if (typeof window !== 'undefined') {
-      const token = window.localStorage.getItem('chopnow.access');
-      if (token) request.headers.set('Authorization', `Bearer ${token}`);
-    }
+    const token = accessTokenStore.get();
+    if (token) request.headers.set('Authorization', `Bearer ${token}`);
     return request;
+  },
+  async onResponse({ response, request }) {
+    if (response.status !== 401) return response;
+    const url = new URL(request.url);
+    // Don't refresh on auth endpoints themselves (login, refresh, OTP), nor on
+    // admin auth (separate session). Refresh would either loop or use the wrong
+    // token type.
+    if (
+      url.pathname.startsWith('/api/v1/auth/') ||
+      url.pathname.startsWith('/api/v1/admin/auth/')
+    ) {
+      return response;
+    }
+
+    const ok = await refreshOnce();
+    if (!ok) return response;
+
+    const fresh = accessTokenStore.get();
+    if (!fresh) return response;
+    const headers = new Headers(request.headers);
+    headers.set('Authorization', `Bearer ${fresh}`);
+    return fetch(request.url, {
+      method: request.method,
+      headers,
+      body: request.body,
+      credentials: 'include',
+    });
   },
 };
 
-export const api = createClient<paths>({ baseUrl: API_URL });
+export const api = createClient<paths>({ baseUrl: API_URL, fetch: fetchWithCredentials });
 api.use(authMiddleware);
 
-/**
- * Lightweight legacy wrapper kept for the rare case where we need direct fetch
- * (file uploads, streaming). Prefer `api.GET / api.POST` for everything else.
- */
-async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const res = await fetch(`${API_URL}${path}`, {
-    ...init,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(init.headers ?? {}),
-    },
-  });
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    throw new ApiClientError(res.status, body);
-  }
-  return res.json() as Promise<T>;
+// === apiRaw — throw-based wrapper around the typed `api` client ===
+//
+// Why this exists alongside `api`:
+//   - `api.GET/POST/...` returns `{ data, error, response }` — the OpenAPI-correct
+//     shape, but verbose for one-liners and not ergonomic with try/catch.
+//   - `apiRaw.get/post/...` keeps the original "await, then handle thrown
+//     ApiClientError" style. ~68 call sites depend on this contract.
+//
+// As of the typing pass, `apiRaw` is overloaded:
+//   1. When the path is a string literal known to the OpenAPI spec, the body
+//      and response are fully typed from `paths` (and the explicit `<T>`
+//      generic becomes redundant).
+//   2. When the path is a template literal (e.g. `/api/v1/admin/vendors/${id}`),
+//      TS falls through to the legacy `<T = unknown>` signature — same runtime,
+//      same throw, just no compile-time check on body/response.
+//
+// All `apiRaw` calls now route through the typed `api` client internally, so
+// they participate in the refresh-on-401 middleware that `api` already has.
+// This fixes a latent bug where apiRaw users got booted on token expiry.
+
+type Paths = keyof paths;
+type Method = 'get' | 'post' | 'put' | 'patch' | 'delete';
+
+type PathsForMethod<M extends Method> = {
+  [P in Paths]: M extends keyof paths[P] ? P : never;
+}[Paths];
+
+type ReqJsonBody<P extends Paths, M extends Method> = M extends keyof paths[P]
+  ? paths[P][M] extends { requestBody: { content: { 'application/json': infer B } } }
+    ? B
+    : paths[P][M] extends { requestBody?: { content: { 'application/json': infer B } } }
+      ? B | undefined
+      : undefined
+  : undefined;
+
+type ResJson<P extends Paths, M extends Method> = M extends keyof paths[P]
+  ? paths[P][M] extends { responses: infer R }
+    ? R extends { 200: { content: { 'application/json': infer T } } }
+      ? T
+      : R extends { 201: { content: { 'application/json': infer T } } }
+        ? T
+        : R extends { 204: unknown }
+          ? void
+          : unknown
+    : unknown
+  : unknown;
+
+const METHOD_MAP: Record<Method, 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'> = {
+  get: 'GET',
+  post: 'POST',
+  put: 'PUT',
+  patch: 'PATCH',
+  delete: 'DELETE',
+};
+
+// Per-call overrides — currently just custom headers (e.g. Idempotency-Key on
+// order placement). Intentionally narrow; new fields should be added explicitly
+// rather than passing through a full RequestInit.
+export interface ApiRawInit {
+  headers?: Record<string, string>;
 }
 
-export const apiRaw = {
-  get: <T>(path: string, init?: RequestInit) => request<T>(path, { ...init, method: 'GET' }),
-  post: <T>(path: string, body: unknown, init?: RequestInit) =>
-    request<T>(path, { ...init, method: 'POST', body: JSON.stringify(body) }),
-  patch: <T>(path: string, body: unknown, init?: RequestInit) =>
-    request<T>(path, { ...init, method: 'PATCH', body: JSON.stringify(body) }),
-  delete: <T>(path: string, init?: RequestInit) => request<T>(path, { ...init, method: 'DELETE' }),
+async function callTyped(
+  method: Method,
+  path: string,
+  body?: unknown,
+  init?: ApiRawInit,
+): Promise<unknown> {
+  const opts: Record<string, unknown> = {};
+  if (body !== undefined) opts.body = body;
+  if (init?.headers) opts.headers = init.headers;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const fn = (api as any)[METHOD_MAP[method]] as (
+    p: string,
+    o: Record<string, unknown>,
+  ) => Promise<{ data: unknown; error: unknown; response: Response }>;
+  const result = await fn(path, opts);
+  if (!result.response.ok) {
+    throw new ApiClientError(result.response.status, result.error ?? result.data ?? {});
+  }
+  return result.data;
+}
+
+export interface ApiRawClient {
+  get<P extends PathsForMethod<'get'>>(path: P, init?: ApiRawInit): Promise<ResJson<P, 'get'>>;
+  get<T = unknown>(path: string, init?: ApiRawInit): Promise<T>;
+
+  post<P extends PathsForMethod<'post'>>(
+    path: P,
+    body: ReqJsonBody<P, 'post'>,
+    init?: ApiRawInit,
+  ): Promise<ResJson<P, 'post'>>;
+  post<T = unknown>(path: string, body: unknown, init?: ApiRawInit): Promise<T>;
+
+  put<P extends PathsForMethod<'put'>>(
+    path: P,
+    body: ReqJsonBody<P, 'put'>,
+    init?: ApiRawInit,
+  ): Promise<ResJson<P, 'put'>>;
+  put<T = unknown>(path: string, body: unknown, init?: ApiRawInit): Promise<T>;
+
+  patch<P extends PathsForMethod<'patch'>>(
+    path: P,
+    body: ReqJsonBody<P, 'patch'>,
+    init?: ApiRawInit,
+  ): Promise<ResJson<P, 'patch'>>;
+  patch<T = unknown>(path: string, body: unknown, init?: ApiRawInit): Promise<T>;
+
+  delete<P extends PathsForMethod<'delete'>>(
+    path: P,
+    init?: ApiRawInit,
+  ): Promise<ResJson<P, 'delete'>>;
+  delete<T = unknown>(path: string, init?: ApiRawInit): Promise<T>;
+
+  // Multipart upload — used for vendor item photos. Browser sets Content-Type
+  // boundary itself; auth bearer attached manually. Bypasses the typed client.
+  upload<T>(path: string, form: FormData, method?: 'POST' | 'PATCH'): Promise<T>;
+}
+
+export const apiRaw: ApiRawClient = {
+  get: ((path: string, init?: ApiRawInit) =>
+    callTyped('get', path, undefined, init)) as ApiRawClient['get'],
+  post: ((path: string, body: unknown, init?: ApiRawInit) =>
+    callTyped('post', path, body, init)) as ApiRawClient['post'],
+  put: ((path: string, body: unknown, init?: ApiRawInit) =>
+    callTyped('put', path, body, init)) as ApiRawClient['put'],
+  patch: ((path: string, body: unknown, init?: ApiRawInit) =>
+    callTyped('patch', path, body, init)) as ApiRawClient['patch'],
+  delete: ((path: string, init?: ApiRawInit) =>
+    callTyped('delete', path, undefined, init)) as ApiRawClient['delete'],
+  upload: async <T>(
+    path: string,
+    form: FormData,
+    method: 'POST' | 'PATCH' = 'PATCH',
+  ): Promise<T> => {
+    const token = accessTokenStore.get();
+    const res = await fetch(`${API_URL}${path}`, {
+      method,
+      body: form,
+      credentials: 'include',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new ApiClientError(res.status, body);
+    }
+    return res.json() as Promise<T>;
+  },
 };

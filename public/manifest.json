@@ -1,11 +1,11 @@
 {
-  "name": "ChopNow",
-  "short_name": "ChopNow",
+  "name": "TChopNow",
+  "short_name": "TChopNow",
   "description": "Mange sans attendre. De la rue à ta porte.",
-  "start_url": "/",
+  "start_url": "/launch?source=pwa",
   "display": "standalone",
-  "background_color": "#FAFAF7",
-  "theme_color": "#E8570A",
+  "background_color": "#E11D2A",
+  "theme_color": "#E11D2A",
   "orientation": "portrait-primary",
   "lang": "fr",
   "icons": [

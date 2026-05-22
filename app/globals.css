@@ -12,8 +12,8 @@
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 6%;
 
-    /* Brand: Chop Orange as primary CTA (one per screen) */
-    --primary: 22 92% 47%;
+    /* Brand: Chop Red as primary CTA (one per screen) — Palier 4 rouge/noir */
+    --primary: 356 76% 50%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 0 0% 96%;
@@ -28,7 +28,7 @@
 
     --border: 0 0% 90%;
     --input: 0 0% 90%;
-    --ring: 22 92% 47%;
+    --ring: 356 76% 50%;
     --radius: 0.5rem;
   }
 
@@ -39,7 +39,7 @@
     --card-foreground: 0 0% 98%;
     --popover: 0 0% 9%;
     --popover-foreground: 0 0% 98%;
-    --primary: 22 92% 55%;
+    --primary: 356 80% 56%;
     --primary-foreground: 0 0% 100%;
     --secondary: 0 0% 15%;
     --secondary-foreground: 0 0% 98%;
@@ -51,7 +51,7 @@
     --destructive-foreground: 0 0% 98%;
     --border: 0 0% 18%;
     --input: 0 0% 18%;
-    --ring: 22 92% 55%;
+    --ring: 356 80% 56%;
   }
 }
 
@@ -61,6 +61,56 @@
   }
   body {
     @apply bg-background text-foreground antialiased;
-    font-feature-settings: 'rlig' 1, 'calt' 1;
+    font-feature-settings:
+      'rlig' 1,
+      'calt' 1;
   }
+}
+
+/* ── PWA / native-app feel ────────────────────────────────────────────
+ *
+ * iOS Safari and Android Chrome ship aggressive defaults that read fine
+ * on a content website but loudly say "you're in a browser" inside a
+ * standalone PWA. These rules dial them back so the installed app
+ * behaves like a native shell:
+ *
+ *   overscroll-behavior: none
+ *     Kills pull-to-refresh + the rubber-band scroll that bounces past
+ *     the page boundary. Native apps don't do that; standalone PWAs
+ *     shouldn't either.
+ *
+ *   -webkit-tap-highlight-color: transparent
+ *     Removes the grey/blue flash iOS draws over a tapped element.
+ *     Our buttons already give visual feedback via `active:scale-[0.99]`;
+ *     the OS-provided highlight is redundant and looks browser-y.
+ *
+ *   user-select: none + -webkit-touch-callout: none on chrome
+ *     Long-press on a button on iOS pops the "Copy / Share" callout
+ *     and selects nearby text. Native apps don't. Apply only to
+ *     interactive chrome (buttons, links, role=button) — leave text
+ *     content selectable so users can still copy an address or order
+ *     code from inside the app.
+ *
+ *   input/textarea/select font-size: 16px
+ *     iOS Safari auto-zooms when a focused input has < 16px font-size,
+ *     which jolts the layout. Bumping to 16px on the field-level keeps
+ *     the page stable.
+ */
+html,
+body {
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button,
+a,
+[role='button'] {
+  -webkit-touch-callout: none;
+  user-select: none;
+}
+
+input,
+textarea,
+select {
+  font-size: 16px;
 }

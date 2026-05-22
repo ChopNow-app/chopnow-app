@@ -1,0 +1,107 @@
+'use client';
+
+// React 19's `react-hooks/set-state-in-effect` rule bites the time-of-day
+// pattern below — we deliberately compute on the client post-mount to avoid
+// SSR hydration mismatch on the rotating message. Same precedent as
+// features/consumer/hooks/useCatalogue.ts.
+/* eslint-disable react-hooks/set-state-in-effect */
+
+import * as React from 'react';
+import { ArrowRight } from 'lucide-react';
+
+interface PromoCardProps {
+  onClick?: () => void;
+}
+
+// Editorial promo card — a stamped poster on chop-red surface with a single
+// oversized headline. No real promotions API yet, so the message rotates by
+// time of day: appetite-cue copy ("Le dîner à la porte") rather than a fake
+// percent-off discount.
+//
+// Pattern overlay uses the brand steam-wisp motif from the prototype's CSS
+// data URI (`var(--pattern-steam-dark)` in landing/), but inlined here so
+// chopnow-app stays self-contained.
+const STEAM_PATTERN_URL =
+  "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96'%3E%3Cpath d='M 34.3,11.3 A 13.5,13.5 0 1 0 34.3,28.7' stroke='%23FFFFFF' stroke-width='3.5' stroke-linecap='round' fill='none' opacity='0.16'/%3E%3Cpath d='M 82.3,11.3 A 13.5,13.5 0 1 0 82.3,28.7' stroke='%23FFFFFF' stroke-width='3.5' stroke-linecap='round' fill='none' opacity='0.16'/%3E%3Cpath d='M 58.3,59.3 A 13.5,13.5 0 1 0 58.3,76.7' stroke='%23FFFFFF' stroke-width='3.5' stroke-linecap='round' fill='none' opacity='0.16'/%3E%3C/svg%3E\")";
+
+export function PromoCard({ onClick }: PromoCardProps) {
+  const msg = useTimeOfDayMessage();
+  return (
+    <div className="px-5 pt-5 md:px-8 lg:px-12">
+      <button
+        type="button"
+        onClick={onClick}
+        className="group relative w-full overflow-hidden rounded-3xl bg-chop-red text-left text-white shadow-elevated transition-transform active:scale-[0.99]"
+      >
+        <div
+          aria-hidden
+          className="absolute inset-0"
+          style={{
+            backgroundImage: STEAM_PATTERN_URL,
+            backgroundRepeat: 'repeat',
+            backgroundSize: '96px 96px',
+          }}
+        />
+        {/* radial vignette in the bottom-right for depth */}
+        <div
+          aria-hidden
+          className="absolute -bottom-16 -right-16 h-48 w-48 rounded-full bg-white/10 blur-3xl"
+        />
+
+        <div className="relative flex items-center justify-between gap-3 px-5 py-6">
+          <div className="min-w-0 flex-1">
+            <span className="inline-block rounded-full bg-white/20 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-[0.14em] backdrop-blur-sm">
+              {msg.kicker}
+            </span>
+            <h3 className="mt-2 text-[26px] font-extrabold leading-[1.05] tracking-tight">
+              {msg.headline}
+            </h3>
+            <p className="mt-1 text-[13px] font-medium text-white/80">{msg.sub}</p>
+          </div>
+          <div
+            aria-hidden
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white text-chop-red transition-transform group-hover:translate-x-0.5"
+          >
+            <ArrowRight className="h-5 w-5" strokeWidth={2.6} />
+          </div>
+        </div>
+      </button>
+    </div>
+  );
+}
+
+interface Message {
+  kicker: string;
+  headline: string;
+  sub: string;
+}
+
+function useTimeOfDayMessage(): Message {
+  const [msg, setMsg] = React.useState<Message>(EVENING);
+  React.useEffect(() => {
+    const h = new Date().getHours();
+    setMsg(h < 5 ? EVENING : h < 11 ? MORNING : h < 15 ? LUNCH : h < 18 ? AFTERNOON : EVENING);
+  }, []);
+  return msg;
+}
+
+const MORNING: Message = {
+  kicker: '⚡ Matin',
+  headline: 'Le petit-déj livré chaud.',
+  sub: 'Beignets-haricots, café, omelette — chez toi en 25 min.',
+};
+const LUNCH: Message = {
+  kicker: '🔥 Midi',
+  headline: 'Le déjeuner sans attendre.',
+  sub: 'Ndolé, poulet DG, koki — préparé maintenant, livré à ta porte.',
+};
+const AFTERNOON: Message = {
+  kicker: '☕ Après-midi',
+  headline: 'Une pause bien méritée.',
+  sub: 'Smoothies, brochettes, snacks — livraison express.',
+};
+const EVENING: Message = {
+  kicker: '🌙 Soir',
+  headline: 'Le dîner à la porte.',
+  sub: 'Tout Douala cuisine. Tu choisis. On amène.',
+};
