@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
+import { AuthRequired } from '@/components/ui/auth-required';
 import { Button } from '@/components/ui/button';
 import { useRiderAvailability } from '../hooks/useRiderAvailability';
 import { useRiderCourses, type RiderCourse } from '../hooks/useRiderCourses';
@@ -23,15 +24,12 @@ export function LivreurDashboard() {
 
   if (courses.status === 'unauthenticated') {
     return (
-      <div className="rounded-2xl border border-chop-dark-border bg-chop-dark-surface p-6 text-center shadow-rider">
-        <h2 className="text-xl font-extrabold">Connexion requise</h2>
-        <p className="mt-2 text-sm text-white/70">
-          Connecte-toi avec ton numéro de téléphone livreur.
-        </p>
-        <Button asChild size="jumbo" className="mt-6 w-full">
-          <Link href="/login?next=/livreur">Se connecter</Link>
-        </Button>
-      </div>
+      <AuthRequired
+        theme="dark"
+        subtitle="Connecte-toi avec ton numéro de téléphone livreur pour voir tes courses du jour."
+        loginHref="/login?next=/livreur"
+        secondary={{ label: "Pas encore livreur ? S'inscrire", href: '/livrer' }}
+      />
     );
   }
 

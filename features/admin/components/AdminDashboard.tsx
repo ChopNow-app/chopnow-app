@@ -3,6 +3,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { AuthRequired } from '@/components/ui/auth-required';
 import { Button } from '@/components/ui/button';
 import { ApiClientError } from '@/lib/api/api-client';
 import { adminApi, adminEmail, adminLogout, adminRole } from '../api';
@@ -24,12 +25,12 @@ export function AdminDashboard() {
 
   if (vendors.status === 'unauthenticated' || riders.status === 'unauthenticated') {
     return (
-      <div className="container max-w-md py-12 text-center">
-        <h2 className="text-xl font-bold">Connexion admin requise</h2>
-        <Button asChild className="mt-4">
-          <Link href="/admin/login">Se connecter</Link>
-        </Button>
-      </div>
+      <AuthRequired
+        theme="light"
+        title="Connexion admin requise"
+        subtitle="Accès réservé aux comptes ADMIN ou SUPER_ADMIN."
+        loginHref="/admin/login"
+      />
     );
   }
 

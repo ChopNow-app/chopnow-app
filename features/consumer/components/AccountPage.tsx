@@ -7,6 +7,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 
+import { AuthRequired } from '@/components/ui/auth-required';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { apiRaw, ApiClientError } from '@/lib/api/api-client';
@@ -80,12 +81,11 @@ export function AccountPage() {
   }
   if (state.status === 'unauthenticated') {
     return (
-      <main className="container py-16 text-center">
-        <h1 className="text-xl font-bold">Connexion requise</h1>
-        <Button asChild className="mt-6">
-          <Link href="/login?next=/account">Se connecter</Link>
-        </Button>
-      </main>
+      <AuthRequired
+        theme="light"
+        subtitle="Connecte-toi pour accéder à ton profil, tes adresses et tes préférences."
+        loginHref="/login?next=/account"
+      />
     );
   }
   if (state.status === 'error') {

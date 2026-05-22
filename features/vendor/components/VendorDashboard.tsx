@@ -3,6 +3,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
+import { AuthRequired } from '@/components/ui/auth-required';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useVendorAvailability } from '../hooks/useVendorAvailability';
@@ -50,12 +51,12 @@ export function VendorDashboard() {
 
   if (orders.status === 'unauthenticated' || availability.status === 'unauthenticated') {
     return (
-      <div className="bg-card rounded-lg border p-6 text-center">
-        <h2 className="text-lg font-semibold">Connexion requise</h2>
-        <Button asChild className="mt-4">
-          <Link href="/login?next=/vendor">Se connecter</Link>
-        </Button>
-      </div>
+      <AuthRequired
+        theme="light"
+        subtitle="Connecte-toi pour gérer ton espace vendeur et tes commandes."
+        loginHref="/login?next=/vendor"
+        secondary={{ label: "Pas encore vendeur ? S'inscrire", href: '/vendre' }}
+      />
     );
   }
 

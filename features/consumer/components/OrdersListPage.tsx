@@ -6,6 +6,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
+import { AuthRequired } from '@/components/ui/auth-required';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { apiRaw, ApiClientError } from '@/lib/api/api-client';
@@ -67,15 +68,11 @@ export function OrdersListPage() {
   }
   if (state.status === 'unauthenticated') {
     return (
-      <main className="container max-w-md py-16 text-center md:max-w-2xl">
-        <h1 className="text-xl font-bold">Connexion requise</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Connecte-toi pour voir l&apos;historique de tes commandes.
-        </p>
-        <Button asChild className="mt-6">
-          <Link href="/login?next=/orders">Se connecter</Link>
-        </Button>
-      </main>
+      <AuthRequired
+        theme="light"
+        subtitle="Connecte-toi pour voir l'historique de tes commandes."
+        loginHref="/login?next=/orders"
+      />
     );
   }
   if (state.status === 'error') {
