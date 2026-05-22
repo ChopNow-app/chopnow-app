@@ -275,12 +275,21 @@ export const adminCampayApi = {
   getCircuitState: () => apiRaw.get<CampayCircuitState>('/api/admin/finance/campay-circuit'),
 };
 
+export interface DispatchFunnel {
+  ordersAssigned: number;
+  assignedOnFirstAttempt: number;
+  expiredNoRider: number;
+  avgAttemptsToAssign: number | null;
+  topRiders: Array<{ riderId: string; offers: number }>;
+}
+
 export interface PilotMetrics {
   window: { from: string; to: string };
   reorderRate: { reorderers: number; uniqueCustomers: number; percent: number };
   completionRate: { delivered: number; total: number; percent: number };
   avgDeliveryTimeMs: number | null;
   avgVendorAcceptTimeMs: number | null;
+  dispatchFunnel: DispatchFunnel;
 }
 
 export async function getPilotMetrics(params?: {

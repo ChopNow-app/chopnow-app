@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { getPilotMetrics, type PilotMetrics } from '../api';
+import { getPilotMetrics, type DispatchFunnel, type PilotMetrics } from '../api';
 import { ApiClientError } from '@/lib/api/api-client';
 
 function formatPercent(p: number): string {
@@ -122,11 +122,111 @@ export function AdminMetrics() {
         />
       </div>
 
+      <DispatchFunnelSection funnel={m.dispatchFunnel} />
+
       <p className="text-xs text-muted-foreground">
         Décision Semaine 3 : réachat ≥ 25% + complétion ≥ 90% → enregistrer RCCM + activer Campay
         live. Sinon, itérer ou pivoter.
       </p>
     </div>
+  );
+}
+
+function DispatchFunnelSection({ funnel }: { funnel: DispatchFunnel }) {
+  const firstAttemptPct =
+    funnel.ordersAssigned === 0
+      ? null
+      : (funnel.assignedOnFirstAttempt / funnel.ordersAssigned) * 100;
+
+  const totalOffers = funnel.topRiders.reduce((sum, r) => sum + r.offers, 0);
+  const topShare =
+    totalOffers === 0 || funnel.topRiders.length === 0
+      ? null
+      : (funnel.topRiders[0].offers / totalOffers) * 100;
+  const starvedRider = topShare !== null && topShare > 70;
+
+  return (
+    <section className="space-y-3">
+      <header>
+        <h2 className="text-lg font-bold">Funnel dispatch</h2>
+        <p className="text-xs text-muted-foreground">
+          Santé de l&apos;attribution rider. Détails dans{' '}
+          <code className="rounded bg-muted px-1 py-0.5 text-[10px]">docs/DISPATCH.md</code>.
+        </p>
+      </header>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <KpiCard
+          title="Commandes attribuées"
+          value={String(funnel.ordersAssigned)}
+          sub="≥ 1 rider assigné dans la fenêtre"
+        />
+        <KpiCard
+          title="Au 1ʳᵉ tentative"
+          value={firstAttemptPct === null ? '—' : formatPercent(firstAttemptPct)}
+          sub={`${funnel.assignedOnFirstAttempt} / ${funnel.ordersAssigned} commandes`}
+          tone={firstAttemptPct === null ? 'neutral' : firstAttemptPct >= 85 ? 'good' : 'warn'}
+        />
+        <KpiCard
+          title="Tentatives moyennes"
+          value={funnel.avgAttemptsToAssign === null ? '—' : funnel.avgAttemptsToAssign.toFixed(2)}
+          sub="Avant d'obtenir un rider"
+          tone={
+            funnel.avgAttemptsToAssign === null
+              ? 'neutral'
+              : funnel.avgAttemptsToAssign <= 1.3
+                ? 'good'
+                : funnel.avgAttemptsToAssign > 2
+                  ? 'warn'
+                  : 'neutral'
+          }
+        />
+        <KpiCard
+          title="Expirées sans rider"
+          value={String(funnel.expiredNoRider)}
+          sub="10 tentatives sans candidat"
+          tone={funnel.expiredNoRider === 0 ? 'good' : 'warn'}
+        />
+      </div>
+
+      <div className="rounded-lg border bg-background p-4">
+        <div className="flex items-center justify-between">
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Top riders — offres reçues
+          </p>
+          {starvedRider && (
+            <span className="rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-destructive">
+              Starved rider
+            </span>
+          )}
+        </div>
+        {funnel.topRiders.length === 0 ? (
+          <p className="mt-2 text-sm text-muted-foreground">Aucune attribution dans la fenêtre.</p>
+        ) : (
+          <ul className="mt-3 space-y-2">
+            {funnel.topRiders.map((r) => {
+              const share = totalOffers === 0 ? 0 : (r.offers / totalOffers) * 100;
+              return (
+                <li
+                  key={r.riderId}
+                  className="flex items-center justify-between text-sm tabular-nums"
+                >
+                  <code className="text-xs text-muted-foreground">{r.riderId.slice(0, 8)}…</code>
+                  <span className="font-semibold">
+                    {r.offers} <span className="text-muted-foreground">({share.toFixed(0)}%)</span>
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+        {starvedRider && (
+          <p className="mt-3 text-xs text-destructive">
+            Un rider porte &gt; 70% des offres. Demande aux autres riders de se repositionner, ou
+            mets temporairement le leader hors-ligne.
+          </p>
+        )}
+      </div>
+    </section>
   );
 }
 
