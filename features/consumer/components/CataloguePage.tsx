@@ -6,6 +6,7 @@ import { useCurrentUser } from '@/features/auth/hooks/useCurrentUser';
 import { useCatalogue } from '../hooks/useCatalogue';
 import { DOUALA_FALLBACK, useGeolocation } from '../hooks/useGeolocation';
 import { VendorCard } from './VendorCard';
+import { VendorRiderEntryBand } from './VendorRiderEntryBand';
 import { VendorCardSkeleton } from './VendorCardSkeleton';
 import { GpsHelpDialog } from './GpsHelpDialog';
 import { HomeHeader } from './HomeHeader';
@@ -201,6 +202,12 @@ export function CataloguePage() {
             ) : null}
           </>
         ) : null}
+
+        {/* Discovery for non-consumers — sits at the very bottom of the
+            feed so it doesn't compete with the catalogue, but is always
+            present so a brand-new PWA user (who bypassed the splash's
+            role picker) still finds the vendor / rider onboarding. */}
+        <VendorRiderEntryBand />
       </div>
 
       {showGpsHelp ? <GpsHelpDialog onClose={() => setShowGpsHelp(false)} /> : null}
