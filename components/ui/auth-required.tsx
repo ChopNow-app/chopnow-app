@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import { LogIn } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -84,15 +83,18 @@ export function AuthRequired({
           isDark ? 'border border-chop-dark-border bg-chop-dark-surface' : 'bg-chop-card-white',
         )}
       >
-        <div
+        {/* Editorial section label above the title — replaces the generic
+            icon-in-circle pattern that read as a Vercel template. */}
+        <p
+          aria-hidden
           className={cn(
-            'mx-auto flex h-12 w-12 items-center justify-center rounded-full',
-            isDark ? 'bg-chop-red/15 text-chop-red' : 'bg-chop-red/10 text-chop-red',
+            'text-[11px] font-extrabold uppercase tracking-[0.22em]',
+            isDark ? 'text-chop-red' : 'text-chop-red',
           )}
         >
-          <LogIn className="h-5 w-5" strokeWidth={2.4} aria-hidden />
-        </div>
-        <h2 className="mt-4 text-xl font-extrabold tracking-tight">{title}</h2>
+          — Accès
+        </p>
+        <h2 className="mt-2 text-2xl font-extrabold tracking-tight">{title}</h2>
         {subtitle ? (
           <p
             className={cn(

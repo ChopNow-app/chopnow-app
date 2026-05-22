@@ -4,7 +4,7 @@ import * as React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ChevronLeft, MessageCircle, ShieldCheck, Zap } from 'lucide-react';
+import { ChevronLeft } from 'lucide-react';
 
 import { OtpRequestForm } from '@/features/auth/components/OtpRequestForm';
 import { OtpVerifyForm } from '@/features/auth/components/OtpVerifyForm';
@@ -140,15 +140,9 @@ function LoginScreen() {
       ) : (
         <section className="mx-auto mt-10 w-full max-w-md flex-1 px-5 md:px-8">
           <ul className="grid grid-cols-3 gap-3">
-            <TrustPill icon={<Zap className="h-4 w-4" strokeWidth={2.4} aria-hidden />}>
-              Connexion en quelques secondes
-            </TrustPill>
-            <TrustPill icon={<MessageCircle className="h-4 w-4" strokeWidth={2.4} aria-hidden />}>
-              Code par WhatsApp
-            </TrustPill>
-            <TrustPill icon={<ShieldCheck className="h-4 w-4" strokeWidth={2.4} aria-hidden />}>
-              Pas de mot de passe à retenir
-            </TrustPill>
+            <TrustPill index="01">Connexion en quelques secondes</TrustPill>
+            <TrustPill index="02">Code par WhatsApp</TrustPill>
+            <TrustPill index="03">Pas de mot de passe à retenir</TrustPill>
           </ul>
         </section>
       )}
@@ -191,15 +185,13 @@ function LoginScreen() {
  * tall phones with content that supports the conversion ("c'est rapide,
  * c'est WhatsApp, pas de mot de passe") rather than padding.
  */
-function TrustPill({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
+function TrustPill({ index, children }: { index: string; children: React.ReactNode }) {
   return (
-    <li className="flex flex-col items-center gap-2 rounded-2xl bg-chop-surface-gray px-2 py-3 text-center">
-      <span className="flex h-8 w-8 items-center justify-center rounded-full bg-chop-card-white text-chop-red">
-        {icon}
+    <li className="flex flex-col gap-2 rounded-2xl border border-divider bg-chop-card-white px-3 py-4">
+      <span className="text-[11px] font-extrabold tracking-[0.16em] text-chop-red" aria-hidden>
+        {index}
       </span>
-      <span className="text-[10px] font-bold uppercase leading-[1.15] tracking-wide text-chop-ink-secondary">
-        {children}
-      </span>
+      <span className="text-[11px] font-semibold leading-[1.25] text-chop-ink">{children}</span>
     </li>
   );
 }

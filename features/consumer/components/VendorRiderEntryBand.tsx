@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { ChefHat, Bike, ChevronRight } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 
 /**
  * Discreet footer band on /restaurants pointing visitors to the vendor
@@ -38,12 +38,9 @@ export function VendorRiderEntryBand() {
         <div className="mt-4 flex flex-col gap-2 sm:flex-row">
           <Link
             href="/vendre"
-            className="group inline-flex items-center justify-between gap-3 rounded-full bg-chop-ink px-4 py-3 text-sm font-bold text-white transition-colors hover:bg-chop-red sm:flex-1"
+            className="group inline-flex items-center justify-between gap-3 rounded-full bg-chop-ink px-5 py-3 text-sm font-bold text-white transition-colors hover:bg-chop-red sm:flex-1"
           >
-            <span className="inline-flex items-center gap-2">
-              <ChefHat className="h-4 w-4" strokeWidth={2.4} aria-hidden />
-              Je vends mes plats
-            </span>
+            <span>Je vends mes plats</span>
             <ChevronRight
               className="h-4 w-4 transition-transform group-hover:translate-x-0.5"
               strokeWidth={2.4}
@@ -52,12 +49,9 @@ export function VendorRiderEntryBand() {
           </Link>
           <Link
             href="/livrer"
-            className="group inline-flex items-center justify-between gap-3 rounded-full bg-chop-ink px-4 py-3 text-sm font-bold text-white transition-colors hover:bg-chop-red sm:flex-1"
+            className="group inline-flex items-center justify-between gap-3 rounded-full bg-chop-ink px-5 py-3 text-sm font-bold text-white transition-colors hover:bg-chop-red sm:flex-1"
           >
-            <span className="inline-flex items-center gap-2">
-              <Bike className="h-4 w-4" strokeWidth={2.4} aria-hidden />
-              Je livre à moto
-            </span>
+            <span>Je livre à moto</span>
             <ChevronRight
               className="h-4 w-4 transition-transform group-hover:translate-x-0.5"
               strokeWidth={2.4}
