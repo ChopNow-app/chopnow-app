@@ -95,6 +95,17 @@ export function CataloguePage() {
   const totalShown = buckets[1].length + buckets[2].length + (showPlan3 ? buckets[3].length : 0);
   const totalAll = buckets[1].length + buckets[2].length + buckets[3].length;
 
+  // Auto-expand the "Tout Douala" bucket when the two closer buckets are
+  // empty but vendors exist further out. Avoids the bad first impression of
+  // two stacked "Aucun vendeur" cards before the consumer discovers the
+  // "Voir tout Douala" button below.
+  const autoExpandPlan3 =
+    catalogue.status === 'ready' &&
+    buckets[1].length === 0 &&
+    buckets[2].length === 0 &&
+    buckets[3].length > 0;
+  const effectiveShowPlan3 = showPlan3 || autoExpandPlan3;
+
   return (
     <main className="relative min-h-dvh bg-chop-warm text-chop-ink">
       {/* paper grain — 3% noise overlay for editorial feel */}
@@ -157,20 +168,34 @@ export function CataloguePage() {
 
         {catalogue.status === 'ready' ? (
           <>
-            <Section
-              title={PLAN_LABEL[1].title}
-              subtitle={PLAN_LABEL[1].subtitle}
-              vendors={buckets[1]}
-              emptyMessage="Aucun vendeur ouvert dans ton quartier pour l'instant."
-            />
-            <Section
-              title={PLAN_LABEL[2].title}
-              subtitle={PLAN_LABEL[2].subtitle}
-              vendors={buckets[2]}
-              emptyMessage="Aucun vendeur dans les quartiers adjacents."
-            />
+            {autoExpandPlan3 ? (
+              // Both near buckets are empty but vendors exist in Tout Douala —
+              // collapse the per-bucket empty cards into a single context line
+              // so the user doesn't see two stacked "Aucun vendeur" messages
+              // before reaching real content. The Section 3 below carries the
+              // actual catalogue.
+              <p className="mx-5 mt-5 rounded-xl bg-chop-surface-gray px-4 py-3 text-[12px] font-medium text-chop-ink-secondary md:mx-8 lg:mx-12">
+                Aucun vendeur dans ton quartier ou les zones proches — voici tous les vendeurs
+                Douala.
+              </p>
+            ) : (
+              <>
+                <Section
+                  title={PLAN_LABEL[1].title}
+                  subtitle={PLAN_LABEL[1].subtitle}
+                  vendors={buckets[1]}
+                  emptyMessage="Aucun vendeur ouvert dans ton quartier pour l'instant."
+                />
+                <Section
+                  title={PLAN_LABEL[2].title}
+                  subtitle={PLAN_LABEL[2].subtitle}
+                  vendors={buckets[2]}
+                  emptyMessage="Aucun vendeur dans les quartiers adjacents."
+                />
+              </>
+            )}
 
-            {showPlan3 ? (
+            {effectiveShowPlan3 ? (
               <Section
                 title={PLAN_LABEL[3].title}
                 subtitle={PLAN_LABEL[3].subtitle}

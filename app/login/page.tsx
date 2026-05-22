@@ -79,7 +79,39 @@ function LoginScreen() {
           </button>
         </div>
       ) : (
-        <OtpRequestForm onRequested={setPhone} />
+        <>
+          <OtpRequestForm onRequested={setPhone} />
+
+          {/* Discovery for fresh users who tapped "Se connecter" but actually
+              wanted to register as a vendor or rider. The OTP form above
+              also creates a new consumer account on first verify, so this
+              section is specifically for the two paid-side roles whose
+              registration is a separate form, not just an OTP. */}
+          <div className="mt-8 border-t border-divider pt-6">
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-chop-ink-secondary">
+              Pas encore inscrit&nbsp;?
+            </p>
+            <p className="mt-1 text-sm text-chop-ink-secondary">
+              Si tu veux <strong className="text-chop-ink">vendre tes plats</strong> ou{' '}
+              <strong className="text-chop-ink">livrer à moto</strong>, il faut d&apos;abord déposer
+              un dossier&nbsp;:
+            </p>
+            <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+              <Link
+                href="/vendre"
+                className="inline-flex flex-1 items-center justify-center rounded-full bg-chop-ink px-4 py-3 text-sm font-bold text-white transition-colors hover:bg-chop-red"
+              >
+                Devenir vendeur
+              </Link>
+              <Link
+                href="/livrer"
+                className="inline-flex flex-1 items-center justify-center rounded-full bg-chop-ink px-4 py-3 text-sm font-bold text-white transition-colors hover:bg-chop-red"
+              >
+                Devenir livreur
+              </Link>
+            </div>
+          </div>
+        </>
       )}
     </section>
   );
