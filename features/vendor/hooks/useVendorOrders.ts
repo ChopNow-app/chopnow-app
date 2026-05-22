@@ -69,7 +69,7 @@ export function useVendorOrders(
 ): OrdersState & { reload: () => void } {
   const query = useQuery({
     queryKey: queryKeys.vendor.orders(type),
-    queryFn: () => apiRaw.get(`/api/orders/vendor/me?type=${type}`) as Promise<VendorOrder[]>,
+    queryFn: () => apiRaw.get(`/api/v1/orders/vendor/me?type=${type}`) as Promise<VendorOrder[]>,
     enabled,
     refetchInterval: POLL_INTERVAL_MS,
   });

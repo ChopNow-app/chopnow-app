@@ -20,7 +20,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/auth/request-otp": {
+    "/api/v1/auth/request-otp": {
         parameters: {
             query?: never;
             header?: never;
@@ -33,14 +33,14 @@ export interface paths {
          * Request OTP
          * @description Sends a 6-digit OTP via WhatsApp (primary) with SMS fallback. Story 1.1.
          */
-        post: operations["AuthController_requestOtp"];
+        post: operations["AuthController_requestOtp_v1"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/auth/verify-otp": {
+    "/api/v1/auth/verify-otp": {
         parameters: {
             query?: never;
             header?: never;
@@ -53,14 +53,14 @@ export interface paths {
          * Verify OTP
          * @description Returns access + refresh JWT on success. Creates the user on first verify.
          */
-        post: operations["AuthController_verifyOtp"];
+        post: operations["AuthController_verifyOtp_v1"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/auth/refresh": {
+    "/api/v1/auth/refresh": {
         parameters: {
             query?: never;
             header?: never;
@@ -73,14 +73,14 @@ export interface paths {
          * Rotate refresh token
          * @description Story 1.2 — returns a new access + refresh pair. Old refresh becomes invalid (rotation). Replaying an already-rotated refresh revokes the entire family. Error codes (body.code on 401): refresh_invalid_or_expired, refresh_reuse_detected, user_suspended.
          */
-        post: operations["AuthController_refresh"];
+        post: operations["AuthController_refresh_v1"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/users/me": {
+    "/api/v1/users/me": {
         parameters: {
             query?: never;
             header?: never;
@@ -88,7 +88,7 @@ export interface paths {
             cookie?: never;
         };
         /** Current authenticated user profile */
-        get: operations["UsersController_me"];
+        get: operations["UsersController_me_v1"];
         put?: never;
         post?: never;
         delete?: never;
@@ -98,10 +98,10 @@ export interface paths {
          * Update own profile (Story 1.8)
          * @description Self-update for any authenticated user. Today: displayName only. Vendor-specific fields → PATCH /vendors/me; rider-specific → PATCH /riders/me. MoMo number change with OTP-on-new-number confirmation is deferred — admin oversight covers MVP.
          */
-        patch: operations["UsersController_updateMe"];
+        patch: operations["UsersController_updateMe_v1"];
         trace?: never;
     };
-    "/api/users/me/addresses": {
+    "/api/v1/users/me/addresses": {
         parameters: {
             query?: never;
             header?: never;
@@ -109,20 +109,20 @@ export interface paths {
             cookie?: never;
         };
         /** List saved addresses (Story 3.2) */
-        get: operations["AddressesController_list"];
+        get: operations["AddressesController_list_v1"];
         put?: never;
         /**
          * Save a new address (max 3 per user)
          * @description Conflict code: address_limit_reached. Setting isDefault demotes any existing default.
          */
-        post: operations["AddressesController_create"];
+        post: operations["AddressesController_create_v1"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/users/me/addresses/{addressId}": {
+    "/api/v1/users/me/addresses/{addressId}": {
         parameters: {
             query?: never;
             header?: never;
@@ -131,16 +131,16 @@ export interface paths {
         };
         get?: never;
         /** Replace an address (ownership-checked) */
-        put: operations["AddressesController_update"];
+        put: operations["AddressesController_update_v1"];
         post?: never;
         /** Delete an address */
-        delete: operations["AddressesController_delete"];
+        delete: operations["AddressesController_delete_v1"];
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/orders": {
+    "/api/v1/orders": {
         parameters: {
             query?: never;
             header?: never;
@@ -148,20 +148,20 @@ export interface paths {
             cookie?: never;
         };
         /** List own orders (recent first, max 30) */
-        get: operations["OrdersController_listMine"];
+        get: operations["OrdersController_listMine_v1"];
         put?: never;
         /**
          * Create order from cart (Story 3.1)
          * @description Validates cart against vendor + items + stock, computes fee/total server-side, enforces minimum order. Idempotent via `Idempotency-Key` header (Story 3.14): a retried request with the same key returns the original order. Error codes: vendor_not_found, vendor_closed, item_not_in_vendor_menu, item_out_of_stock, order_below_minimum.
          */
-        post: operations["OrdersController_create"];
+        post: operations["OrdersController_create_v1"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/orders/{orderId}": {
+    "/api/v1/orders/{orderId}": {
         parameters: {
             query?: never;
             header?: never;
@@ -172,7 +172,7 @@ export interface paths {
          * Order detail
          * @description Visible to the consumer who placed it AND to the target vendor.
          */
-        get: operations["OrdersController_detail"];
+        get: operations["OrdersController_detail_v1"];
         put?: never;
         post?: never;
         delete?: never;
@@ -181,7 +181,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/orders/{orderId}/public": {
+    "/api/v1/orders/{orderId}/public": {
         parameters: {
             query?: never;
             header?: never;
@@ -192,7 +192,7 @@ export interface paths {
          * Public order status (no auth — UUID-as-token model)
          * @description Returns only non-PII fields (order code, status, vendor name, lifecycle timestamps) so consumers can share the link with friends/family without exposing payment info, delivery code, or contact details. UUID-as-token: the order id is the access key — treat the link as semi-secret.
          */
-        get: operations["OrdersController_detailPublic"];
+        get: operations["OrdersController_detailPublic_v1"];
         put?: never;
         post?: never;
         delete?: never;
@@ -201,7 +201,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/orders/{orderId}/cancel": {
+    "/api/v1/orders/{orderId}/cancel": {
         parameters: {
             query?: never;
             header?: never;
@@ -218,10 +218,10 @@ export interface paths {
          * Consumer cancel — only before vendor acceptance (Story 3.8)
          * @description Cash orders cancel cleanly. MoMo orders enter cancelled state immediately; the refund is processed asynchronously by the payments module.
          */
-        patch: operations["OrdersController_cancel"];
+        patch: operations["OrdersController_cancel_v1"];
         trace?: never;
     };
-    "/api/orders/{orderId}/rating": {
+    "/api/v1/orders/{orderId}/rating": {
         parameters: {
             query?: never;
             header?: never;
@@ -234,14 +234,14 @@ export interface paths {
          * Rate vendor + rider post-delivery (Story 3.9)
          * @description Both scores required. 24h window from deliveredAt. One rating per order. Error codes: order_not_rateable, order_already_rated, rating_window_expired.
          */
-        post: operations["OrdersController_rate"];
+        post: operations["OrdersController_rate_v1"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/orders/vendor/me": {
+    "/api/v1/orders/vendor/me": {
         parameters: {
             query?: never;
             header?: never;
@@ -252,7 +252,7 @@ export interface paths {
          * Vendor inbox — list own orders (Story 3.7, pre-orders #187)
          * @description Optional `status` query filters to a single state — pass `CONFIRMED` for "awaiting decision". Optional `type` query splits immediate orders (default — scheduledFor=null, sorted placedAt DESC) from pre-orders (type=preorder — scheduledFor!=null, sorted scheduledFor ASC).
          */
-        get: operations["OrdersController_vendorList"];
+        get: operations["OrdersController_vendorList_v1"];
         put?: never;
         post?: never;
         delete?: never;
@@ -261,7 +261,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/orders/{orderId}/accept": {
+    "/api/v1/orders/{orderId}/accept": {
         parameters: {
             query?: never;
             header?: never;
@@ -275,10 +275,10 @@ export interface paths {
         options?: never;
         head?: never;
         /** Vendor accepts an order (Story 3.7) */
-        patch: operations["OrdersController_accept"];
+        patch: operations["OrdersController_accept_v1"];
         trace?: never;
     };
-    "/api/orders/{orderId}/refuse": {
+    "/api/v1/orders/{orderId}/refuse": {
         parameters: {
             query?: never;
             header?: never;
@@ -295,10 +295,10 @@ export interface paths {
          * Vendor refuses with reason (Story 3.7)
          * @description POWER_OUTAGE is non-penalising; everything else counts toward the weekly refusal alert.
          */
-        patch: operations["OrdersController_refuse"];
+        patch: operations["OrdersController_refuse_v1"];
         trace?: never;
     };
-    "/api/orders/{orderId}/items/{itemId}/prepared": {
+    "/api/v1/orders/{orderId}/items/{itemId}/prepared": {
         parameters: {
             query?: never;
             header?: never;
@@ -312,10 +312,10 @@ export interface paths {
         options?: never;
         head?: never;
         /** Vendor toggles a single article as prepared (preparation checklist) */
-        patch: operations["OrdersController_setItemPrepared"];
+        patch: operations["OrdersController_setItemPrepared_v1"];
         trace?: never;
     };
-    "/api/orders/{orderId}/ready": {
+    "/api/v1/orders/{orderId}/ready": {
         parameters: {
             query?: never;
             header?: never;
@@ -329,10 +329,10 @@ export interface paths {
         options?: never;
         head?: never;
         /** Vendor marks an order ready for pickup — all items must be prepared first */
-        patch: operations["OrdersController_markReady"];
+        patch: operations["OrdersController_markReady_v1"];
         trace?: never;
     };
-    "/api/orders/{orderId}/vendor-cancel-preorder": {
+    "/api/v1/orders/{orderId}/vendor-cancel-preorder": {
         parameters: {
             query?: never;
             header?: never;
@@ -349,10 +349,10 @@ export interface paths {
          * Vendor cancels a pre-order they already accepted (#187). Triggers consumer refund + VendorPenalty.
          * @description Only valid for pre-orders (scheduledFor != null) currently in ACCEPTED or IN_PREP. Pre-acceptance cancellations should use the regular refuse endpoint (no penalty). Returns the cancelled status + the penalty amount in FCFA.
          */
-        patch: operations["OrdersController_vendorCancelPreOrder"];
+        patch: operations["OrdersController_vendorCancelPreOrder_v1"];
         trace?: never;
     };
-    "/api/notifications/push/subscribe": {
+    "/api/v1/notifications/push/subscribe": {
         parameters: {
             query?: never;
             header?: never;
@@ -365,12 +365,12 @@ export interface paths {
          * Register or refresh a Web Push subscription for the current user
          * @description Upserts by (userId, deviceFingerprint). Same device re-granting permission updates the row in place — the endpoint URL may have rotated.
          */
-        post: operations["PushSubscriptionsController_subscribe"];
+        post: operations["PushSubscriptionsController_subscribe_v1"];
         /**
          * Remove a push subscription for the current user
          * @description Idempotent: 204 even if the row is already gone.
          */
-        delete: operations["PushSubscriptionsController_unsubscribe"];
+        delete: operations["PushSubscriptionsController_unsubscribe_v1"];
         options?: never;
         head?: never;
         patch?: never;
@@ -410,1071 +410,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/vendors": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Submit an informal vendor application
-         * @description Story 2.0 — single-shot submission for the 5-screen onboarding form. Creates User + Vendor + first Item atomically (Vendor.status = PENDING_REVIEW). Photos uploaded to R2. WhatsApp confirmation fires after commit (fire-and-forget). Conflict codes: vendor_already_submitted, phone_used_by_other_role.
-         */
-        post: operations["VendorController_submit"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/vendors/me": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get own vendor profile
-         * @description Read endpoint backing the /vendor/profile editor and the type-aware menu UI. Returns the vendor row plus enough metadata for the dashboard to render — deliberately omits admin-only fields (commissionRate, rejectionReason, KYC numbers).
-         */
-        get: operations["VendorController_getMe"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /**
-         * Update own vendor profile (Story 1.8)
-         * @description Vendor-self-update for name, description, and momoPhone. Photo is a separate multipart endpoint (PATCH /vendors/me/photo). Quartier / landmark moves and commission edits stay admin-only.
-         */
-        patch: operations["VendorController_updateMe"];
-        trace?: never;
-    };
-    "/api/vendors/me/balance": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get own balance + payout history
-         * @description Read-only self-service view of the vendor's ledger position. Surfaces balanceXAF, isTrusted (drives same-day vs 24h cashout for INFORMAL), the last 5 payouts, and the next scheduled payout estimate. RESTAURANT and SEMI_FORMAL vendors see the next Sunday 02:00 Africa/Douala estimate; INFORMAL vendors see ON_DEMAND with no estimatedAt.
-         */
-        get: operations["VendorController_getMyBalance"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/vendors/me/cashout-request": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Request an on-demand cashout (INFORMAL vendors only)
-         * @description Creates a VendorCashoutRequest. Admin must approve before payout fires. Refuses if a pending request already exists, vendor is not INFORMAL, or balance is non-positive. SEMI_FORMAL / RESTAURANT vendors use the Sunday cron.
-         */
-        post: operations["VendorController_requestCashout"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/vendors/me/photo": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /**
-         * Replace own profile photo (Story 1.8)
-         * @description Multipart field `photo`. Same size + MIME guardrails as onboarding.
-         */
-        patch: operations["VendorController_updateMePhoto"];
-        trace?: never;
-    };
-    "/api/vendors/me/cover": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /**
-         * Replace own cover photo (hero image on the vendor's catalogue card)
-         * @description Multipart field `photo`. Same size + MIME guardrails as profile photo. The old R2 key is left to the lifecycle sweeper — keeps the rollback story simple if a failed upload need not race a delete.
-         */
-        patch: operations["VendorController_updateMeCover"];
-        trace?: never;
-    };
-    "/api/vendors/status": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Check vendor submission status by WhatsApp phone (Story 2.0 follow-up)
-         * @description Public, throttled. Returns PENDING_REVIEW / CORRECTION_REQUESTED / ACTIVE / SUSPENDED / REJECTED for the vendor row associated with `phone` (Cameroon local OR E.164). 404 if no submission exists. Does NOT leak name/address — only the validation lifecycle.
-         */
-        get: operations["VendorController_getStatus"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/vendors/me/items": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List own menu items (Story 2.2 / 2.3) */
-        get: operations["MenuController_listItems"];
-        put?: never;
-        /**
-         * Create a menu item (Story 2.2 / 2.3)
-         * @description Informal vendors capped at 15 items / 2 categories. Restaurants unlimited. Conflict codes: menu_limit_reached, category_not_yours, category_not_found.
-         */
-        post: operations["MenuController_createItem"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/vendors/me/items/{itemId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** Replace a menu item */
-        put: operations["MenuController_updateItem"];
-        post?: never;
-        /** Delete a menu item */
-        delete: operations["MenuController_deleteItem"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/vendors/me/items/{itemId}/stock": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /**
-         * 1-tap stock toggle (Story 2.10)
-         * @description Lightweight endpoint specifically for the dashboard "Disponible / Épuisé" switch. Designed to take a Tecno/Itel 1-tap on 3G without blocking on payload size.
-         */
-        patch: operations["MenuController_setStock"];
-        trace?: never;
-    };
-    "/api/vendors/me/items/{itemId}/photo": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /** Upload / replace an item photo */
-        patch: operations["MenuController_setPhoto"];
-        trace?: never;
-    };
-    "/api/vendors/me/categories": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List own menu categories */
-        get: operations["MenuController_listCategories"];
-        put?: never;
-        /**
-         * Create a menu category (Story 2.3)
-         * @description Informal vendors capped at 2 categories. Conflict codes: category_limit_reached, category_name_taken.
-         */
-        post: operations["MenuController_createCategory"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/vendors/me/categories/{categoryId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /** Delete a category. Items in it are detached (categoryId = NULL). */
-        delete: operations["MenuController_deleteCategory"];
-        options?: never;
-        head?: never;
-        /** Rename / reorder a category */
-        patch: operations["MenuController_updateCategory"];
-        trace?: never;
-    };
-    "/api/vendors/me/availability": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Read own availability + hours (Story 2.4)
-         * @description Returns { isOpen, hours, isOpenNow }. `isOpenNow` is a server-computed live flag; the dashboard renders straight from it without having to reimplement weekday/clock math.
-         */
-        get: operations["AvailabilityController_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /**
-         * Toggle Ouvert / Fermé (Story 2.4 — 1-tap)
-         * @description INFORMAL: this is the only availability signal. RESTAURANT: same toggle today; the future hours-cron will flip it automatically based on configured hours.
-         */
-        patch: operations["AvailabilityController_setAvailability"];
-        trace?: never;
-    };
-    "/api/vendors/me/hours": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /**
-         * Replace weekly opening hours (Story 2.4 — restaurant)
-         * @description Days absent from the body = closed that day. Times in 24h "HH:MM". INFORMAL vendors can call this too — it just won't affect isOpenNow.
-         */
-        put: operations["AvailabilityController_setHours"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/catalogue": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Browse vendors near a location (Story 2.5)
-         * @description Returns ACTIVE + isOpen vendors within radius (default 10km) ranked by distance. Each card carries server-computed distanceKm, deliveryFeeXAF, etaMinutes, and a plan tier (1 = ≤2km, 2 = ≤5km, 3 = >5km) so the consumer PWA can render the three sections without reimplementing geo math.
-         */
-        get: operations["BrowseController_catalogue"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/vendors/{vendorId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Vendor public profile + menu (Story 2.6)
-         * @description Returns vendor header, categories, and in-stock items. 404 if vendor is not ACTIVE.
-         */
-        get: operations["BrowseController_vendorPublic"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/riders": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Submit a rider KYC application
-         * @description Story 1.4 — single-shot multipart submission. Creates (or upgrades) the User and creates/updates the Rider row in PENDING_REVIEW. Files: idCardPhoto + selfiePhoto (always required), vehiclePhoto (required for MOTO/BICYCLE/CAR). licensePlate required for MOTO and CAR. Conflict codes: rider_already_active, phone_used_by_other_role, license_plate_already_used.
-         */
-        post: operations["RidersController_submit"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/riders/me": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /**
-         * Update own rider profile (Story 1.8)
-         * @description Rider-self-update for preferredZone and momoPhone. vehicleType, photos, and licensePlate changes trigger admin re-validation and live in Story 6.2.
-         */
-        patch: operations["RidersController_updateMe"];
-        trace?: never;
-    };
-    "/api/riders/me/balance": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get own balance + payout history
-         * @description Read-only self-service view of the rider's ledger position. Balance is the sum of RIDER_PAYABLE entries since the last successful payout; the next scheduled payout is the next 06:00 Africa/Douala (or null if balance is zero — cron would skip).
-         */
-        get: operations["RidersController_getMyBalance"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/riders/me/availability": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /**
-         * Toggle online / offline (Story 4.1)
-         * @description 1-tap "Je commence" / "Pause". Account must be ACTIVE — riders in PENDING_REVIEW or CORRECTION_REQUESTED cannot go online.
-         */
-        patch: operations["RidersController_setAvailability"];
-        trace?: never;
-    };
-    "/api/riders/me/location": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Push 15s GPS heartbeat (Story 4.4)
-         * @description Updates lastLocation + lastSeenAt. Implicit online — keeps dispatch eligible through brief network blips. Rider is dropped from dispatch once lastSeenAt > 60s.
-         */
-        post: operations["RidersController_pushHeartbeat"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/riders/me/courses": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List assigned + in-flight courses (Story 4.2) */
-        get: operations["RidersController_listCourses"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/riders/me/courses/{orderId}/picked-up": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /**
-         * Rider confirms pickup at vendor (Story 4.2 / 4.13)
-         * @description Transitions ACCEPTED / IN_PREP / READY_PICKUP → PICKED_UP. Requires the 4-digit pickup code from the vendor in the body. Error codes: wrong_pickup_code, order_not_pickupable.
-         */
-        patch: operations["RidersController_markPickedUp"];
-        trace?: never;
-    };
-    "/api/riders/me/courses/{orderId}/delivered": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /**
-         * Rider confirms drop-off (Story 4.2 / 4.13)
-         * @description Transitions PICKED_UP → DELIVERED. Requires the 4-digit delivery code from the consumer in the body. Error codes: wrong_delivery_code, order_not_in_delivery. Delivery proof photo (Story 4.10) lands later.
-         */
-        patch: operations["RidersController_markDelivered"];
-        trace?: never;
-    };
-    "/api/riders/status": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Check rider submission status by phone (Story 1.4 follow-up)
-         * @description Public, throttled. Returns PENDING_REVIEW / CORRECTION_REQUESTED / ACTIVE / SUSPENDED / REJECTED. 404 if no submission. No PII beyond status + timestamps.
-         */
-        get: operations["RidersController_getStatus"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/auth/login": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Admin login (email + password)
-         * @description Story 1.6 — issues an 8h access JWT for ADMIN/SUPER_ADMIN/OPERATOR/VIEWER users. No refresh-token flow (admin re-enters password at end of session). Lockout: 5 failed attempts in 15 min → account_locked; super-admin must unlock. Error codes (body.code on 401): invalid_credentials, account_locked.
-         */
-        post: operations["AdminAuthController_login"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/vendors/pending": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List vendors awaiting approval (Story 6.2) */
-        get: operations["AdminValidationController_listPendingVendors"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/vendors/{vendorId}/approve": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Approve a vendor application
-         * @description Flips Vendor.status to ACTIVE + sets validatedAt. Fires the "🎉 en ligne" WhatsApp.
-         */
-        post: operations["AdminValidationController_approveVendor"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/vendors/{vendorId}/reject": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Reject a vendor application
-         * @description Sets REJECTED + rejectionReason. Fires WhatsApp with the reason.
-         */
-        post: operations["AdminValidationController_rejectVendor"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/vendors/{vendorId}/suspend": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Suspend a vendor (Stories 1.7 + 6.2)
-         * @description Flips status to SUSPENDED, forces isOpen=false, and revokes the vendor's JWTs via the Redis blacklist (Story 1.7) — their tokens stop working on the very next request.
-         */
-        post: operations["AdminValidationController_suspendVendor"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/vendors/{vendorId}/unsuspend": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Lift a vendor suspension — clears the JWT blacklist. */
-        post: operations["AdminValidationController_unsuspendVendor"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/vendors/{vendorId}/pre-orders": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /**
-         * Toggle Vendor.acceptsPreOrders (#187 follow-up)
-         * @description INFORMAL vendors get acceptsPreOrders=true at submission. This endpoint lets admin override per vendor without code changes — e.g. opting in a willing SEMI_FORMAL, or opting out an INFORMAL whose kitchen workflow does not support pre-orders. Idempotent: no DB write or audit log if the value is already what was requested.
-         */
-        patch: operations["AdminValidationController_setVendorPreOrders"];
-        trace?: never;
-    };
-    "/api/admin/riders/pending": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List riders awaiting KYC approval */
-        get: operations["AdminValidationController_listPendingRiders"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/riders/{riderId}/approve": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Approve a rider KYC */
-        post: operations["AdminValidationController_approveRider"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/riders/{riderId}/reject": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Reject a rider application */
-        post: operations["AdminValidationController_rejectRider"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/riders/{riderId}/suspend": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Suspend a rider (revokes JWTs immediately) */
-        post: operations["AdminValidationController_suspendRider"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/riders/{riderId}/unsuspend": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Lift a rider suspension */
-        post: operations["AdminValidationController_unsuspendRider"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/metrics": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Pilot KPI snapshot (7-day reorder rate, completion, avg times)
-         * @description Drives the Week-3 decision point of the COD-only pilot. Defaults to a rolling 7-day window. Pass ?from=&to= (ISO 8601) to inspect a custom range.
-         */
-        get: operations["AdminMetricsController_getMetrics"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/vendors/{vendorId}/balance": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Vendor balance — read from LedgerEntry, signed (positive = platform owes vendor)
-         * @description Returns the vendor's current balance plus per-component breakdown (gross, commission, penalty, adjustments) accumulated since the last paid VendorPayout (or vendor creation if none). Trusted flag drives the on-demand cashout admin UX per ADR-0005.
-         */
-        get: operations["AdminFinanceController_getVendorBalance"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/riders/{riderId}/balance": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Rider balance — read from LedgerEntry, signed (positive = platform owes rider)
-         * @description Returns the rider's current balance plus per-component breakdown (gross, adjustments) accumulated since the last paid RiderPayout. Riders have no commission or penalty surface in v1 — they earn the rider share of the delivery fee directly. See ADR-0005.
-         */
-        get: operations["AdminFinanceController_getRiderBalance"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/finance/vendor-balances": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Paginated list of vendor balances (sorted by balance DESC)
-         * @description Drives the admin financial dashboard. Filter by VendorStatus, VendorType, and minimum balance. Pagination via offset/limit (pilot scope — switch to cursor-based when row counts demand it).
-         */
-        get: operations["AdminFinanceController_listVendorBalances"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/finance/rider-balances": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Paginated list of rider balances (sorted by balance DESC) */
-        get: operations["AdminFinanceController_listRiderBalances"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/finance/refund-queue": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Refund worklist — orders in PaymentStatus.REFUND_PENDING, oldest first
-         * @description Manual ops worklist until Story 3.8 (Campay refund API) wires the automated refund flow. Surfaces order code, vendor name, total, and days since the refund was queued.
-         */
-        get: operations["AdminFinanceController_listRefundQueue"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/finance/cashout-requests": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Cashout request queue — INFORMAL vendor on-demand cashouts (ADR-0005, 7.2b)
-         * @description Paginated list of vendor-side cashout requests, oldest first. Filter by CashoutRequestStatus. Each row carries vendor name, requested amount, age in hours, and the live isTrusted flag.
-         */
-        get: operations["AdminFinanceController_listCashoutRequests"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/finance/cashout-requests/{requestId}/approve": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Approve a cashout request — creates a VendorPayout via the 7.2a path
-         * @description Reads live balance, applies the same negative-balance + minimum-amount guards as the weekly cron, creates a VendorPayout (status PENDING) with paired VENDOR_PAYABLE / CAMPAY_FLOAT ledger entries. Refuses if balance changed below MIN_CASHOUT_XAF since request, or open dispute appeared.
-         */
-        post: operations["AdminFinanceController_approveCashoutRequest"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/finance/cashout-requests/{requestId}/reject": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Reject a cashout request with a reason */
-        post: operations["AdminFinanceController_rejectCashoutRequest"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/finance/campay-circuit": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Campay circuit breaker state (#92) — CLOSED / OPEN / HALF_OPEN
-         * @description Exposes the breaker state for the admin financial dashboard. When OPEN, every CampayService outbound call (collect, transfer, refund, balance) fails fast with code campay_circuit_open until the cool-down elapses. Useful when investigating a wave of FAILED payouts.
-         */
-        get: operations["AdminFinanceController_getCampayCircuitState"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/finance/escalations": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List failed / stuck payouts + refunds needing admin attention
-         * @description Returns VendorPayout / RiderPayout in FAILED status or stuck IN_FLIGHT past the 30-min threshold, plus Orders in REFUND_PENDING with refundCampayRef set but no refundedAt after the same threshold. Sorted oldest first. Per ADR-0005 §S3 / #85.
-         */
-        get: operations["AdminFinanceController_listEscalations"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/finance/vendor-payouts/{payoutId}/retry": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Retry a FAILED vendor payout — flips it back to PENDING */
-        post: operations["AdminFinanceController_retryVendorPayout"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/finance/rider-payouts/{payoutId}/retry": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Retry a FAILED rider payout — flips it back to PENDING */
-        post: operations["AdminFinanceController_retryRiderPayout"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/finance/vendor-payouts/{payoutId}/manual-mark-paid": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Manually mark a vendor payout PAID after firing it via the Campay UI
-         * @description Captures the Campay reference admin used in the manual fire so the audit trail stays connected. Sets status=PAID, paidAt=now. Refuses if the row is already PAID or CANCELLED.
-         */
-        post: operations["AdminFinanceController_manualMarkVendorPayoutPaid"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/finance/rider-payouts/{payoutId}/manual-mark-paid": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Manually mark a rider payout PAID after manual Campay fire */
-        post: operations["AdminFinanceController_manualMarkRiderPayoutPaid"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/orders/stuck-pickup": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List Orders stuck in PICKED_UP > 2h — admin rider-fraud triage queue
-         * @description Synchronous version of the StuckPickupDetectorService cron output. Returns orders where the rider scanned pickup but never marked delivered, oldest first. Powers the admin /admin/finance → Incidents livreurs tab.
-         */
-        get: operations["AdminRiderFraudController_listStuckPickups"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/orders/{orderId}/resolve-rider-fraud": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Resolve a rider-fraud incident (Order stuck in PICKED_UP)
-         * @description Atomic resolution flow for the scenario where a rider scanned pickup but never marked DELIVERED. Admin picks any combination of: queue a consumer refund (paymentStatus → REFUND_PENDING, RefundProcessor drains it), compensate the vendor via an ADJUSTMENT ledger entry, and either SUSPEND the rider (status flip + JWT revoke) or WARN them (reliabilityScore decrement). Order always ends CANCELLED with refusalReason set to "RIDER_FRAUD: <note>". Per ADR-0005 §S3.
-         */
-        post: operations["AdminRiderFraudController_resolveRiderFraud"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/orders/{orderId}/pay/momo": {
+    "/api/v1/orders/{orderId}/pay/momo": {
         parameters: {
             query?: never;
             header?: never;
@@ -1487,7 +423,7 @@ export interface paths {
          * Initiate a Campay MoMo collect (Stories 3.3, 3.4)
          * @description Triggers the Campay USSD prompt on the payer phone. Returns immediately with a reference; the order flips to CONFIRMED + PAID once Campay's webhook lands (typically < 30s for MTN, < 2min for Orange). Error codes: payment_method_not_momo, order_not_payable, payment_already_processing.
          */
-        post: operations["PaymentsController_initiateMomo"];
+        post: operations["PaymentsController_initiateMomo_v1"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1511,7 +447,1071 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/orders/{orderId}/call-consumer": {
+    "/api/v1/vendors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Submit an informal vendor application
+         * @description Story 2.0 — single-shot submission for the 5-screen onboarding form. Creates User + Vendor + first Item atomically (Vendor.status = PENDING_REVIEW). Photos uploaded to R2. WhatsApp confirmation fires after commit (fire-and-forget). Conflict codes: vendor_already_submitted, phone_used_by_other_role.
+         */
+        post: operations["VendorController_submit_v1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/vendors/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get own vendor profile
+         * @description Read endpoint backing the /vendor/profile editor and the type-aware menu UI. Returns the vendor row plus enough metadata for the dashboard to render — deliberately omits admin-only fields (commissionRate, rejectionReason, KYC numbers).
+         */
+        get: operations["VendorController_getMe_v1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update own vendor profile (Story 1.8)
+         * @description Vendor-self-update for name, description, and momoPhone. Photo is a separate multipart endpoint (PATCH /vendors/me/photo). Quartier / landmark moves and commission edits stay admin-only.
+         */
+        patch: operations["VendorController_updateMe_v1"];
+        trace?: never;
+    };
+    "/api/v1/vendors/me/balance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get own balance + payout history
+         * @description Read-only self-service view of the vendor's ledger position. Surfaces balanceXAF, isTrusted (drives same-day vs 24h cashout for INFORMAL), the last 5 payouts, and the next scheduled payout estimate. RESTAURANT and SEMI_FORMAL vendors see the next Sunday 02:00 Africa/Douala estimate; INFORMAL vendors see ON_DEMAND with no estimatedAt.
+         */
+        get: operations["VendorController_getMyBalance_v1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/vendors/me/cashout-request": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Request an on-demand cashout (INFORMAL vendors only)
+         * @description Creates a VendorCashoutRequest. Admin must approve before payout fires. Refuses if a pending request already exists, vendor is not INFORMAL, or balance is non-positive. SEMI_FORMAL / RESTAURANT vendors use the Sunday cron.
+         */
+        post: operations["VendorController_requestCashout_v1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/vendors/me/photo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Replace own profile photo (Story 1.8)
+         * @description Multipart field `photo`. Same size + MIME guardrails as onboarding.
+         */
+        patch: operations["VendorController_updateMePhoto_v1"];
+        trace?: never;
+    };
+    "/api/v1/vendors/me/cover": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Replace own cover photo (hero image on the vendor's catalogue card)
+         * @description Multipart field `photo`. Same size + MIME guardrails as profile photo. The old R2 key is left to the lifecycle sweeper — keeps the rollback story simple if a failed upload need not race a delete.
+         */
+        patch: operations["VendorController_updateMeCover_v1"];
+        trace?: never;
+    };
+    "/api/v1/vendors/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Check vendor submission status by WhatsApp phone (Story 2.0 follow-up)
+         * @description Public, throttled. Returns PENDING_REVIEW / CORRECTION_REQUESTED / ACTIVE / SUSPENDED / REJECTED for the vendor row associated with `phone` (Cameroon local OR E.164). 404 if no submission exists. Does NOT leak name/address — only the validation lifecycle.
+         */
+        get: operations["VendorController_getStatus_v1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/vendors/me/items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List own menu items (Story 2.2 / 2.3) */
+        get: operations["MenuController_listItems_v1"];
+        put?: never;
+        /**
+         * Create a menu item (Story 2.2 / 2.3)
+         * @description Informal vendors capped at 15 items / 2 categories. Restaurants unlimited. Conflict codes: menu_limit_reached, category_not_yours, category_not_found.
+         */
+        post: operations["MenuController_createItem_v1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/vendors/me/items/{itemId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Replace a menu item */
+        put: operations["MenuController_updateItem_v1"];
+        post?: never;
+        /** Delete a menu item */
+        delete: operations["MenuController_deleteItem_v1"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/vendors/me/items/{itemId}/stock": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * 1-tap stock toggle (Story 2.10)
+         * @description Lightweight endpoint specifically for the dashboard "Disponible / Épuisé" switch. Designed to take a Tecno/Itel 1-tap on 3G without blocking on payload size.
+         */
+        patch: operations["MenuController_setStock_v1"];
+        trace?: never;
+    };
+    "/api/v1/vendors/me/items/{itemId}/photo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Upload / replace an item photo */
+        patch: operations["MenuController_setPhoto_v1"];
+        trace?: never;
+    };
+    "/api/v1/vendors/me/categories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List own menu categories */
+        get: operations["MenuController_listCategories_v1"];
+        put?: never;
+        /**
+         * Create a menu category (Story 2.3)
+         * @description Informal vendors capped at 2 categories. Conflict codes: category_limit_reached, category_name_taken.
+         */
+        post: operations["MenuController_createCategory_v1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/vendors/me/categories/{categoryId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete a category. Items in it are detached (categoryId = NULL). */
+        delete: operations["MenuController_deleteCategory_v1"];
+        options?: never;
+        head?: never;
+        /** Rename / reorder a category */
+        patch: operations["MenuController_updateCategory_v1"];
+        trace?: never;
+    };
+    "/api/v1/vendors/me/availability": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read own availability + hours (Story 2.4)
+         * @description Returns { isOpen, hours, isOpenNow }. `isOpenNow` is a server-computed live flag; the dashboard renders straight from it without having to reimplement weekday/clock math.
+         */
+        get: operations["AvailabilityController_get_v1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Toggle Ouvert / Fermé (Story 2.4 — 1-tap)
+         * @description INFORMAL: this is the only availability signal. RESTAURANT: same toggle today; the future hours-cron will flip it automatically based on configured hours.
+         */
+        patch: operations["AvailabilityController_setAvailability_v1"];
+        trace?: never;
+    };
+    "/api/v1/vendors/me/hours": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Replace weekly opening hours (Story 2.4 — restaurant)
+         * @description Days absent from the body = closed that day. Times in 24h "HH:MM". INFORMAL vendors can call this too — it just won't affect isOpenNow.
+         */
+        put: operations["AvailabilityController_setHours_v1"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/catalogue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Browse vendors near a location (Story 2.5)
+         * @description Returns ACTIVE + isOpen vendors within radius (default 10km) ranked by distance. Each card carries server-computed distanceKm, deliveryFeeXAF, etaMinutes, and a plan tier (1 = ≤2km, 2 = ≤5km, 3 = >5km) so the consumer PWA can render the three sections without reimplementing geo math.
+         */
+        get: operations["BrowseController_catalogue_v1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/vendors/{vendorId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Vendor public profile + menu (Story 2.6)
+         * @description Returns vendor header, categories, and in-stock items. 404 if vendor is not ACTIVE.
+         */
+        get: operations["BrowseController_vendorPublic_v1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/riders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Submit a rider KYC application
+         * @description Story 1.4 — single-shot multipart submission. Creates (or upgrades) the User and creates/updates the Rider row in PENDING_REVIEW. Files: idCardPhoto + selfiePhoto (always required), vehiclePhoto (required for MOTO/BICYCLE/CAR). licensePlate required for MOTO and CAR. Conflict codes: rider_already_active, phone_used_by_other_role, license_plate_already_used.
+         */
+        post: operations["RidersController_submit_v1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/riders/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update own rider profile (Story 1.8)
+         * @description Rider-self-update for preferredZone and momoPhone. vehicleType, photos, and licensePlate changes trigger admin re-validation and live in Story 6.2.
+         */
+        patch: operations["RidersController_updateMe_v1"];
+        trace?: never;
+    };
+    "/api/v1/riders/me/balance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get own balance + payout history
+         * @description Read-only self-service view of the rider's ledger position. Balance is the sum of RIDER_PAYABLE entries since the last successful payout; the next scheduled payout is the next 06:00 Africa/Douala (or null if balance is zero — cron would skip).
+         */
+        get: operations["RidersController_getMyBalance_v1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/riders/me/availability": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Toggle online / offline (Story 4.1)
+         * @description 1-tap "Je commence" / "Pause". Account must be ACTIVE — riders in PENDING_REVIEW or CORRECTION_REQUESTED cannot go online.
+         */
+        patch: operations["RidersController_setAvailability_v1"];
+        trace?: never;
+    };
+    "/api/v1/riders/me/location": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Push 15s GPS heartbeat (Story 4.4)
+         * @description Updates lastLocation + lastSeenAt. Implicit online — keeps dispatch eligible through brief network blips. Rider is dropped from dispatch once lastSeenAt > 60s.
+         */
+        post: operations["RidersController_pushHeartbeat_v1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/riders/me/courses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List assigned + in-flight courses (Story 4.2) */
+        get: operations["RidersController_listCourses_v1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/riders/me/courses/{orderId}/picked-up": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Rider confirms pickup at vendor (Story 4.2 / 4.13)
+         * @description Transitions ACCEPTED / IN_PREP / READY_PICKUP → PICKED_UP. Requires the 4-digit pickup code from the vendor in the body. Error codes: wrong_pickup_code, order_not_pickupable.
+         */
+        patch: operations["RidersController_markPickedUp_v1"];
+        trace?: never;
+    };
+    "/api/v1/riders/me/courses/{orderId}/delivered": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Rider confirms drop-off (Story 4.2 / 4.13)
+         * @description Transitions PICKED_UP → DELIVERED. Requires the 4-digit delivery code from the consumer in the body. Error codes: wrong_delivery_code, order_not_in_delivery. Delivery proof photo (Story 4.10) lands later.
+         */
+        patch: operations["RidersController_markDelivered_v1"];
+        trace?: never;
+    };
+    "/api/v1/riders/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Check rider submission status by phone (Story 1.4 follow-up)
+         * @description Public, throttled. Returns PENDING_REVIEW / CORRECTION_REQUESTED / ACTIVE / SUSPENDED / REJECTED. 404 if no submission. No PII beyond status + timestamps.
+         */
+        get: operations["RidersController_getStatus_v1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/auth/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Admin login (email + password)
+         * @description Story 1.6 — issues an 8h access JWT for ADMIN/SUPER_ADMIN/OPERATOR/VIEWER users. No refresh-token flow (admin re-enters password at end of session). Lockout: 5 failed attempts in 15 min → account_locked; super-admin must unlock. Error codes (body.code on 401): invalid_credentials, account_locked.
+         */
+        post: operations["AdminAuthController_login_v1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/vendors/pending": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List vendors awaiting approval (Story 6.2) */
+        get: operations["AdminValidationController_listPendingVendors_v1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/vendors/{vendorId}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve a vendor application
+         * @description Flips Vendor.status to ACTIVE + sets validatedAt. Fires the "🎉 en ligne" WhatsApp.
+         */
+        post: operations["AdminValidationController_approveVendor_v1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/vendors/{vendorId}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reject a vendor application
+         * @description Sets REJECTED + rejectionReason. Fires WhatsApp with the reason.
+         */
+        post: operations["AdminValidationController_rejectVendor_v1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/vendors/{vendorId}/suspend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Suspend a vendor (Stories 1.7 + 6.2)
+         * @description Flips status to SUSPENDED, forces isOpen=false, and revokes the vendor's JWTs via the Redis blacklist (Story 1.7) — their tokens stop working on the very next request.
+         */
+        post: operations["AdminValidationController_suspendVendor_v1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/vendors/{vendorId}/unsuspend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Lift a vendor suspension — clears the JWT blacklist. */
+        post: operations["AdminValidationController_unsuspendVendor_v1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/vendors/{vendorId}/pre-orders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Toggle Vendor.acceptsPreOrders (#187 follow-up)
+         * @description INFORMAL vendors get acceptsPreOrders=true at submission. This endpoint lets admin override per vendor without code changes — e.g. opting in a willing SEMI_FORMAL, or opting out an INFORMAL whose kitchen workflow does not support pre-orders. Idempotent: no DB write or audit log if the value is already what was requested.
+         */
+        patch: operations["AdminValidationController_setVendorPreOrders_v1"];
+        trace?: never;
+    };
+    "/api/v1/admin/riders/pending": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List riders awaiting KYC approval */
+        get: operations["AdminValidationController_listPendingRiders_v1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/riders/{riderId}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Approve a rider KYC */
+        post: operations["AdminValidationController_approveRider_v1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/riders/{riderId}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reject a rider application */
+        post: operations["AdminValidationController_rejectRider_v1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/riders/{riderId}/suspend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Suspend a rider (revokes JWTs immediately) */
+        post: operations["AdminValidationController_suspendRider_v1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/riders/{riderId}/unsuspend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Lift a rider suspension */
+        post: operations["AdminValidationController_unsuspendRider_v1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/metrics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Pilot KPI snapshot (7-day reorder rate, completion, avg times)
+         * @description Drives the Week-3 decision point of the COD-only pilot. Defaults to a rolling 7-day window. Pass ?from=&to= (ISO 8601) to inspect a custom range.
+         */
+        get: operations["AdminMetricsController_getMetrics_v1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/vendors/{vendorId}/balance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Vendor balance — read from LedgerEntry, signed (positive = platform owes vendor)
+         * @description Returns the vendor's current balance plus per-component breakdown (gross, commission, penalty, adjustments) accumulated since the last paid VendorPayout (or vendor creation if none). Trusted flag drives the on-demand cashout admin UX per ADR-0005.
+         */
+        get: operations["AdminFinanceController_getVendorBalance_v1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/riders/{riderId}/balance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Rider balance — read from LedgerEntry, signed (positive = platform owes rider)
+         * @description Returns the rider's current balance plus per-component breakdown (gross, adjustments) accumulated since the last paid RiderPayout. Riders have no commission or penalty surface in v1 — they earn the rider share of the delivery fee directly. See ADR-0005.
+         */
+        get: operations["AdminFinanceController_getRiderBalance_v1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/finance/vendor-balances": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Paginated list of vendor balances (sorted by balance DESC)
+         * @description Drives the admin financial dashboard. Filter by VendorStatus, VendorType, and minimum balance. Pagination via offset/limit (pilot scope — switch to cursor-based when row counts demand it).
+         */
+        get: operations["AdminFinanceController_listVendorBalances_v1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/finance/rider-balances": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Paginated list of rider balances (sorted by balance DESC) */
+        get: operations["AdminFinanceController_listRiderBalances_v1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/finance/refund-queue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Refund worklist — orders in PaymentStatus.REFUND_PENDING, oldest first
+         * @description Manual ops worklist until Story 3.8 (Campay refund API) wires the automated refund flow. Surfaces order code, vendor name, total, and days since the refund was queued.
+         */
+        get: operations["AdminFinanceController_listRefundQueue_v1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/finance/cashout-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Cashout request queue — INFORMAL vendor on-demand cashouts (ADR-0005, 7.2b)
+         * @description Paginated list of vendor-side cashout requests, oldest first. Filter by CashoutRequestStatus. Each row carries vendor name, requested amount, age in hours, and the live isTrusted flag.
+         */
+        get: operations["AdminFinanceController_listCashoutRequests_v1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/finance/cashout-requests/{requestId}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve a cashout request — creates a VendorPayout via the 7.2a path
+         * @description Reads live balance, applies the same negative-balance + minimum-amount guards as the weekly cron, creates a VendorPayout (status PENDING) with paired VENDOR_PAYABLE / CAMPAY_FLOAT ledger entries. Refuses if balance changed below MIN_CASHOUT_XAF since request, or open dispute appeared.
+         */
+        post: operations["AdminFinanceController_approveCashoutRequest_v1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/finance/cashout-requests/{requestId}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reject a cashout request with a reason */
+        post: operations["AdminFinanceController_rejectCashoutRequest_v1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/finance/campay-circuit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Campay circuit breaker state (#92) — CLOSED / OPEN / HALF_OPEN
+         * @description Exposes the breaker state for the admin financial dashboard. When OPEN, every CampayService outbound call (collect, transfer, refund, balance) fails fast with code campay_circuit_open until the cool-down elapses. Useful when investigating a wave of FAILED payouts.
+         */
+        get: operations["AdminFinanceController_getCampayCircuitState_v1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/finance/escalations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List failed / stuck payouts + refunds needing admin attention
+         * @description Returns VendorPayout / RiderPayout in FAILED status or stuck IN_FLIGHT past the 30-min threshold, plus Orders in REFUND_PENDING with refundCampayRef set but no refundedAt after the same threshold. Sorted oldest first. Per ADR-0005 §S3 / #85.
+         */
+        get: operations["AdminFinanceController_listEscalations_v1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/finance/vendor-payouts/{payoutId}/retry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Retry a FAILED vendor payout — flips it back to PENDING */
+        post: operations["AdminFinanceController_retryVendorPayout_v1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/finance/rider-payouts/{payoutId}/retry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Retry a FAILED rider payout — flips it back to PENDING */
+        post: operations["AdminFinanceController_retryRiderPayout_v1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/finance/vendor-payouts/{payoutId}/manual-mark-paid": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Manually mark a vendor payout PAID after firing it via the Campay UI
+         * @description Captures the Campay reference admin used in the manual fire so the audit trail stays connected. Sets status=PAID, paidAt=now. Refuses if the row is already PAID or CANCELLED.
+         */
+        post: operations["AdminFinanceController_manualMarkVendorPayoutPaid_v1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/finance/rider-payouts/{payoutId}/manual-mark-paid": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Manually mark a rider payout PAID after manual Campay fire */
+        post: operations["AdminFinanceController_manualMarkRiderPayoutPaid_v1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/orders/stuck-pickup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Orders stuck in PICKED_UP > 2h — admin rider-fraud triage queue
+         * @description Synchronous version of the StuckPickupDetectorService cron output. Returns orders where the rider scanned pickup but never marked delivered, oldest first. Powers the admin /admin/finance → Incidents livreurs tab.
+         */
+        get: operations["AdminRiderFraudController_listStuckPickups_v1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/orders/{orderId}/resolve-rider-fraud": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Resolve a rider-fraud incident (Order stuck in PICKED_UP)
+         * @description Atomic resolution flow for the scenario where a rider scanned pickup but never marked DELIVERED. Admin picks any combination of: queue a consumer refund (paymentStatus → REFUND_PENDING, RefundProcessor drains it), compensate the vendor via an ADJUSTMENT ledger entry, and either SUSPEND the rider (status flip + JWT revoke) or WARN them (reliabilityScore decrement). Order always ends CANCELLED with refusalReason set to "RIDER_FRAUD: <note>". Per ADR-0005 §S3.
+         */
+        post: operations["AdminRiderFraudController_resolveRiderFraud_v1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/orders/{orderId}/call-consumer": {
         parameters: {
             query?: never;
             header?: never;
@@ -1521,14 +1521,14 @@ export interface paths {
         get?: never;
         put?: never;
         /** Masked rider → consumer call (Story 4.17) */
-        post: operations["VoiceProxyController_riderCallConsumer"];
+        post: operations["VoiceProxyController_riderCallConsumer_v1"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/orders/{orderId}/vendor-call-consumer": {
+    "/api/v1/orders/{orderId}/vendor-call-consumer": {
         parameters: {
             query?: never;
             header?: never;
@@ -1538,14 +1538,14 @@ export interface paths {
         get?: never;
         put?: never;
         /** Masked vendor → consumer call (Story 3.17) */
-        post: operations["VoiceProxyController_vendorCallConsumer"];
+        post: operations["VoiceProxyController_vendorCallConsumer_v1"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/orders/{orderId}/vendor-call-rider": {
+    "/api/v1/orders/{orderId}/vendor-call-rider": {
         parameters: {
             query?: never;
             header?: never;
@@ -1555,14 +1555,14 @@ export interface paths {
         get?: never;
         put?: never;
         /** Masked vendor → rider call (Story 3.17) */
-        post: operations["VoiceProxyController_vendorCallRider"];
+        post: operations["VoiceProxyController_vendorCallRider_v1"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/orders/{orderId}/call-vendor": {
+    "/api/v1/orders/{orderId}/call-vendor": {
         parameters: {
             query?: never;
             header?: never;
@@ -1572,14 +1572,14 @@ export interface paths {
         get?: never;
         put?: never;
         /** Masked consumer → vendor call */
-        post: operations["VoiceProxyController_consumerCallVendor"];
+        post: operations["VoiceProxyController_consumerCallVendor_v1"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/orders/{orderId}/call-rider": {
+    "/api/v1/orders/{orderId}/call-rider": {
         parameters: {
             query?: never;
             header?: never;
@@ -1589,7 +1589,7 @@ export interface paths {
         get?: never;
         put?: never;
         /** Masked consumer → rider call */
-        post: operations["VoiceProxyController_consumerCallRider"];
+        post: operations["VoiceProxyController_consumerCallRider_v1"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1706,7 +1706,7 @@ export interface components {
             vendorId: string;
             items: components["schemas"]["CartLineDto"][];
             /** @enum {string} */
-            paymentMethod: "MTN_MOMO" | "ORANGE_MONEY" | "CASH";
+            paymentMethod: "MTN_MOMO" | "ORANGE_MONEY";
             /**
              * @description Note for the vendor — the only client→vendor channel. Max 120 chars.
              * @example Sans piment
@@ -1771,6 +1771,13 @@ export interface components {
         UnsubscribePushDto: {
             /** @description Push service endpoint URL to deactivate */
             endpoint: string;
+        };
+        InitiateMomoPaymentDto: {
+            /**
+             * @description MTN MoMo or Orange Money number — Cameroon local or E.164.
+             * @example 670000000
+             */
+            payerPhone: string;
         };
         SubmitVendorDto: {
             /**
@@ -2079,13 +2086,6 @@ export interface components {
             /** @description Free-text note captured in refusalReason + audit log */
             note: string;
         };
-        InitiateMomoPaymentDto: {
-            /**
-             * @description MTN MoMo or Orange Money number — Cameroon local or E.164.
-             * @example 670000000
-             */
-            payerPhone: string;
-        };
     };
     responses: never;
     parameters: never;
@@ -2115,7 +2115,7 @@ export interface operations {
             };
         };
     };
-    AuthController_requestOtp: {
+    AuthController_requestOtp_v1: {
         parameters: {
             query?: never;
             header?: never;
@@ -2136,7 +2136,7 @@ export interface operations {
             };
         };
     };
-    AuthController_verifyOtp: {
+    AuthController_verifyOtp_v1: {
         parameters: {
             query?: never;
             header?: never;
@@ -2157,7 +2157,7 @@ export interface operations {
             };
         };
     };
-    AuthController_refresh: {
+    AuthController_refresh_v1: {
         parameters: {
             query?: never;
             header?: never;
@@ -2178,7 +2178,7 @@ export interface operations {
             };
         };
     };
-    UsersController_me: {
+    UsersController_me_v1: {
         parameters: {
             query?: never;
             header?: never;
@@ -2195,7 +2195,7 @@ export interface operations {
             };
         };
     };
-    UsersController_updateMe: {
+    UsersController_updateMe_v1: {
         parameters: {
             query?: never;
             header?: never;
@@ -2216,7 +2216,7 @@ export interface operations {
             };
         };
     };
-    AddressesController_list: {
+    AddressesController_list_v1: {
         parameters: {
             query?: never;
             header?: never;
@@ -2233,7 +2233,7 @@ export interface operations {
             };
         };
     };
-    AddressesController_create: {
+    AddressesController_create_v1: {
         parameters: {
             query?: never;
             header?: never;
@@ -2254,7 +2254,7 @@ export interface operations {
             };
         };
     };
-    AddressesController_update: {
+    AddressesController_update_v1: {
         parameters: {
             query?: never;
             header?: never;
@@ -2277,7 +2277,7 @@ export interface operations {
             };
         };
     };
-    AddressesController_delete: {
+    AddressesController_delete_v1: {
         parameters: {
             query?: never;
             header?: never;
@@ -2296,7 +2296,7 @@ export interface operations {
             };
         };
     };
-    OrdersController_listMine: {
+    OrdersController_listMine_v1: {
         parameters: {
             query?: never;
             header?: never;
@@ -2313,7 +2313,7 @@ export interface operations {
             };
         };
     };
-    OrdersController_create: {
+    OrdersController_create_v1: {
         parameters: {
             query?: never;
             header: {
@@ -2336,7 +2336,7 @@ export interface operations {
             };
         };
     };
-    OrdersController_detail: {
+    OrdersController_detail_v1: {
         parameters: {
             query?: never;
             header?: never;
@@ -2355,7 +2355,7 @@ export interface operations {
             };
         };
     };
-    OrdersController_detailPublic: {
+    OrdersController_detailPublic_v1: {
         parameters: {
             query?: never;
             header?: never;
@@ -2374,7 +2374,7 @@ export interface operations {
             };
         };
     };
-    OrdersController_cancel: {
+    OrdersController_cancel_v1: {
         parameters: {
             query?: never;
             header?: never;
@@ -2393,7 +2393,7 @@ export interface operations {
             };
         };
     };
-    OrdersController_rate: {
+    OrdersController_rate_v1: {
         parameters: {
             query?: never;
             header?: never;
@@ -2416,7 +2416,7 @@ export interface operations {
             };
         };
     };
-    OrdersController_vendorList: {
+    OrdersController_vendorList_v1: {
         parameters: {
             query?: {
                 type?: "immediate" | "preorder";
@@ -2436,7 +2436,7 @@ export interface operations {
             };
         };
     };
-    OrdersController_accept: {
+    OrdersController_accept_v1: {
         parameters: {
             query?: never;
             header?: never;
@@ -2455,7 +2455,7 @@ export interface operations {
             };
         };
     };
-    OrdersController_refuse: {
+    OrdersController_refuse_v1: {
         parameters: {
             query?: never;
             header?: never;
@@ -2478,7 +2478,7 @@ export interface operations {
             };
         };
     };
-    OrdersController_setItemPrepared: {
+    OrdersController_setItemPrepared_v1: {
         parameters: {
             query?: never;
             header?: never;
@@ -2502,7 +2502,7 @@ export interface operations {
             };
         };
     };
-    OrdersController_markReady: {
+    OrdersController_markReady_v1: {
         parameters: {
             query?: never;
             header?: never;
@@ -2521,7 +2521,7 @@ export interface operations {
             };
         };
     };
-    OrdersController_vendorCancelPreOrder: {
+    OrdersController_vendorCancelPreOrder_v1: {
         parameters: {
             query?: never;
             header?: never;
@@ -2544,7 +2544,7 @@ export interface operations {
             };
         };
     };
-    PushSubscriptionsController_subscribe: {
+    PushSubscriptionsController_subscribe_v1: {
         parameters: {
             query?: never;
             header?: never;
@@ -2565,7 +2565,7 @@ export interface operations {
             };
         };
     };
-    PushSubscriptionsController_unsubscribe: {
+    PushSubscriptionsController_unsubscribe_v1: {
         parameters: {
             query?: never;
             header?: never;
@@ -2620,1238 +2620,7 @@ export interface operations {
             };
         };
     };
-    VendorController_submit: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "multipart/form-data": components["schemas"]["SubmitVendorDto"];
-            };
-        };
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    VendorController_getMe: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    VendorController_updateMe: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateVendorProfileDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    VendorController_getMyBalance: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["VendorSelfBalanceDto"];
-                };
-            };
-        };
-    };
-    VendorController_requestCashout: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    VendorController_updateMePhoto: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    VendorController_updateMeCover: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    VendorController_getStatus: {
-        parameters: {
-            query: {
-                /** @description WhatsApp phone — Cameroon local or E.164 */
-                phone: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    MenuController_listItems: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    MenuController_createItem: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpsertItemDto"];
-            };
-        };
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    MenuController_updateItem: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                itemId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpsertItemDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    MenuController_deleteItem: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                itemId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    MenuController_setStock: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                itemId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateItemStockDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    MenuController_setPhoto: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                itemId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    MenuController_listCategories: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    MenuController_createCategory: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpsertCategoryDto"];
-            };
-        };
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    MenuController_deleteCategory: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                categoryId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    MenuController_updateCategory: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                categoryId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpsertCategoryDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    AvailabilityController_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    AvailabilityController_setAvailability: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateAvailabilityDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    AvailabilityController_setHours: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateHoursDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    BrowseController_catalogue: {
-        parameters: {
-            query: {
-                /** @description Consumer latitude. */
-                lat: number;
-                /** @description Consumer longitude. */
-                lng: number;
-                /** @description Max distance to fetch in km. Defaults to 10 (covers Douala metro). Catalogue groups results into 3 plans (≤2km, ≤5km, >5km) regardless. */
-                radiusKm?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    BrowseController_vendorPublic: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                vendorId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    RidersController_submit: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "multipart/form-data": components["schemas"]["SubmitRiderDto"];
-            };
-        };
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    RidersController_updateMe: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateRiderProfileDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    RidersController_getMyBalance: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["RiderSelfBalanceDto"];
-                };
-            };
-        };
-    };
-    RidersController_setAvailability: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["RiderAvailabilityDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    RidersController_pushHeartbeat: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["RiderHeartbeatDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    RidersController_listCourses: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    RidersController_markPickedUp: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                orderId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ConfirmationCodeDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    RidersController_markDelivered: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                orderId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ConfirmationCodeDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    RidersController_getStatus: {
-        parameters: {
-            query: {
-                /** @description WhatsApp phone — Cameroon local or E.164 */
-                phone: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    AdminAuthController_login: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AdminLoginDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    AdminValidationController_listPendingVendors: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    AdminValidationController_approveVendor: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                vendorId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    AdminValidationController_rejectVendor: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                vendorId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AdminDecisionDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    AdminValidationController_suspendVendor: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                vendorId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AdminDecisionDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    AdminValidationController_unsuspendVendor: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                vendorId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    AdminValidationController_setVendorPreOrders: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                vendorId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["SetVendorPreOrdersDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    AdminValidationController_listPendingRiders: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    AdminValidationController_approveRider: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                riderId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    AdminValidationController_rejectRider: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                riderId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AdminDecisionDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    AdminValidationController_suspendRider: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                riderId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AdminDecisionDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    AdminValidationController_unsuspendRider: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                riderId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    AdminMetricsController_getMetrics: {
-        parameters: {
-            query?: {
-                from?: string;
-                to?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    AdminFinanceController_getVendorBalance: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                vendorId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    AdminFinanceController_getRiderBalance: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                riderId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    AdminFinanceController_listVendorBalances: {
-        parameters: {
-            query?: {
-                status?: "PENDING_REVIEW" | "CORRECTION_REQUESTED" | "ACTIVE" | "SUSPENDED" | "REJECTED";
-                type?: "INFORMAL" | "SEMI_FORMAL" | "RESTAURANT";
-                /** @description Minimum balance in FCFA (signed) */
-                minBalanceXAF?: number;
-                limit?: number;
-                offset?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    AdminFinanceController_listRiderBalances: {
-        parameters: {
-            query?: {
-                vehicleType?: "MOTO" | "BICYCLE" | "CAR" | "ON_FOOT";
-                /** @description Minimum balance in FCFA (signed) */
-                minBalanceXAF?: number;
-                limit?: number;
-                offset?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    AdminFinanceController_listRefundQueue: {
-        parameters: {
-            query?: {
-                limit?: number;
-                offset?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    AdminFinanceController_listCashoutRequests: {
-        parameters: {
-            query?: {
-                status?: "PENDING_APPROVAL" | "APPROVED" | "REJECTED" | "CANCELLED";
-                limit?: number;
-                offset?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    AdminFinanceController_approveCashoutRequest: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                requestId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    AdminFinanceController_rejectCashoutRequest: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                requestId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["RejectCashoutRequestDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    AdminFinanceController_getCampayCircuitState: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    AdminFinanceController_listEscalations: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    AdminFinanceController_retryVendorPayout: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                payoutId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    AdminFinanceController_retryRiderPayout: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                payoutId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    AdminFinanceController_manualMarkVendorPayoutPaid: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                payoutId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ManualMarkPaidDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    AdminFinanceController_manualMarkRiderPayoutPaid: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                payoutId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ManualMarkPaidDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    AdminRiderFraudController_listStuckPickups: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    AdminRiderFraudController_resolveRiderFraud: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                orderId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ResolveRiderFraudDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    PaymentsController_initiateMomo: {
+    PaymentsController_initiateMomo_v1: {
         parameters: {
             query?: never;
             header?: never;
@@ -3891,7 +2660,1238 @@ export interface operations {
             };
         };
     };
-    VoiceProxyController_riderCallConsumer: {
+    VendorController_submit_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["SubmitVendorDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    VendorController_getMe_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    VendorController_updateMe_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateVendorProfileDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    VendorController_getMyBalance_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VendorSelfBalanceDto"];
+                };
+            };
+        };
+    };
+    VendorController_requestCashout_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    VendorController_updateMePhoto_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    VendorController_updateMeCover_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    VendorController_getStatus_v1: {
+        parameters: {
+            query: {
+                /** @description WhatsApp phone — Cameroon local or E.164 */
+                phone: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    MenuController_listItems_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    MenuController_createItem_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpsertItemDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    MenuController_updateItem_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                itemId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpsertItemDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    MenuController_deleteItem_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                itemId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    MenuController_setStock_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                itemId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateItemStockDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    MenuController_setPhoto_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                itemId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    MenuController_listCategories_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    MenuController_createCategory_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpsertCategoryDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    MenuController_deleteCategory_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                categoryId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    MenuController_updateCategory_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                categoryId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpsertCategoryDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AvailabilityController_get_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AvailabilityController_setAvailability_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateAvailabilityDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AvailabilityController_setHours_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateHoursDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    BrowseController_catalogue_v1: {
+        parameters: {
+            query: {
+                /** @description Consumer latitude. */
+                lat: number;
+                /** @description Consumer longitude. */
+                lng: number;
+                /** @description Max distance to fetch in km. Defaults to 10 (covers Douala metro). Catalogue groups results into 3 plans (≤2km, ≤5km, >5km) regardless. */
+                radiusKm?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    BrowseController_vendorPublic_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                vendorId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    RidersController_submit_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["SubmitRiderDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    RidersController_updateMe_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateRiderProfileDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    RidersController_getMyBalance_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RiderSelfBalanceDto"];
+                };
+            };
+        };
+    };
+    RidersController_setAvailability_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RiderAvailabilityDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    RidersController_pushHeartbeat_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RiderHeartbeatDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    RidersController_listCourses_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    RidersController_markPickedUp_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                orderId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConfirmationCodeDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    RidersController_markDelivered_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                orderId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConfirmationCodeDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    RidersController_getStatus_v1: {
+        parameters: {
+            query: {
+                /** @description WhatsApp phone — Cameroon local or E.164 */
+                phone: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminAuthController_login_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminLoginDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminValidationController_listPendingVendors_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminValidationController_approveVendor_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                vendorId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminValidationController_rejectVendor_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                vendorId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminDecisionDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminValidationController_suspendVendor_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                vendorId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminDecisionDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminValidationController_unsuspendVendor_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                vendorId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminValidationController_setVendorPreOrders_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                vendorId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetVendorPreOrdersDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminValidationController_listPendingRiders_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminValidationController_approveRider_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                riderId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminValidationController_rejectRider_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                riderId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminDecisionDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminValidationController_suspendRider_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                riderId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminDecisionDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminValidationController_unsuspendRider_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                riderId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminMetricsController_getMetrics_v1: {
+        parameters: {
+            query?: {
+                from?: string;
+                to?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminFinanceController_getVendorBalance_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                vendorId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminFinanceController_getRiderBalance_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                riderId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminFinanceController_listVendorBalances_v1: {
+        parameters: {
+            query?: {
+                status?: "PENDING_REVIEW" | "CORRECTION_REQUESTED" | "ACTIVE" | "SUSPENDED" | "REJECTED";
+                type?: "INFORMAL" | "SEMI_FORMAL" | "RESTAURANT";
+                /** @description Minimum balance in FCFA (signed) */
+                minBalanceXAF?: number;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminFinanceController_listRiderBalances_v1: {
+        parameters: {
+            query?: {
+                vehicleType?: "MOTO" | "BICYCLE" | "CAR" | "ON_FOOT";
+                /** @description Minimum balance in FCFA (signed) */
+                minBalanceXAF?: number;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminFinanceController_listRefundQueue_v1: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminFinanceController_listCashoutRequests_v1: {
+        parameters: {
+            query?: {
+                status?: "PENDING_APPROVAL" | "APPROVED" | "REJECTED" | "CANCELLED";
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminFinanceController_approveCashoutRequest_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                requestId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminFinanceController_rejectCashoutRequest_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                requestId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RejectCashoutRequestDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminFinanceController_getCampayCircuitState_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminFinanceController_listEscalations_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminFinanceController_retryVendorPayout_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                payoutId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminFinanceController_retryRiderPayout_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                payoutId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminFinanceController_manualMarkVendorPayoutPaid_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                payoutId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ManualMarkPaidDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminFinanceController_manualMarkRiderPayoutPaid_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                payoutId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ManualMarkPaidDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminRiderFraudController_listStuckPickups_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminRiderFraudController_resolveRiderFraud_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                orderId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResolveRiderFraudDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    VoiceProxyController_riderCallConsumer_v1: {
         parameters: {
             query?: never;
             header?: never;
@@ -3910,7 +3910,7 @@ export interface operations {
             };
         };
     };
-    VoiceProxyController_vendorCallConsumer: {
+    VoiceProxyController_vendorCallConsumer_v1: {
         parameters: {
             query?: never;
             header?: never;
@@ -3929,7 +3929,7 @@ export interface operations {
             };
         };
     };
-    VoiceProxyController_vendorCallRider: {
+    VoiceProxyController_vendorCallRider_v1: {
         parameters: {
             query?: never;
             header?: never;
@@ -3948,7 +3948,7 @@ export interface operations {
             };
         };
     };
-    VoiceProxyController_consumerCallVendor: {
+    VoiceProxyController_consumerCallVendor_v1: {
         parameters: {
             query?: never;
             header?: never;
@@ -3967,7 +3967,7 @@ export interface operations {
             };
         };
     };
-    VoiceProxyController_consumerCallRider: {
+    VoiceProxyController_consumerCallRider_v1: {
         parameters: {
             query?: never;
             header?: never;

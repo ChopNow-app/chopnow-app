@@ -127,7 +127,7 @@ export function RiderOnboardingForm() {
       form.append('selfiePhoto', selfiePhoto);
       if (vehiclePhoto) form.append('vehiclePhoto', vehiclePhoto);
 
-      const res = await fetch(`${API_URL}/api/riders`, { method: 'POST', body: form });
+      const res = await fetch(`${API_URL}/api/v1/riders`, { method: 'POST', body: form });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         throw new ApiClientError(res.status, body);

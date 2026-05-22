@@ -135,7 +135,7 @@ export function VendorProfileScreen() {
       // 1. Text fields (skip if nothing changed AND no photos to upload —
       //    saves a no-op PATCH when the user only swaps photos).
       if (isDirty) {
-        await apiRaw.patch('/api/vendors/me', {
+        await apiRaw.patch('/api/v1/vendors/me', {
           name: values.name,
           description: values.description || undefined,
           momoPhone: values.momoPhone,
@@ -145,14 +145,14 @@ export function VendorProfileScreen() {
       if (profilePhoto) {
         const form = new FormData();
         form.append('photo', profilePhoto);
-        await apiRaw.upload('/api/vendors/me/photo', form, 'PATCH');
+        await apiRaw.upload('/api/v1/vendors/me/photo', form, 'PATCH');
         setProfilePhoto(null);
       }
       // 3. Cover photo
       if (coverPhoto) {
         const form = new FormData();
         form.append('photo', coverPhoto);
-        await apiRaw.upload('/api/vendors/me/cover', form, 'PATCH');
+        await apiRaw.upload('/api/v1/vendors/me/cover', form, 'PATCH');
         setCoverPhoto(null);
       }
       // Pull fresh state so the seeded values reflect the server's truth

@@ -26,7 +26,7 @@ const POLL_INTERVAL_MS = 5_000;
 export function useVendorOrder(orderId: string): VendorOrderState & { reload: () => void } {
   const query = useQuery({
     queryKey: queryKeys.vendor.order(orderId),
-    queryFn: () => apiRaw.get(`/api/orders/${orderId}`) as Promise<VendorOrder>,
+    queryFn: () => apiRaw.get(`/api/v1/orders/${orderId}`) as Promise<VendorOrder>,
     refetchInterval: POLL_INTERVAL_MS,
     retry: (count, err) => {
       if (err instanceof ApiClientError && (err.status === 404 || err.status === 401)) {

@@ -179,7 +179,7 @@ describe('usePushSubscription', () => {
     });
 
     expect(apiRaw.post).toHaveBeenCalledWith(
-      '/api/notifications/push/subscribe',
+      '/api/v1/notifications/push/subscribe',
       expect.objectContaining({
         endpoint: 'https://fcm.googleapis.com/abc',
         keys: { p256dh: 'pub-key', auth: 'auth-key' },

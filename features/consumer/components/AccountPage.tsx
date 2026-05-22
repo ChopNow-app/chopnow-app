@@ -50,7 +50,7 @@ export function AccountPage() {
     let cancelled = false;
     (async () => {
       try {
-        const profile = await apiRaw.get<UserProfile>('/api/users/me');
+        const profile = await apiRaw.get<UserProfile>('/api/v1/users/me');
         if (!cancelled) setState({ status: 'ready', profile });
       } catch (err) {
         if (cancelled) return;
@@ -193,7 +193,7 @@ function NameEditor({
     setSaving(true);
     setServerError(null);
     try {
-      const updated = await apiRaw.patch<UserProfile>('/api/users/me', {
+      const updated = await apiRaw.patch<UserProfile>('/api/v1/users/me', {
         displayName: values.displayName,
       });
       onSaved(updated);

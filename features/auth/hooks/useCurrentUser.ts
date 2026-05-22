@@ -35,7 +35,7 @@ export function useCurrentUser(): CurrentUserState {
   const query = useQuery({
     queryKey: queryKeys.user.me(),
     queryFn: async () => {
-      const user = (await apiRaw.get('/api/users/me')) as CurrentUser;
+      const user = (await apiRaw.get('/api/v1/users/me')) as CurrentUser;
       // Persist the role to localStorage so the next PWA cold-launch
       // routes vendors / riders to their dashboards instantly via
       // LaunchRedirector (no /users/me roundtrip during the splash).

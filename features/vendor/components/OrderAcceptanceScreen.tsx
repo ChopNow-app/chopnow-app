@@ -265,7 +265,7 @@ function DecisionButtons({
   const accept = async () => {
     setBusy('accept');
     try {
-      await apiRaw.patch(`/api/orders/${orderId}/accept`, {});
+      await apiRaw.patch(`/api/v1/orders/${orderId}/accept`, {});
       invalidateOrders();
       onDone();
     } catch (err) {
@@ -278,7 +278,7 @@ function DecisionButtons({
   const submitRefuse = async () => {
     setBusy('refuse');
     try {
-      await apiRaw.patch(`/api/orders/${orderId}/refuse`, { reason });
+      await apiRaw.patch(`/api/v1/orders/${orderId}/refuse`, { reason });
       invalidateOrders();
       onDone();
     } catch (err) {

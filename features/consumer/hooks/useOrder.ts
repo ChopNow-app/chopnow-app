@@ -92,7 +92,7 @@ const POLL_INTERVAL_MS = 10_000;
 export function useOrder(orderId: string | null): OrderState & { reload: () => void } {
   const query = useQuery({
     queryKey: queryKeys.order(orderId),
-    queryFn: () => apiRaw.get(`/api/orders/${orderId}`) as Promise<OrderView>,
+    queryFn: () => apiRaw.get(`/api/v1/orders/${orderId}`) as Promise<OrderView>,
     enabled: !!orderId,
     refetchInterval: (q) => {
       const order = q.state.data as OrderView | undefined;

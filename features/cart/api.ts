@@ -63,7 +63,7 @@ export async function placeOrder(
   idempotencyKey: string,
 ): Promise<PlacedOrder> {
   try {
-    return await apiRaw.post<PlacedOrder>('/api/orders', input, {
+    return await apiRaw.post<PlacedOrder>('/api/v1/orders', input, {
       headers: { 'Idempotency-Key': idempotencyKey },
     });
   } catch (err) {
@@ -85,7 +85,7 @@ export interface MomoPayResult {
 
 export async function initiateMomo(orderId: string, payerPhone: string): Promise<MomoPayResult> {
   try {
-    return await apiRaw.post<MomoPayResult>(`/api/orders/${orderId}/pay/momo`, {
+    return await apiRaw.post<MomoPayResult>(`/api/v1/orders/${orderId}/pay/momo`, {
       payerPhone,
     });
   } catch (err) {

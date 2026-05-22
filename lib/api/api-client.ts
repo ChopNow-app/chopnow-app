@@ -6,7 +6,7 @@ import type { paths } from './types';
  * Re-run `npm run codegen:api` after the backend ships new endpoints.
  *
  * Usage:
- *   const { data, error } = await api.POST('/api/auth/request-otp', {
+ *   const { data, error } = await api.POST('/api/v1/auth/request-otp', {
  *     body: { phone: '670000000' },
  *   });
  */
@@ -59,7 +59,7 @@ async function refreshOnce(): Promise<boolean> {
   if (!refreshInflight) {
     refreshInflight = (async () => {
       try {
-        const res = await fetch(`${API_URL}/api/auth/refresh`, {
+        const res = await fetch(`${API_URL}/api/v1/auth/refresh`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ refreshToken }),
@@ -96,7 +96,10 @@ const authMiddleware: Middleware = {
     // Don't refresh on auth endpoints themselves (login, refresh, OTP), nor on
     // admin auth (separate session). Refresh would either loop or use the wrong
     // token type.
-    if (url.pathname.startsWith('/api/auth/') || url.pathname.startsWith('/api/admin/auth/')) {
+    if (
+      url.pathname.startsWith('/api/v1/auth/') ||
+      url.pathname.startsWith('/api/v1/admin/auth/')
+    ) {
       return response;
     }
 
@@ -131,7 +134,7 @@ api.use(authMiddleware);
 //   1. When the path is a string literal known to the OpenAPI spec, the body
 //      and response are fully typed from `paths` (and the explicit `<T>`
 //      generic becomes redundant).
-//   2. When the path is a template literal (e.g. `/api/admin/vendors/${id}`),
+//   2. When the path is a template literal (e.g. `/api/v1/admin/vendors/${id}`),
 //      TS falls through to the legacy `<T = unknown>` signature — same runtime,
 //      same throw, just no compile-time check on body/response.
 //

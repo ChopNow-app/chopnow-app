@@ -65,7 +65,7 @@ function OrderContent({ order, onReload }: { order: OrderView; onReload: () => v
   const onCancel = async () => {
     if (!window.confirm('Annuler cette commande ? Cette action est irréversible.')) return;
     try {
-      await apiRaw.patch(`/api/orders/${order.id}/cancel`, {});
+      await apiRaw.patch(`/api/v1/orders/${order.id}/cancel`, {});
       onReload();
     } catch (err) {
       const msg = err instanceof ApiClientError ? `Erreur ${err.status}` : (err as Error).message;
@@ -357,8 +357,8 @@ function ConsumerCallActions({ order }: { order: OrderView }) {
     try {
       const endpoint =
         target === 'vendor'
-          ? `/api/orders/${order.id}/call-vendor`
-          : `/api/orders/${order.id}/call-rider`;
+          ? `/api/v1/orders/${order.id}/call-vendor`
+          : `/api/v1/orders/${order.id}/call-rider`;
       await apiRaw.post(endpoint, {});
       window.alert(
         target === 'vendor'

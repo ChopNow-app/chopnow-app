@@ -29,7 +29,7 @@ export interface PublicOrderView {
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? '';
 
 export async function fetchPublicOrder(orderId: string): Promise<PublicOrderView> {
-  const url = `${API_URL}/api/orders/${encodeURIComponent(orderId)}/public`;
+  const url = `${API_URL}/api/v1/orders/${encodeURIComponent(orderId)}/public`;
   const res = await fetch(url, { cache: 'no-store' });
   if (res.status === 404) {
     const err = new Error('order_not_found');

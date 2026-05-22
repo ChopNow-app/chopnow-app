@@ -33,7 +33,7 @@ export function useRiderAvailability(): AvailabilityState & {
   const setOnline = React.useCallback(async (next: boolean) => {
     setState((prev) => ({ isOnline: prev.isOnline, setting: true, error: null }));
     try {
-      await apiRaw.patch('/api/riders/me/availability', { isOnline: next });
+      await apiRaw.patch('/api/v1/riders/me/availability', { isOnline: next });
       if (typeof window !== 'undefined') {
         window.localStorage.setItem(STORAGE_KEY, next ? '1' : '0');
       }

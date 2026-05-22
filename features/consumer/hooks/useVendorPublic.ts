@@ -15,7 +15,7 @@ export type VendorState =
 export function useVendorPublic(vendorId: string | null): VendorState {
   const query = useQuery({
     queryKey: queryKeys.publicVendor(vendorId ?? ''),
-    queryFn: () => apiRaw.get(`/api/vendors/${vendorId}`) as Promise<PublicVendorView>,
+    queryFn: () => apiRaw.get(`/api/v1/vendors/${vendorId}`) as Promise<PublicVendorView>,
     enabled: !!vendorId,
     retry: (count, err) => {
       if (err instanceof ApiClientError && err.status === 404) return false;

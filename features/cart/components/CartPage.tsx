@@ -27,7 +27,7 @@ function useUserPhone(): string | null {
   React.useEffect(() => {
     let cancelled = false;
     apiRaw
-      .get<{ phone: string }>('/api/users/me')
+      .get<{ phone: string }>('/api/v1/users/me')
       .then((u) => {
         if (!cancelled) setPhone(u.phone ?? null);
       })

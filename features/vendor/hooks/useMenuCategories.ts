@@ -40,7 +40,7 @@ export function useMenuCategories(): MenuCategoriesState & {
 
   const query = useQuery({
     queryKey: queryKeys.vendor.menuCategories(),
-    queryFn: () => apiRaw.get('/api/vendors/me/categories') as Promise<MenuCategory[]>,
+    queryFn: () => apiRaw.get('/api/v1/vendors/me/categories') as Promise<MenuCategory[]>,
     retry: (count, err) => {
       if (err instanceof ApiClientError && err.status === 401) return false;
       return count < 2;
@@ -49,7 +49,7 @@ export function useMenuCategories(): MenuCategoriesState & {
 
   const createMutation = useMutation({
     mutationFn: (name: string) =>
-      apiRaw.post('/api/vendors/me/categories', { name }) as Promise<MenuCategory>,
+      apiRaw.post('/api/v1/vendors/me/categories', { name }) as Promise<MenuCategory>,
     onSuccess: (created) => {
       qc.setQueryData<MenuCategory[]>(queryKeys.vendor.menuCategories(), (prev) =>
         prev ? [...prev, created] : [created],
@@ -59,7 +59,7 @@ export function useMenuCategories(): MenuCategoriesState & {
 
   const renameMutation = useMutation({
     mutationFn: ({ id, name }: { id: string; name: string }) =>
-      apiRaw.patch(`/api/vendors/me/categories/${id}`, { name }) as Promise<MenuCategory>,
+      apiRaw.patch(`/api/v1/vendors/me/categories/${id}`, { name }) as Promise<MenuCategory>,
     onSuccess: (updated) => {
       qc.setQueryData<MenuCategory[]>(queryKeys.vendor.menuCategories(), (prev) =>
         prev?.map((c) => (c.id === updated.id ? updated : c)),
@@ -68,7 +68,7 @@ export function useMenuCategories(): MenuCategoriesState & {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => apiRaw.delete(`/api/vendors/me/categories/${id}`),
+    mutationFn: (id: string) => apiRaw.delete(`/api/v1/vendors/me/categories/${id}`),
     onSuccess: (_data, id) => {
       qc.setQueryData<MenuCategory[]>(queryKeys.vendor.menuCategories(), (prev) =>
         prev?.filter((c) => c.id !== id),

@@ -76,7 +76,7 @@ function normalize(raw: ApiVendorBalance): VendorBalanceView {
 export function useVendorBalance(): VendorBalanceState & { reload: () => void } {
   const query = useQuery({
     queryKey: queryKeys.vendor.balance(),
-    queryFn: () => apiRaw.get('/api/vendors/me/balance') as Promise<ApiVendorBalance>,
+    queryFn: () => apiRaw.get('/api/v1/vendors/me/balance') as Promise<ApiVendorBalance>,
     refetchInterval: 30_000,
     select: normalize,
   });
