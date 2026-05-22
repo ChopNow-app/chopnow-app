@@ -3,6 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { ApiClientError, apiRaw } from '@/lib/api/api-client';
 import { auth } from '@/lib/auth';
+import { useSession } from '@/lib/auth/useSession';
 import { queryKeys } from '@/lib/query/keys';
 import type { UserRole } from '@/lib/auth/role-redirect';
 
@@ -30,7 +31,8 @@ export type CurrentUserState =
  * auto-redirect (authenticated).
  */
 export function useCurrentUser(): CurrentUserState {
-  const hasToken = typeof window !== 'undefined' && auth.isAuthenticated();
+  const session = useSession();
+  const hasToken = session.status === 'authenticated';
 
   const query = useQuery({
     queryKey: queryKeys.user.me(),
@@ -49,6 +51,11 @@ export function useCurrentUser(): CurrentUserState {
     },
   });
 
+  // While the boot refresh is in flight, every consumer of useCurrentUser
+  // should see `loading` rather than flashing `anonymous` (which on the
+  // landing page would briefly render the role-picker before snapping
+  // back to the authenticated view).
+  if (session.status === 'booting') return { status: 'loading' };
   if (!hasToken) return { status: 'anonymous' };
   if (query.isError) {
     if (query.error instanceof ApiClientError && query.error.status === 401) {

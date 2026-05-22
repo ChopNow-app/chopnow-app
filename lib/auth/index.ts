@@ -1,12 +1,17 @@
 import { apiRaw } from '@/lib/api/api-client';
+import { accessTokenStore } from '@/lib/auth/access-token-store';
 import type { UserRole } from '@/lib/auth/role-redirect';
 
-const ACCESS_KEY = 'chopnow.access';
-const REFRESH_KEY = 'chopnow.refresh';
-// Cached broad UserRole — read by LaunchRedirector to send vendors /
-// riders to their dashboard on PWA cold-launch without waiting on a
-// /users/me roundtrip. Kept fresh by login, RoleRedirector, and the
-// useCurrentUser query whenever they successfully resolve the role.
+// Phase B1 — the refresh token lives in the HttpOnly `chopnow_rt` cookie
+// the backend sets at verify-otp / refresh / login. JavaScript can't read
+// it, so it isn't here. The (now 15-min) access token lives in
+// `accessTokenStore` — pure memory, no disk.
+//
+// `chopnow.user.role` stays in localStorage on purpose: it's a non-secret
+// UX hint that lets the splash route vendors / riders to their dashboards
+// instantly on cold launch, before the boot refresh has resolved. A
+// hostile reader of it learns at most "this device last logged in as a
+// VENDOR" — no session capability.
 const ROLE_KEY = 'chopnow.user.role';
 
 const VALID_ROLES: ReadonlySet<UserRole> = new Set([
@@ -18,23 +23,26 @@ const VALID_ROLES: ReadonlySet<UserRole> = new Set([
 ]);
 
 export interface AuthTokens {
+  /** Short-lived (15-min) JWT — server returns it in the body so the
+   *  PWA can put it straight into the in-memory store. */
   accessToken: string;
-  refreshToken: string;
+  /** Optional — backend now sets the refresh token via HttpOnly cookie.
+   *  Kept here only because /auth/verify-otp still returns it in the
+   *  body for backwards-compat; we deliberately drop it on the floor. */
+  refreshToken?: string;
 }
 
 export const auth = {
+  /**
+   * Store the access token in memory. The refresh side travels via the
+   * HttpOnly cookie set by the same backend response — nothing to do
+   * client-side.
+   */
   saveTokens(tokens: AuthTokens) {
-    if (typeof window === 'undefined') return;
-    localStorage.setItem(ACCESS_KEY, tokens.accessToken);
-    localStorage.setItem(REFRESH_KEY, tokens.refreshToken);
+    accessTokenStore.set(tokens.accessToken);
   },
   getAccessToken(): string | null {
-    if (typeof window === 'undefined') return null;
-    return localStorage.getItem(ACCESS_KEY);
-  },
-  getRefreshToken(): string | null {
-    if (typeof window === 'undefined') return null;
-    return localStorage.getItem(REFRESH_KEY);
+    return accessTokenStore.get();
   },
   saveRole(role: UserRole) {
     if (typeof window === 'undefined') return;
@@ -47,14 +55,15 @@ export const auth = {
     if (!raw || !VALID_ROLES.has(raw)) return null;
     return raw;
   },
+  /** Drop the in-memory access token + role hint. Does NOT clear the
+   *  refresh cookie — call `auth.logout()` for a real sign-out. */
   clear() {
+    accessTokenStore.clear();
     if (typeof window === 'undefined') return;
-    localStorage.removeItem(ACCESS_KEY);
-    localStorage.removeItem(REFRESH_KEY);
     localStorage.removeItem(ROLE_KEY);
   },
   isAuthenticated(): boolean {
-    return !!this.getAccessToken();
+    return !!accessTokenStore.get();
   },
 
   // --- API calls ---
@@ -66,7 +75,21 @@ export const auth = {
     this.saveTokens(tokens);
     return tokens;
   },
+  /**
+   * Server-side revoke + cookie wipe. We don't need to send a body — the
+   * cookie carries the refresh token, and the backend is idempotent
+   * (unknown / expired tokens still 204). After this resolves the user is
+   * fully signed out: no access in memory, no refresh cookie, no role.
+   */
   async logout() {
+    try {
+      await apiRaw.post('/api/v1/auth/logout', {});
+    } catch {
+      // Swallow — a network blip mid-logout shouldn't strand the user in
+      // a logged-in UI. We still wipe locally; worst case the cookie
+      // lingers server-side until its 30-day TTL, but that row is
+      // single-use + reuse-detected so it can't be replayed.
+    }
     this.clear();
   },
 };

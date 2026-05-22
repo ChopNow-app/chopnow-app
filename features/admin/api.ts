@@ -1,4 +1,5 @@
 import { apiRaw, ApiClientError } from '@/lib/api/api-client';
+import { accessTokenStore } from '@/lib/auth/access-token-store';
 
 export type AdminRole = 'SUPER_ADMIN' | 'ADMIN' | 'OPERATOR' | 'VIEWER';
 
@@ -9,13 +10,20 @@ export interface AdminLoginResult {
   expiresIn: number;
 }
 
-const ACCESS_KEY = 'chopnow.access';
+// Phase B1 — consumer tokens are now memory + HttpOnly cookie. Admin
+// sessions still have no refresh side (8h access TTL by design), so
+// to survive a page reload we persist the access token under
+// `chopnow.admin.token`. The boot rehydrate helper seeds the in-memory
+// store from this key when there's no consumer cookie session.
+const ADMIN_ACCESS_KEY = 'chopnow.admin.token';
 
 /**
  * Story 1.6 — admin login. Email + argon2id password (no OTP). The backend
  * returns only an access token (8h TTL, no refresh) — admin re-enters at
- * session end. We persist it under the same key as consumer tokens so the
- * existing `authMiddleware` attaches it automatically.
+ * session end. We put it in the in-memory access store (so the existing
+ * `authMiddleware` attaches it automatically) AND mirror it to localStorage
+ * under a distinct admin-only key so a tab reload doesn't bounce the
+ * admin to /admin/login.
  */
 export async function adminLogin(email: string, password: string): Promise<AdminLoginResult> {
   try {
@@ -23,10 +31,12 @@ export async function adminLogin(email: string, password: string): Promise<Admin
       email,
       password,
     });
+    accessTokenStore.set(result.accessToken);
     if (typeof window !== 'undefined') {
-      window.localStorage.setItem(ACCESS_KEY, result.accessToken);
-      // Wipe any consumer refresh token — admin sessions don't carry one,
-      // and a stale consumer refresh would otherwise trigger refresh-on-401.
+      window.localStorage.setItem(ADMIN_ACCESS_KEY, result.accessToken);
+      // Belt-and-braces: wipe any pre-Phase-B1 consumer tokens that might
+      // still be sitting in localStorage from before this PR shipped.
+      window.localStorage.removeItem('chopnow.access');
       window.localStorage.removeItem('chopnow.refresh');
       window.localStorage.setItem('chopnow.admin.role', result.role);
       window.localStorage.setItem('chopnow.admin.email', result.email);
@@ -57,8 +67,9 @@ export function adminEmail(): string | null {
   return window.localStorage.getItem('chopnow.admin.email');
 }
 export function adminLogout() {
+  accessTokenStore.clear();
   if (typeof window === 'undefined') return;
-  window.localStorage.removeItem(ACCESS_KEY);
+  window.localStorage.removeItem(ADMIN_ACCESS_KEY);
   window.localStorage.removeItem('chopnow.admin.role');
   window.localStorage.removeItem('chopnow.admin.email');
 }
