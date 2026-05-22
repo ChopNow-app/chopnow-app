@@ -5,7 +5,7 @@
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ChevronRight, X, Utensils, ShoppingBag, Bike, Clock } from 'lucide-react';
+import { ChevronRight, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const STORAGE_KEY = 'chopnow.onboarded';
@@ -154,10 +154,11 @@ export function MobileOnboarding() {
 interface Slide {
   key: string;
   variant: 'brand' | 'step' | 'roles';
+  /** Editorial chapter number on step slides, shown big in chop-red. */
+  chapter?: string;
   eyebrow?: string;
   title: React.ReactNode;
   body?: string;
-  icon?: React.ReactNode;
 }
 
 const SLIDES: Slide[] = [
@@ -178,18 +179,18 @@ const SLIDES: Slide[] = [
   {
     key: 'step-choose',
     variant: 'step',
-    eyebrow: '01. Le vendeur',
+    chapter: '01',
+    eyebrow: 'Le vendeur',
     title: 'Choisis ton plat.',
     body: 'Maman du quartier, maquis, restaurant — tous autour de toi.',
-    icon: <Utensils className="h-12 w-12" strokeWidth={1.6} />,
   },
   {
     key: 'step-order',
     variant: 'step',
-    eyebrow: '02. Le panier',
+    chapter: '02',
+    eyebrow: 'Le panier',
     title: 'Commande en 3 taps.',
     body: 'Plats, adresse, paiement à la livraison — c’est tout.',
-    icon: <ShoppingBag className="h-12 w-12" strokeWidth={1.6} />,
   },
   {
     key: 'roles',
@@ -239,17 +240,22 @@ function BrandSlide({ slide }: { slide: Slide }) {
         </p>
       </div>
 
-      {/* Visual flourish — Stop watch + clock vignette in the brand red poster */}
+      {/* Visual flourish — the "30 minutes" promise as a typographic
+          callout in the red poster. Big "30'" tabular numeral instead
+          of the Clock-in-circle template anatomy. */}
       <div className="relative overflow-hidden rounded-3xl bg-chop-red p-5 text-white shadow-elevated">
-        <div className="flex items-center gap-3">
-          <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/15 backdrop-blur-sm">
-            <Clock className="h-5 w-5" strokeWidth={2.4} aria-hidden />
+        <div className="flex items-baseline gap-3">
+          <span
+            aria-hidden
+            className="text-[44px] font-extrabold tabular-nums leading-none tracking-[-0.04em]"
+          >
+            30&apos;
           </span>
           <div>
             <p className="text-[13px] font-bold uppercase tracking-widest text-white/70">
               Le pacte
             </p>
-            <p className="text-[16px] font-extrabold leading-tight">30 minutes ou moins.</p>
+            <p className="text-[16px] font-extrabold leading-tight">Trente minutes ou moins.</p>
           </div>
         </div>
       </div>
@@ -260,10 +266,16 @@ function BrandSlide({ slide }: { slide: Slide }) {
 function StepSlide({ slide }: { slide: Slide }) {
   return (
     <div className="flex h-full w-full max-w-sm flex-col items-start justify-center">
-      <span className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-chop-red-light text-chop-red">
-        {slide.icon}
+      {/* Editorial chapter number — replaces the lucide-icon-in-rounded-
+          square that read as a v0 template. Big enough to be the visual
+          anchor of the slide. */}
+      <span
+        aria-hidden
+        className="text-[120px] font-extrabold leading-[0.82] tracking-[-0.06em] text-chop-red"
+      >
+        {slide.chapter}
       </span>
-      <p className="mt-7 text-[11px] font-bold uppercase tracking-[0.22em] text-chop-ink-secondary">
+      <p className="mt-5 text-[11px] font-bold uppercase tracking-[0.22em] text-chop-ink-secondary">
         {slide.eyebrow}
       </p>
       <h2 className="mt-2 text-[40px] font-extrabold leading-[0.95] tracking-[-0.03em]">
@@ -290,7 +302,6 @@ function RolesSlide({ onDismiss }: { onDismiss: (href: string) => void }) {
           eyebrow="01"
           label="Je commande"
           sub="Mange chaud, livré en 30 min."
-          icon={<ShoppingBag className="h-5 w-5" strokeWidth={2.2} aria-hidden />}
           onClick={() => onDismiss('/restaurants')}
         />
         <RoleCard
@@ -298,7 +309,6 @@ function RolesSlide({ onDismiss }: { onDismiss: (href: string) => void }) {
           eyebrow="02"
           label="Je vends mes plats"
           sub="Devenir vendeur TChopNow."
-          icon={<Utensils className="h-5 w-5" strokeWidth={2.2} aria-hidden />}
           onClick={() => onDismiss('/vendre')}
         />
         <RoleCard
@@ -306,7 +316,6 @@ function RolesSlide({ onDismiss }: { onDismiss: (href: string) => void }) {
           eyebrow="03"
           label="Je livre à moto"
           sub="Gagner en livrant dans ton quartier."
-          icon={<Bike className="h-5 w-5" strokeWidth={2.2} aria-hidden />}
           onClick={() => onDismiss('/livrer')}
         />
       </ul>
@@ -326,14 +335,12 @@ function RoleCard({
   eyebrow,
   label,
   sub,
-  icon,
   onClick,
 }: {
   tone: 'primary' | 'default';
   eyebrow: string;
   label: string;
   sub: string;
-  icon: React.ReactNode;
   onClick: () => void;
 }) {
   const isPrimary = tone === 'primary';
@@ -349,23 +356,19 @@ function RoleCard({
             : 'border-2 border-chop-ink/10 bg-chop-card-white text-chop-ink hover:border-chop-ink',
         )}
       >
+        {/* Big editorial chapter number — replaces the lucide-icon-in-
+            rounded-square. Carries enough visual weight on its own to
+            anchor the row, paired with the bold label below. */}
         <span
+          aria-hidden
           className={cn(
-            'inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl',
-            isPrimary ? 'bg-white/15 text-white' : 'bg-chop-warm text-chop-ink',
+            'shrink-0 text-[28px] font-extrabold tabular-nums leading-none tracking-tight',
+            isPrimary ? 'text-white/80' : 'text-chop-red',
           )}
         >
-          {icon}
+          {eyebrow}
         </span>
         <span className="min-w-0 flex-1">
-          <span
-            className={cn(
-              'block font-mono text-[10px] font-bold tabular-nums',
-              isPrimary ? 'text-white/60' : 'text-chop-ink-secondary',
-            )}
-          >
-            {eyebrow}.
-          </span>
           <span className="block text-[16px] font-extrabold leading-tight tracking-tight">
             {label}
           </span>

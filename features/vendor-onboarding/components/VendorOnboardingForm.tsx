@@ -610,12 +610,13 @@ export function SuccessState({ role }: { role: 'vendor' | 'rider' }) {
         };
   return (
     <div className="relative overflow-hidden rounded-3xl bg-chop-card-white p-7 shadow-elevated md:p-10">
-      <div className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-chop-mboue-light">
-        <span aria-hidden className="text-2xl">
-          ✓
-        </span>
-      </div>
-      <h2 className="mt-5 text-[28px] font-extrabold leading-tight tracking-tight text-chop-ink md:text-[32px]">
+      <p
+        aria-hidden
+        className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-chop-mboue"
+      >
+        — Demande envoyée
+      </p>
+      <h2 className="mt-3 text-[28px] font-extrabold leading-tight tracking-tight text-chop-ink md:text-[32px]">
         {config.title}
       </h2>
       <p className="mt-2 max-w-prose text-[15px] font-medium text-chop-ink-secondary md:text-[16px]">

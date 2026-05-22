@@ -3,7 +3,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Bell, ChevronLeft, MapPin, Check, X } from 'lucide-react';
+import { ChevronLeft, MapPin, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useQueryClient } from '@tanstack/react-query';
 import { apiRaw, ApiClientError } from '@/lib/api/api-client';
@@ -96,10 +96,13 @@ function DecisionView({ order }: { order: VendorOrder }) {
   return (
     <Shell>
       <div className="flex flex-col items-center text-center">
-        <div className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-full bg-chop-red-light text-chop-red shadow-card">
-          <Bell className="h-7 w-7" strokeWidth={2.4} aria-hidden />
-        </div>
-        <h1 className="text-2xl font-extrabold tracking-tight">Nouvelle commande !</h1>
+        <p
+          aria-hidden
+          className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-chop-red"
+        >
+          — Nouvelle
+        </p>
+        <h1 className="mt-2 text-3xl font-extrabold tracking-tight">Nouvelle commande&nbsp;!</h1>
         <p className="mt-1.5 max-w-xs text-sm text-muted-foreground">
           Accepte ou refuse avant la fin du compte à rebours. Sinon elle sera refusée
           automatiquement.
@@ -151,21 +154,16 @@ function TerminalView({ order }: { order: VendorOrder }) {
   return (
     <Shell>
       <div className="flex flex-col items-center text-center">
-        <div
+        <p
+          aria-hidden
           className={cn(
-            'mb-4 inline-flex h-16 w-16 items-center justify-center rounded-full shadow-card',
-            isPositive
-              ? 'bg-chop-mboue-light text-chop-mboue'
-              : 'bg-chop-surface-gray text-muted-foreground',
+            'text-[11px] font-extrabold uppercase tracking-[0.22em]',
+            isPositive ? 'text-chop-mboue' : 'text-chop-ink-secondary',
           )}
         >
-          {isPositive ? (
-            <Check className="h-7 w-7" strokeWidth={2.4} />
-          ) : (
-            <X className="h-7 w-7" strokeWidth={2.4} />
-          )}
-        </div>
-        <h1 className="text-2xl font-extrabold tracking-tight">{label}</h1>
+          — Statut
+        </p>
+        <h1 className="mt-2 text-3xl font-extrabold tracking-tight">{label}</h1>
         <p className="mt-1.5 max-w-xs text-sm text-muted-foreground">
           Cette commande n&apos;attend plus de décision.
         </p>

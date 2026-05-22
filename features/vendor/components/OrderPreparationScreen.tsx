@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { ChevronLeft, Check, Clock, ChefHat } from 'lucide-react';
+import { ChevronLeft, Check, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useQueryClient } from '@tanstack/react-query';
 import { apiRaw, ApiClientError } from '@/lib/api/api-client';
@@ -448,7 +448,6 @@ function ReadyCta({
       onClick={submit}
       className="mt-5 w-full gap-2 bg-chop-red text-base shadow-card hover:bg-chop-red/90 disabled:opacity-50"
     >
-      <ChefHat className="h-5 w-5" aria-hidden />
       {busy ? '…' : 'Commande prête — appeler livreur 🛵'}
     </Button>
   );

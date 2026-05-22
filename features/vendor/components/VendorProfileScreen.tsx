@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { ChevronLeft, User, Save } from 'lucide-react';
+import { ChevronLeft, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   BrandInput,
@@ -293,11 +293,14 @@ function EmptyState({
 }) {
   return (
     <div className="mt-20 flex flex-col items-center text-center">
-      <span className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-full bg-chop-red-light text-chop-red">
-        <User className="h-5 w-5" aria-hidden />
-      </span>
-      <h2 className="text-xl font-bold">{title}</h2>
-      <p className="mt-1 max-w-xs text-sm text-muted-foreground">{message}</p>
+      <p
+        aria-hidden
+        className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-chop-red"
+      >
+        — Profil
+      </p>
+      <h2 className="mt-2 text-2xl font-extrabold tracking-tight">{title}</h2>
+      <p className="mt-1.5 max-w-xs text-sm text-muted-foreground">{message}</p>
       <Button asChild className="mt-5">
         <Link href={ctaHref}>{ctaLabel}</Link>
       </Button>
