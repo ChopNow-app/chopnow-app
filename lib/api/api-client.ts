@@ -1,5 +1,6 @@
 import createClient, { type Middleware } from 'openapi-fetch';
 import type { paths } from './types';
+import { accessTokenStore } from '@/lib/auth/access-token-store';
 
 /**
  * Typed fetch client — uses the OpenAPI spec generated from chopnow-api.
@@ -9,11 +10,15 @@ import type { paths } from './types';
  *   const { data, error } = await api.POST('/api/v1/auth/request-otp', {
  *     body: { phone: '670000000' },
  *   });
+ *
+ * Phase B1 — the access token now lives in `accessTokenStore` (memory,
+ * not localStorage) and the refresh token lives in the HttpOnly
+ * `chopnow_rt` cookie set by the backend. Every request goes out with
+ * `credentials: 'include'` so the cookie travels with cross-origin calls
+ * to api-staging.tchopnow.app from app.tchopnow.app (same eTLD+1, but the
+ * browser still needs the explicit opt-in).
  */
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
-
-const ACCESS_KEY = 'chopnow.access';
-const REFRESH_KEY = 'chopnow.refresh';
 
 export interface ApiError {
   statusCode: number;
@@ -30,22 +35,12 @@ export class ApiClientError extends Error {
   }
 }
 
-function readAccess(): string | null {
-  return typeof window === 'undefined' ? null : window.localStorage.getItem(ACCESS_KEY);
-}
-function readRefresh(): string | null {
-  return typeof window === 'undefined' ? null : window.localStorage.getItem(REFRESH_KEY);
-}
-function writeTokens(accessToken: string, refreshToken: string) {
-  if (typeof window === 'undefined') return;
-  window.localStorage.setItem(ACCESS_KEY, accessToken);
-  window.localStorage.setItem(REFRESH_KEY, refreshToken);
-}
-function clearTokens() {
-  if (typeof window === 'undefined') return;
-  window.localStorage.removeItem(ACCESS_KEY);
-  window.localStorage.removeItem(REFRESH_KEY);
-}
+// Every fetch the openapi-fetch client makes goes through this wrapper —
+// the original Request has `credentials: 'same-origin'`, which on a
+// cross-subdomain staging setup (app.* → api.*) means the cookie does NOT
+// flow. Cloning the Request with credentials override fixes that.
+const fetchWithCredentials = (input: Request): Promise<Response> =>
+  globalThis.fetch(new Request(input, { credentials: 'include' }));
 
 // Story 1.2 — refresh-on-401. A single in-flight refresh shared across
 // concurrent 401s so a fan-out of expired requests doesn't fire N parallel
@@ -53,26 +48,27 @@ function clearTokens() {
 let refreshInflight: Promise<boolean> | null = null;
 
 async function refreshOnce(): Promise<boolean> {
-  const refreshToken = readRefresh();
-  if (!refreshToken) return false;
-
+  // Phase B1: the refresh token is in the HttpOnly cookie — sending an
+  // empty body is fine. We MUST use credentials:'include' so the cookie
+  // travels with the request.
   if (!refreshInflight) {
     refreshInflight = (async () => {
       try {
         const res = await fetch(`${API_URL}/api/v1/auth/refresh`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ refreshToken }),
+          credentials: 'include',
+          body: '{}',
         });
         if (!res.ok) {
-          clearTokens();
+          accessTokenStore.clear();
           return false;
         }
-        const body = (await res.json()) as { accessToken: string; refreshToken: string };
-        writeTokens(body.accessToken, body.refreshToken);
+        const body = (await res.json()) as { accessToken: string };
+        accessTokenStore.set(body.accessToken);
         return true;
       } catch {
-        clearTokens();
+        accessTokenStore.clear();
         return false;
       } finally {
         refreshInflight = null;
@@ -86,7 +82,7 @@ async function refreshOnce(): Promise<boolean> {
 // once after a successful refresh on 401. Skips /api/auth/* to avoid loops.
 const authMiddleware: Middleware = {
   async onRequest({ request }) {
-    const token = readAccess();
+    const token = accessTokenStore.get();
     if (token) request.headers.set('Authorization', `Bearer ${token}`);
     return request;
   },
@@ -106,7 +102,7 @@ const authMiddleware: Middleware = {
     const ok = await refreshOnce();
     if (!ok) return response;
 
-    const fresh = readAccess();
+    const fresh = accessTokenStore.get();
     if (!fresh) return response;
     const headers = new Headers(request.headers);
     headers.set('Authorization', `Bearer ${fresh}`);
@@ -114,12 +110,12 @@ const authMiddleware: Middleware = {
       method: request.method,
       headers,
       body: request.body,
-      credentials: request.credentials,
+      credentials: 'include',
     });
   },
 };
 
-export const api = createClient<paths>({ baseUrl: API_URL });
+export const api = createClient<paths>({ baseUrl: API_URL, fetch: fetchWithCredentials });
 api.use(authMiddleware);
 
 // === apiRaw — throw-based wrapper around the typed `api` client ===
@@ -257,10 +253,11 @@ export const apiRaw: ApiRawClient = {
     form: FormData,
     method: 'POST' | 'PATCH' = 'PATCH',
   ): Promise<T> => {
-    const token = readAccess();
+    const token = accessTokenStore.get();
     const res = await fetch(`${API_URL}${path}`, {
       method,
       body: form,
+      credentials: 'include',
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
     if (!res.ok) {

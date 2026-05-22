@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { ApiClientError, apiRaw } from '@/lib/api/api-client';
 import { auth } from '@/lib/auth';
 import { redirectPathForRole, type UserRole } from '@/lib/auth/role-redirect';
+import { useSession } from '@/lib/auth/useSession';
 
 const MIN_SPLASH_MS = 700;
 const SAFE_DESTINATIONS = new Set(['/restaurants', '/vendor', '/livreur', '/admin']);
@@ -32,8 +33,14 @@ const SAFE_DESTINATIONS = new Set(['/restaurants', '/vendor', '/livreur', '/admi
 export function LaunchRedirector() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const session = useSession();
 
   React.useEffect(() => {
+    // Wait for the boot refresh to resolve before deciding. The splash
+    // already provides the visual hold — no flash of /restaurants for
+    // returning users with a valid cookie.
+    if (session.status === 'booting') return;
+
     let cancelled = false;
     const start = Date.now();
 
@@ -54,7 +61,7 @@ export function LaunchRedirector() {
     }
 
     // 2. Anonymous → consumer catalogue (the app's default home).
-    if (!auth.isAuthenticated()) {
+    if (session.status === 'anonymous') {
       handoff('/restaurants');
       return;
     }
@@ -89,7 +96,7 @@ export function LaunchRedirector() {
     return () => {
       cancelled = true;
     };
-  }, [router, searchParams]);
+  }, [router, searchParams, session.status]);
 
   return null;
 }
