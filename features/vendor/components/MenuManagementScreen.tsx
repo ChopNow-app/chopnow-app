@@ -516,7 +516,7 @@ function Shell({ children }: { children: React.ReactNode }) {
   // Full-screen takeover like /vendor/commande and /vendor/preparation.
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-chop-surface-gray">
-      <div className="mx-auto flex min-h-full w-full max-w-md flex-col px-5 pb-12 pt-5">
+      <div className="mx-auto flex min-h-full w-full max-w-md flex-col px-5 pb-12 pt-5 md:max-w-3xl md:px-8">
         {children}
       </div>
     </div>

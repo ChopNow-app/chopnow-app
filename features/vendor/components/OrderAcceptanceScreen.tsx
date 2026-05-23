@@ -358,10 +358,11 @@ function Shell({ children }: { children: React.ReactNode }) {
   // Full-screen takeover — the countdown screen is a decision moment that
   // shouldn't compete with the vendor layout's chrome. We render fixed,
   // covering inset-0 with the surface-gray background, and the inner
-  // content is a scrollable max-w-md column so it still works on tablet.
+  // content is a scrollable column that widens on desktop (md:max-w-3xl)
+  // for vendor staff on PCs / large tablets.
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-chop-surface-gray">
-      <div className="mx-auto flex min-h-full w-full max-w-md flex-col px-5 pb-12 pt-8">
+      <div className="mx-auto flex min-h-full w-full max-w-md flex-col px-5 pb-12 pt-8 md:max-w-3xl md:px-8">
         {children}
       </div>
     </div>
