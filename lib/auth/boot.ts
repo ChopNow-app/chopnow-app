@@ -11,10 +11,9 @@
  * we try once with that token in the body. On success the backend issues a
  * fresh cookie + we wipe the legacy localStorage entries.
  *
- * Admin path: admins have no refresh token. If they have a stashed access
- * token in `chopnow.admin.token`, we seed the memory store from it — the
- * 8h TTL is enforced server-side; a stale one will 401 on first use and
- * the user is bounced to /admin/login by the usual flow.
+ * Phase D1: admins now go through the same cookie path as consumers — no
+ * more `chopnow.admin.token` localStorage seed needed. The legacy key is
+ * actively wiped on boot so XSS can't read a stale long-lived bearer.
  */
 
 import { accessTokenStore } from './access-token-store';
@@ -23,7 +22,9 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
 
 const LEGACY_ACCESS_KEY = 'chopnow.access';
 const LEGACY_REFRESH_KEY = 'chopnow.refresh';
-const ADMIN_ACCESS_KEY = 'chopnow.admin.token';
+// Phase D1 — admins now ride the same cookie + memory model as consumers.
+// The legacy key (set by chopnow-app pre-D1) is wiped on boot below.
+const LEGACY_ADMIN_KEY = 'chopnow.admin.token';
 
 export type BootStatus = 'pending' | 'authenticated' | 'anonymous';
 
@@ -101,15 +102,11 @@ export function bootRehydrate(): Promise<BootStatus> {
       }
     }
 
-    // 3) Admin fallback — admin sessions are access-only (no refresh).
-    //    A persisted access token survives reload; let it through and the
-    //    next 401 will clear it.
-    const adminAccess = window.localStorage.getItem(ADMIN_ACCESS_KEY);
-    if (adminAccess) {
-      accessTokenStore.set(adminAccess);
-      setStatus('authenticated');
-      return 'authenticated' as const;
-    }
+    // Phase D1 — wipe any pre-D1 admin token sitting in localStorage so
+    // an XSS on /admin/* can't steal it. Admins authenticate fresh after
+    // the cutover deploy; their cookie + memory model takes over from
+    // the next sign-in.
+    window.localStorage.removeItem(LEGACY_ADMIN_KEY);
 
     setStatus('anonymous');
     return 'anonymous' as const;

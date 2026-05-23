@@ -1,4 +1,5 @@
 import { apiRaw, ApiClientError } from '@/lib/api/api-client';
+import { auth } from '@/lib/auth';
 import { accessTokenStore } from '@/lib/auth/access-token-store';
 
 export type AdminRole = 'SUPER_ADMIN' | 'ADMIN' | 'OPERATOR' | 'VIEWER';
@@ -10,20 +11,15 @@ export interface AdminLoginResult {
   expiresIn: number;
 }
 
-// Phase B1 — consumer tokens are now memory + HttpOnly cookie. Admin
-// sessions still have no refresh side (8h access TTL by design), so
-// to survive a page reload we persist the access token under
-// `chopnow.admin.token`. The boot rehydrate helper seeds the in-memory
-// store from this key when there's no consumer cookie session.
-const ADMIN_ACCESS_KEY = 'chopnow.admin.token';
-
 /**
- * Story 1.6 — admin login. Email + argon2id password (no OTP). The backend
- * returns only an access token (8h TTL, no refresh) — admin re-enters at
- * session end. We put it in the in-memory access store (so the existing
- * `authMiddleware` attaches it automatically) AND mirror it to localStorage
- * under a distinct admin-only key so a tab reload doesn't bounce the
- * admin to /admin/login.
+ * Phase D1 — admin auth now mirrors consumer:
+ *   - access token (15-min) → in-memory `accessTokenStore`
+ *   - refresh token (24h)   → HttpOnly `chopnow_rt` cookie (server-set)
+ *   - device id             → HttpOnly `chopnow_did` cookie (server-set)
+ *
+ * The legacy `chopnow.admin.token` localStorage entry is gone — XSS on
+ * /admin/* can no longer steal a long-lived bearer. Role + email stay
+ * in localStorage as non-secret UX hints (header label, redirect routing).
  */
 export async function adminLogin(email: string, password: string): Promise<AdminLoginResult> {
   try {
@@ -33,9 +29,10 @@ export async function adminLogin(email: string, password: string): Promise<Admin
     });
     accessTokenStore.set(result.accessToken);
     if (typeof window !== 'undefined') {
-      window.localStorage.setItem(ADMIN_ACCESS_KEY, result.accessToken);
-      // Belt-and-braces: wipe any pre-Phase-B1 consumer tokens that might
-      // still be sitting in localStorage from before this PR shipped.
+      // Belt-and-braces: wipe any pre-Phase-D1 admin tokens (and any
+      // pre-Phase-B1 consumer tokens) sitting in localStorage from
+      // before this PR shipped. XSS can read these otherwise.
+      window.localStorage.removeItem('chopnow.admin.token');
       window.localStorage.removeItem('chopnow.access');
       window.localStorage.removeItem('chopnow.refresh');
       window.localStorage.setItem('chopnow.admin.role', result.role);
@@ -66,10 +63,17 @@ export function adminEmail(): string | null {
   if (typeof window === 'undefined') return null;
   return window.localStorage.getItem('chopnow.admin.email');
 }
-export function adminLogout() {
-  accessTokenStore.clear();
+/**
+ * Phase D1 — admin logout now hits the server (revokes the refresh
+ * cookie row) like consumer's `auth.logout()`, then clears the
+ * admin-only localStorage hints. Pre-D1 this was a local-wipe-only
+ * because admin had no refresh side; now it actually invalidates the
+ * server session.
+ */
+export async function adminLogout() {
+  await auth.logout();
   if (typeof window === 'undefined') return;
-  window.localStorage.removeItem(ADMIN_ACCESS_KEY);
+  window.localStorage.removeItem('chopnow.admin.token');
   window.localStorage.removeItem('chopnow.admin.role');
   window.localStorage.removeItem('chopnow.admin.email');
 }
