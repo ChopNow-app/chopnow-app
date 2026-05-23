@@ -184,7 +184,7 @@ export function CataloguePage() {
               // so the user doesn't see two stacked "Aucun vendeur" messages
               // before reaching real content. The Section 3 below carries the
               // actual catalogue.
-              <p className="mx-5 mt-5 rounded-xl bg-chop-surface-gray px-4 py-3 text-[12px] font-medium text-chop-ink-secondary md:mx-8 lg:mx-12">
+              <p className="mx-5 mt-5 rounded-xl bg-chop-surface-gray px-4 py-3 text-[12px] font-medium text-chop-ink-secondary md:mx-8 lg:mx-auto lg:max-w-3xl lg:px-5">
                 Aucun vendeur dans ton quartier ou les zones proches — voici tous les vendeurs
                 Douala.
               </p>

@@ -23,7 +23,11 @@ import { ChevronRight } from 'lucide-react';
 export function VendorRiderEntryBand() {
   return (
     <section aria-label="Devenir vendeur ou livreur" className="mt-10 px-5 pb-2 md:px-8 lg:px-12">
-      <div className="rounded-3xl border border-divider bg-chop-card-white p-5 shadow-card sm:p-6">
+      {/* Cap the card on desktop so the two CTA buttons stay button-sized
+          (~280–340px each) instead of stretching to 600+ px when the
+          catalogue container is xl:max-w-7xl wide. mx-auto centers the
+          card within the wider parent. */}
+      <div className="mx-auto max-w-3xl rounded-3xl border border-divider bg-chop-card-white p-5 shadow-card sm:p-6">
         <p className="text-xs font-bold uppercase tracking-[0.2em] text-chop-ink-secondary">
           Tu n&apos;es pas client&nbsp;?
         </p>
