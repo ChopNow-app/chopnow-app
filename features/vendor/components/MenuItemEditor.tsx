@@ -133,7 +133,7 @@ export function MenuItemEditor({
 
   return (
     <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/50 sm:items-center">
-      <div className="bg-card max-h-[92vh] w-full max-w-md overflow-y-auto rounded-t-xl border p-4 sm:rounded-xl">
+      <div className="bg-card max-h-[92vh] w-full max-w-md overflow-y-auto rounded-t-xl border p-4 sm:rounded-xl md:max-w-2xl md:p-6">
         <header className="mb-3 flex items-start justify-between gap-3">
           <h2 className="text-lg font-bold">{initial ? 'Modifier le plat' : 'Nouveau plat'}</h2>
           <button
