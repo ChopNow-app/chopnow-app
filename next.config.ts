@@ -27,11 +27,19 @@ const securityHeaders = [
     key: 'Content-Security-Policy',
     value: [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+      // Cloudflare Turnstile loads its widget script from challenges.cloudflare.com
+      // when CAPTCHA_ENABLED=true on the backend. Allow the origin in script-src
+      // even when the widget isn't rendered — no script auto-loads from there
+      // unless <Turnstile> mounts, so the addition is inert when CAPTCHA is off.
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com",
       "style-src 'self' 'unsafe-inline' fonts.googleapis.com",
       "font-src 'self' fonts.gstatic.com data:",
       "img-src 'self' data: blob: https:",
       connectSrc,
+      // Turnstile's challenge UI renders inside an iframe hosted on the same
+      // origin as the script. frame-ancestors stays 'none' (we still refuse
+      // being embedded); this only allows our page to embed THEIR iframe.
+      'frame-src https://challenges.cloudflare.com',
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",
