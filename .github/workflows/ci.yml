@@ -1,12 +1,26 @@
 # CI — Gate 1 (feature → develop) and required check for develop → main releases.
-# Runs only on PRs, not on push (saves minutes; same SHA's already validated by the PR).
+#
+# Runs on:
+#   - Every push to a feature branch (fast feedback during local iteration —
+#     dev sees lint/type/test result before even opening a PR)
+#   - Every PR to develop / main (the merge gate)
+#
+# Pushes to develop / main are EXCLUDED — those branches only ever
+# receive merge commits from PRs that already ran this workflow, so
+# re-running would burn minutes for zero new signal.
 
 name: CI
 
 on:
   workflow_dispatch:
+  push:
+    branches-ignore: [develop, main]
   pull_request:
     branches: [develop, main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   lint-typecheck-test-build:
