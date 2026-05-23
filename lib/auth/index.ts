@@ -67,8 +67,14 @@ export const auth = {
   },
 
   // --- API calls ---
-  async requestOtp(phone: string) {
-    return apiRaw.post<{ ok: true; expiresInSeconds: number }>('/api/auth/request-otp', { phone });
+  // captchaToken is sent only when the consumer surface has the
+  // Turnstile widget enabled (NEXT_PUBLIC_CAPTCHA_ENABLED=true). When
+  // the backend's matching CAPTCHA_ENABLED is false the field is
+  // ignored; when true and the token is absent the request fails 403.
+  async requestOtp(phone: string, captchaToken?: string | null) {
+    const body: { phone: string; cfTurnstileResponse?: string } = { phone };
+    if (captchaToken) body.cfTurnstileResponse = captchaToken;
+    return apiRaw.post<{ ok: true; expiresInSeconds: number }>('/api/auth/request-otp', body);
   },
   async verifyOtp(phone: string, code: string) {
     const tokens = await apiRaw.post<AuthTokens>('/api/auth/verify-otp', { phone, code });
