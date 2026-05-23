@@ -71,7 +71,7 @@ function LoginScreen() {
     <div className="flex min-h-dvh flex-col">
       {/* ── Header band ──────────────────────────────────────────── */}
       <header className="px-5 pt-5 md:px-8 md:pt-6">
-        <div className="mx-auto flex w-full max-w-md items-center justify-between gap-3">
+        <div className="mx-auto flex w-full max-w-md items-center justify-between gap-3 md:max-w-xl">
           <button
             type="button"
             onClick={goBack}
@@ -94,7 +94,10 @@ function LoginScreen() {
       </header>
 
       {/* ── Hero + form band — anchored upper-middle ─────────────── */}
-      <section className="container mx-auto w-full max-w-md px-5 pt-8 md:px-8 md:pt-12">
+      {/* On md+ we widen to max-w-xl and wrap the form area in a card
+          so it no longer feels like a 400px column floating in
+          whitespace. Mobile unchanged. */}
+      <section className="container mx-auto w-full max-w-md px-5 pt-8 md:max-w-xl md:rounded-3xl md:bg-chop-card-white md:px-10 md:py-10 md:shadow-card lg:mt-4">
         <h1 className="text-4xl font-extrabold leading-[1.05] tracking-tight md:text-5xl">
           {phone ? (
             <>
@@ -138,7 +141,7 @@ function LoginScreen() {
       {phone ? (
         <div className="flex-1" aria-hidden />
       ) : (
-        <section className="mx-auto mt-10 w-full max-w-md flex-1 px-5 md:px-8">
+        <section className="mx-auto mt-10 w-full max-w-md flex-1 px-5 md:max-w-xl md:px-0">
           <ul className="grid grid-cols-3 gap-3">
             <TrustPill index="01">Connexion en quelques secondes</TrustPill>
             <TrustPill index="02">Code par WhatsApp</TrustPill>
@@ -149,7 +152,7 @@ function LoginScreen() {
 
       {/* ── Bottom band — register entry points, pinned to bottom ── */}
       {phone ? null : (
-        <footer className="mx-auto w-full max-w-md px-5 pb-[max(env(safe-area-inset-bottom),24px)] pt-8 md:px-8">
+        <footer className="mx-auto w-full max-w-md px-5 pb-[max(env(safe-area-inset-bottom),24px)] pt-8 md:max-w-xl md:px-0">
           <div className="rounded-3xl bg-chop-card-white p-5 shadow-card">
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-chop-ink-secondary">
               Pas encore inscrit&nbsp;?

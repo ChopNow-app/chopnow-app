@@ -40,8 +40,10 @@ export function AdminLoginPage() {
   };
 
   return (
-    <main className="min-h-dvh bg-background p-4">
-      <div className="container max-w-md py-12">
+    <main className="flex min-h-dvh items-center justify-center bg-background p-4">
+      {/* Desktop polish: form sits in a centered card with shadow on md+,
+          full-width on mobile. Same pattern as the consumer login page. */}
+      <div className="md:bg-card container max-w-md py-12 md:max-w-xl md:rounded-3xl md:px-10 md:py-10 md:shadow-card">
         <h1 className="text-2xl font-extrabold">Console Admin</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Connexion avec ton email et ton mot de passe (8h de session).
