@@ -45,13 +45,16 @@ jobs:
         env:
           NEXT_PUBLIC_API_URL: http://localhost:3001
 
-      # --- Warning only (informational, never blocks merge) ---
-      - name: Security audit (warning only)
-        run: |
-          echo "::group::npm audit"
-          npm audit --audit-level=high || true
-          echo "::endgroup::"
+      # --- Blocking: matches chopnow-api's gate. ---
+      # If a HIGH or CRITICAL CVE lands in the dependency tree, the PR
+      # cannot merge until either the vulnerable dep is updated or the
+      # CVE is reviewed + acknowledged via `npm audit fix` or an
+      # exception. Dependabot opens auto-fix PRs for routine updates;
+      # this gate is the safety net for the moments it doesn't.
+      - name: Security audit (deps)
+        run: npm audit --audit-level=high
 
+      # --- Warning only (informational, never blocks merge) ---
       - name: i18n hardcoded-string check (warning only)
         if: contains(github.event.pull_request.changed_files, 'features/') || contains(github.event.pull_request.changed_files, 'app/')
         run: |
