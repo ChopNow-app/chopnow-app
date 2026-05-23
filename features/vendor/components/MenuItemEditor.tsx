@@ -266,6 +266,11 @@ export function MenuItemEditor({
           <div className="mt-4 border-t pt-4">
             <p className="mb-2 text-sm font-semibold">Photo du plat</p>
             {currentItem.photoUrl ? (
+              // Vendor admin preview — fluid 100% width; using Next/Image
+              // here would require fill-mode + position:relative wrapper
+              // for vanishingly small LCP benefit on a vendor-admin
+              // surface. Consistent with the rest of /vendor/*.
+              // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={`/r2/${currentItem.photoUrl}`}
                 alt={currentItem.name}

@@ -202,7 +202,7 @@ const SLIDES: Slide[] = [
 
 function SlideView({
   slide,
-  isLast,
+  isLast: _isLast,
   onDismiss,
 }: {
   slide: Slide;

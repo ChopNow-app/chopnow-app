@@ -63,9 +63,13 @@ export function VendorProfileScreen() {
     defaultValues: { name: '', description: '', momoPhone: '' },
   });
 
-  // Seed the form once the API load resolves. We only do this once (when
-  // status flips to ready) so the user's in-progress edits aren't blown
-  // away by a background refetch.
+  // Seed the form once the API load resolves. Effect intentionally
+  // depends on `profile.status` ONLY (not the inner fields) — we want
+  // a single seed on the loading → ready transition, not a re-seed
+  // on every TanStack-Query refetch (which would clobber the user's
+  // in-progress edits). The lint rule wants us to inline the data
+  // fields too; doing so changes the semantic from "seed once" to
+  // "re-seed on every refetch."
   React.useEffect(() => {
     if (profile.status === 'ready') {
       reset({
@@ -74,6 +78,7 @@ export function VendorProfileScreen() {
         momoPhone: profile.data.momoPhone,
       });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile.status, reset]);
 
   if (profile.status === 'loading') {
