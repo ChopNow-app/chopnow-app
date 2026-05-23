@@ -7,6 +7,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 
 import * as React from 'react';
+import Link from 'next/link';
 import { MapPin, ChevronDown, Bell } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { GeolocationState } from '../hooks/useGeolocation';
@@ -22,7 +23,6 @@ interface HomeHeaderProps {
   coordsSource?: 'gps' | 'out-of-zone' | 'unavailable' | 'pending';
   firstName?: string | null;
   onLocationClick?: () => void;
-  onNotificationsClick?: () => void;
   hasUnreadNotifications?: boolean;
 }
 
@@ -42,7 +42,6 @@ export function HomeHeader({
   coordsSource,
   firstName,
   onLocationClick,
-  onNotificationsClick,
   hasUnreadNotifications,
 }: HomeHeaderProps) {
   const greetingWord = useTimeOfDayGreeting();
@@ -100,9 +99,12 @@ export function HomeHeader({
           </h1>
         </div>
 
-        <button
-          type="button"
-          onClick={onNotificationsClick}
+        {/* Bell navigates to /notifications instead of an onClick handler
+            so it's never a dead button — the previous shape required every
+            caller to pass `onNotificationsClick` and CataloguePage didn't,
+            so the bell silently did nothing on the live site. */}
+        <Link
+          href="/notifications"
           aria-label="Notifications"
           className="relative mt-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-chop-surface-gray text-chop-ink transition-colors hover:bg-chop-card-white"
         >
@@ -113,7 +115,7 @@ export function HomeHeader({
               className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-chop-red ring-2 ring-chop-warm"
             />
           ) : null}
-        </button>
+        </Link>
       </div>
     </header>
   );
