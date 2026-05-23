@@ -18,7 +18,6 @@ import {
   ErrorBanner,
   Field,
   FormSection,
-  MAX_PHOTO_BYTES,
   PhotoPicker,
   RadioCard,
 } from '@/components/forms/onboarding-atoms';

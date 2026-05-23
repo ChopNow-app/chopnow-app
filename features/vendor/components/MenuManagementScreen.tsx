@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { ChevronLeft, Plus, AlertTriangle, Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { useMenuItems, type MenuItem, type StockLevel, type ItemKind } from '../hooks/useMenuItems';
+import { useMenuItems, type MenuItem, type StockLevel } from '../hooks/useMenuItems';
 import { useMenuCategories, type MenuCategory } from '../hooks/useMenuCategories';
 import { useVendorProfile } from '../hooks/useVendorProfile';
 import { MenuItemEditor } from './MenuItemEditor';
@@ -430,6 +430,10 @@ function PhotoThumb({ item }: { item: MenuItem }) {
     );
   }
   return (
+    // Vendor admin thumbnail — no LCP/bandwidth concern (vendor staff
+    // are on managed devices, not Tecno/Itel mid-range on 3G). Same
+    // pattern as VendorDetailPage / MenuItemEditor in this codebase.
+    // eslint-disable-next-line @next/next/no-img-element
     <img
       src={`/r2/${item.photoUrl}`}
       alt={item.name}
