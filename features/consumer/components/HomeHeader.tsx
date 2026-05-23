@@ -13,6 +13,13 @@ import type { GeolocationState } from '../hooks/useGeolocation';
 
 interface HomeHeaderProps {
   geo: GeolocationState;
+  /**
+   * Effective catalogue-coords source as resolved by `resolveCoords` in
+   * useGeolocation. Lets the pill report honestly when we silently swap
+   * the geolocated point for DOUALA_FALLBACK (out-of-zone, unavailable).
+   * Omit on legacy callers — falls back to the older geo-only label.
+   */
+  coordsSource?: 'gps' | 'out-of-zone' | 'unavailable' | 'pending';
   firstName?: string | null;
   onLocationClick?: () => void;
   onNotificationsClick?: () => void;
@@ -32,6 +39,7 @@ interface HomeHeaderProps {
 // reactive to geolocation state changes without an effect on the parent.
 export function HomeHeader({
   geo,
+  coordsSource,
   firstName,
   onLocationClick,
   onNotificationsClick,
@@ -39,22 +47,30 @@ export function HomeHeader({
 }: HomeHeaderProps) {
   const greetingWord = useTimeOfDayGreeting();
 
-  // We do not reverse-geocode yet (no Mapbox/Nominatim call). Until then the
-  // pill is a one-liner that reflects the geolocation contract: GPS active,
-  // approximate, or denied. Pilot zone copy ("Bonamoussadi") is the future
-  // when a quartier picker lands.
+  // Pill copy follows the effective catalogue-coords source, not the raw
+  // geo status, so we never lie ("Position GPS · Douala" while actually
+  // querying with DOUALA_FALLBACK because the user is in Paris).
   const locationLabel =
-    geo.status === 'ready'
+    coordsSource === 'gps'
       ? 'Position GPS · Douala'
-      : geo.status === 'requesting'
-        ? 'Localisation…'
-        : 'Douala (centre)';
+      : coordsSource === 'out-of-zone'
+        ? 'Hors zone · Douala (centre)'
+        : coordsSource === 'unavailable'
+          ? 'Douala (centre)'
+          : geo.status === 'requesting'
+            ? 'Localisation…'
+            : // legacy callers without coordsSource fall through to the geo state
+              geo.status === 'ready'
+              ? 'Position GPS · Douala'
+              : 'Douala (centre)';
   const locationDotClass =
-    geo.status === 'ready'
+    coordsSource === 'gps'
       ? 'bg-emerald-500'
-      : geo.status === 'requesting'
-        ? 'animate-pulse bg-amber-400'
-        : 'bg-chop-neutral';
+      : coordsSource === 'out-of-zone'
+        ? 'bg-amber-400'
+        : geo.status === 'requesting'
+          ? 'animate-pulse bg-amber-400'
+          : 'bg-chop-neutral';
 
   return (
     <header className="px-5 pt-6 md:px-8 lg:px-12">
