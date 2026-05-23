@@ -4,7 +4,7 @@ import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import { useCurrentUser } from '@/features/auth/hooks/useCurrentUser';
 import { useCatalogue } from '../hooks/useCatalogue';
-import { DOUALA_FALLBACK, useGeolocation } from '../hooks/useGeolocation';
+import { resolveCoords, useGeolocation } from '../hooks/useGeolocation';
 import { VendorCard } from './VendorCard';
 import { VendorRiderEntryBand } from './VendorRiderEntryBand';
 import { VendorCardSkeleton } from './VendorCardSkeleton';
@@ -57,11 +57,20 @@ export function CataloguePage() {
     if (geo.status === 'idle') geo.request();
   }, [geo]);
 
-  const coords = React.useMemo(() => {
-    if (geo.status === 'ready') return { lat: geo.lat, lng: geo.lng };
-    if (geo.status === 'denied' || geo.status === 'unsupported') return DOUALA_FALLBACK;
-    return null;
-  }, [geo]);
+  // `resolveCoords` is the single source of truth for "what coordinates
+  // do we query the catalogue with?":
+  //   - real GPS coords when they fall inside the Douala service-area bbox
+  //   - DOUALA_FALLBACK when the browser denied / can't geolocate / OR
+  //     when the geolocated point lands outside the service area (user
+  //     is in Paris on a test sandbox, traveling, behind a VPN, etc.)
+  //   - null while the prompt is still pending — the query is suspended.
+  //
+  // Catching the "out-of-zone" case is what fixes the empty-catalogue
+  // bug where 3 seeded Bonamoussadi vendors looked invisible to anyone
+  // not physically in Douala.
+  const resolved = React.useMemo(() => resolveCoords(geo), [geo]);
+  const coords = resolved.coords;
+  const coordsSource = resolved.source;
 
   const catalogue = useCatalogue(coords);
 
@@ -121,6 +130,7 @@ export function CataloguePage() {
       <div className="relative z-10 mx-auto max-w-md pb-8 md:max-w-3xl lg:max-w-6xl xl:max-w-7xl">
         <HomeHeader
           geo={geo}
+          coordsSource={coordsSource}
           firstName={firstName}
           onLocationClick={() => {
             if (geo.status === 'denied' || geo.status === 'unsupported') setShowGpsHelp(true);
