@@ -42,4 +42,9 @@ export const queryKeys = {
   admin: {
     validationQueues: () => ['admin', 'validation-queues'] as const,
   },
+
+  // Public config (auth captcha widget state, etc.)
+  config: {
+    captcha: () => ['config', 'captcha'] as const,
+  },
 } as const;

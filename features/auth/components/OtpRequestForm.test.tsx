@@ -5,20 +5,25 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 
 import { OtpRequestForm } from './OtpRequestForm';
 import { auth } from '@/lib/auth';
+import { useCaptchaConfig } from '@/features/auth/hooks/useCaptchaConfig';
 
 vi.mock('@/lib/auth', () => ({
   auth: { requestOtp: vi.fn(), verifyOtp: vi.fn() },
 }));
 
+vi.mock('@/features/auth/hooks/useCaptchaConfig', () => ({
+  useCaptchaConfig: vi.fn(),
+}));
+
 describe('OtpRequestForm — captcha-disabled (inert default)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    // CAPTCHA env vars are unset in the test environment, which is the
-    // production-default shape. The widget should not render and the
-    // submit button should accept submissions without a token.
+    // Backend returns the inert config — same shape the API serves when
+    // CAPTCHA_ENABLED is false on the server.
+    vi.mocked(useCaptchaConfig).mockReturnValue({ enabled: false, siteKey: null });
   });
 
-  it('submits without a captcha token when the flag is off', async () => {
+  it('submits without a captcha token when backend says disabled', async () => {
     const user = userEvent.setup();
     const onRequested = vi.fn();
     vi.mocked(auth.requestOtp).mockResolvedValueOnce({ ok: true, expiresInSeconds: 300 });
@@ -28,18 +33,13 @@ describe('OtpRequestForm — captcha-disabled (inert default)', () => {
     await user.click(screen.getByRole('button', { name: /recevoir le code/i }));
 
     await waitFor(() => {
-      // Second arg is `undefined` (or absent) — the captcha token wasn't
-      // collected because the widget never rendered.
       expect(auth.requestOtp).toHaveBeenCalledWith('670000000', null);
       expect(onRequested).toHaveBeenCalledWith('670000000');
     });
   });
 
-  it('does not render a Turnstile widget when NEXT_PUBLIC_CAPTCHA_ENABLED is off', () => {
+  it('does not render a Turnstile widget when backend says disabled', () => {
     render(<OtpRequestForm onRequested={vi.fn()} />);
-    // The widget root from @marsidev/react-turnstile renders an iframe
-    // with a `cf-turnstile` data attribute. In the inert default, none
-    // of that DOM should exist.
     expect(document.querySelector('[data-cf-turnstile]')).toBeNull();
     expect(document.querySelector('iframe[src*="challenges.cloudflare.com"]')).toBeNull();
   });
@@ -53,5 +53,28 @@ describe('OtpRequestForm — captcha-disabled (inert default)', () => {
     await user.click(screen.getByRole('button', { name: /recevoir le code/i }));
 
     expect(await screen.findByText(/phone_rate_limited|Erreur réseau/i)).toBeInTheDocument();
+  });
+});
+
+describe('OtpRequestForm — captcha-active', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(useCaptchaConfig).mockReturnValue({
+      enabled: true,
+      siteKey: '1x00000000000000000000AA', // Cloudflare's "always passes" test key
+    });
+  });
+
+  it('blocks submit and surfaces a French message when no token is held yet', async () => {
+    const user = userEvent.setup();
+    render(<OtpRequestForm onRequested={vi.fn()} />);
+    await user.type(screen.getByRole('textbox'), '670000000');
+
+    const submit = screen.getByRole('button', { name: /recevoir le code/i });
+    // Disabled because captchaActive && !captchaToken
+    expect(submit).toBeDisabled();
+
+    // auth.requestOtp must not fire while the button is disabled
+    expect(auth.requestOtp).not.toHaveBeenCalled();
   });
 });
