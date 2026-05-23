@@ -9,6 +9,7 @@ import { Turnstile, type TurnstileInstance } from '@marsidev/react-turnstile';
 import { Button } from '@/components/ui/button';
 import { PhoneInput } from '@/components/PhoneInput';
 import { auth } from '@/lib/auth';
+import { useCaptchaConfig } from '@/features/auth/hooks/useCaptchaConfig';
 
 /**
  * Canonical example of the form pattern devs should copy for Sprint 1 stories:
@@ -18,14 +19,11 @@ import { auth } from '@/lib/auth';
  *   - server errors surfaced via setError('root', ...)
  *   - disabled state during submission
  *
- * Cloudflare Turnstile (bot-protection) is gated behind
- * NEXT_PUBLIC_CAPTCHA_ENABLED. When disabled (default), the widget never
- * renders and no token is sent — matches the backend's inert default.
- * Flip both flags + populate keys when an abuse signal appears.
+ * Cloudflare Turnstile (bot-protection) state is fetched at runtime from
+ * `/auth/captcha-config` so the widget can be turned on without a Vercel
+ * rebuild — the backend's CAPTCHA_ENABLED + TURNSTILE_SITE_KEY env vars
+ * are the single source of truth.
  */
-
-const CAPTCHA_ENABLED = process.env.NEXT_PUBLIC_CAPTCHA_ENABLED === 'true';
-const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? '';
 
 const schema = z.object({
   phone: z
@@ -41,6 +39,9 @@ export interface OtpRequestFormProps {
 }
 
 export function OtpRequestForm({ onRequested }: OtpRequestFormProps) {
+  const captcha = useCaptchaConfig();
+  const captchaActive = captcha.enabled && Boolean(captcha.siteKey);
+
   const {
     handleSubmit,
     setValue,
@@ -55,14 +56,18 @@ export function OtpRequestForm({ onRequested }: OtpRequestFormProps) {
 
   const phone = watch('phone');
 
-  // Turnstile state. When the widget isn't enabled or hasn't rendered
-  // yet, captchaToken stays null and the submit button accepts that
-  // (backend will short-circuit because CAPTCHA_ENABLED=false there too).
   const [captchaToken, setCaptchaToken] = React.useState<string | null>(null);
   const turnstileRef = React.useRef<TurnstileInstance | null>(null);
 
+  // Reset the held token if the backend flips the captcha state mid-
+  // session (e.g. ops disables it). Without this, a stale token would
+  // sit in state and confuse subsequent attempts.
+  React.useEffect(() => {
+    if (!captchaActive) setCaptchaToken(null);
+  }, [captchaActive]);
+
   const onSubmit = async (values: FormValues) => {
-    if (CAPTCHA_ENABLED && !captchaToken) {
+    if (captchaActive && !captchaToken) {
       setError('root', { message: 'Vérification anti-bot requise — patientez un instant.' });
       return;
     }
@@ -72,7 +77,7 @@ export function OtpRequestForm({ onRequested }: OtpRequestFormProps) {
     } catch (err) {
       // Tokens are single-use — reset on failure so the next attempt
       // gets a fresh challenge instead of replaying the burned one.
-      if (CAPTCHA_ENABLED) {
+      if (captchaActive) {
         turnstileRef.current?.reset();
         setCaptchaToken(null);
       }
@@ -88,11 +93,11 @@ export function OtpRequestForm({ onRequested }: OtpRequestFormProps) {
         error={errors.phone?.message}
       />
 
-      {CAPTCHA_ENABLED && TURNSTILE_SITE_KEY ? (
+      {captchaActive ? (
         <div className="flex justify-center">
           <Turnstile
             ref={turnstileRef}
-            siteKey={TURNSTILE_SITE_KEY}
+            siteKey={captcha.siteKey as string}
             onSuccess={setCaptchaToken}
             onError={() => setCaptchaToken(null)}
             onExpire={() => setCaptchaToken(null)}
@@ -105,7 +110,7 @@ export function OtpRequestForm({ onRequested }: OtpRequestFormProps) {
 
       <Button
         type="submit"
-        disabled={isSubmitting || (CAPTCHA_ENABLED && !captchaToken)}
+        disabled={isSubmitting || (captchaActive && !captchaToken)}
         className="w-full"
       >
         {isSubmitting ? 'Envoi…' : 'Recevoir le code'}
