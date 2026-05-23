@@ -57,15 +57,19 @@ describe('bootRehydrate', () => {
     expect(window.localStorage.getItem('chopnow.access')).toBeNull();
   });
 
-  it('admin localStorage fallback → seeds memory without a network call', async () => {
-    window.localStorage.setItem('chopnow.admin.token', 'admin-jwt');
+  it('Phase D1 — wipes any pre-D1 chopnow.admin.token from localStorage on boot', async () => {
+    window.localStorage.setItem('chopnow.admin.token', 'stale-admin-jwt');
     mockFetch(async () => jsonResponse(401, {}));
 
-    await expect(bootRehydrate()).resolves.toBe('authenticated');
-    expect(accessTokenStore.get()).toBe('admin-jwt');
+    // No cookie path, no legacy refresh → still anonymous (the admin
+    // localStorage seed is NOT trusted post-D1).
+    await expect(bootRehydrate()).resolves.toBe('anonymous');
+    expect(accessTokenStore.get()).toBeNull();
+    // And the stale key is wiped so an XSS post-boot can't read it.
+    expect(window.localStorage.getItem('chopnow.admin.token')).toBeNull();
   });
 
-  it('no cookie, no legacy, no admin → anonymous', async () => {
+  it('no cookie, no legacy → anonymous', async () => {
     mockFetch(async () => jsonResponse(401, {}));
 
     await expect(bootRehydrate()).resolves.toBe('anonymous');
