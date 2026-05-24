@@ -5,6 +5,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { ListSkeleton } from '@/components/ui/skeleton';
 import { ApiClientError } from '@/lib/api/api-client';
 import {
   adminFinanceApi,
@@ -323,28 +324,30 @@ function VendorBalancesPanel() {
       {state.data.rows.length === 0 ? (
         <EmptyState message="Aucun solde positif." />
       ) : (
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b text-left text-xs text-muted-foreground">
-              <th className="py-2">Nom</th>
-              <th>Type</th>
-              <th>Solde</th>
-              <th>Trusted</th>
-              <th>Dernier virement</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y">
-            {state.data.rows.map((r) => (
-              <tr key={r.vendorId}>
-                <td className="py-2 font-medium">{r.name}</td>
-                <td className="text-muted-foreground">{r.type}</td>
-                <td className="font-semibold">{formatXAF(r.balanceXAF)}</td>
-                <td>{r.isTrusted ? '✓' : '—'}</td>
-                <td className="text-xs text-muted-foreground">{formatDate(r.lastPayoutAt)}</td>
+        <div className="-mx-5 overflow-x-auto px-5 md:mx-0 md:px-0">
+          <table className="w-full min-w-[640px] text-sm">
+            <thead>
+              <tr className="border-b text-left text-xs text-muted-foreground">
+                <th className="py-2">Nom</th>
+                <th>Type</th>
+                <th>Solde</th>
+                <th>Trusted</th>
+                <th>Dernier virement</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y">
+              {state.data.rows.map((r) => (
+                <tr key={r.vendorId}>
+                  <td className="py-2 font-medium">{r.name}</td>
+                  <td className="text-muted-foreground">{r.type}</td>
+                  <td className="font-semibold">{formatXAF(r.balanceXAF)}</td>
+                  <td>{r.isTrusted ? '✓' : '—'}</td>
+                  <td className="text-xs text-muted-foreground">{formatDate(r.lastPayoutAt)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </section>
   );
@@ -389,26 +392,28 @@ function RiderBalancesPanel() {
       {state.data.rows.length === 0 ? (
         <EmptyState message="Aucun solde positif." />
       ) : (
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b text-left text-xs text-muted-foreground">
-              <th className="py-2">Nom</th>
-              <th>Véhicule</th>
-              <th>Solde</th>
-              <th>Dernier virement</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y">
-            {state.data.rows.map((r) => (
-              <tr key={r.riderId}>
-                <td className="py-2 font-medium">{r.name ?? '—'}</td>
-                <td className="text-muted-foreground">{r.vehicleType}</td>
-                <td className="font-semibold">{formatXAF(r.balanceXAF)}</td>
-                <td className="text-xs text-muted-foreground">{formatDate(r.lastPayoutAt)}</td>
+        <div className="-mx-5 overflow-x-auto px-5 md:mx-0 md:px-0">
+          <table className="w-full min-w-[640px] text-sm">
+            <thead>
+              <tr className="border-b text-left text-xs text-muted-foreground">
+                <th className="py-2">Nom</th>
+                <th>Véhicule</th>
+                <th>Solde</th>
+                <th>Dernier virement</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y">
+              {state.data.rows.map((r) => (
+                <tr key={r.riderId}>
+                  <td className="py-2 font-medium">{r.name ?? '—'}</td>
+                  <td className="text-muted-foreground">{r.vehicleType}</td>
+                  <td className="font-semibold">{formatXAF(r.balanceXAF)}</td>
+                  <td className="text-xs text-muted-foreground">{formatDate(r.lastPayoutAt)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </section>
   );
@@ -453,32 +458,34 @@ function RefundQueuePanel() {
       {state.data.rows.length === 0 ? (
         <EmptyState message="Aucun remboursement en attente." />
       ) : (
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b text-left text-xs text-muted-foreground">
-              <th className="py-2">Commande</th>
-              <th>Vendeur</th>
-              <th>Montant</th>
-              <th>Âge</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y">
-            {state.data.rows.map((r) => (
-              <tr key={r.orderId}>
-                <td className="py-2 font-mono text-xs">{r.code}</td>
-                <td className="text-sm">{r.vendorName}</td>
-                <td className="font-semibold">{formatXAF(r.totalXAF)}</td>
-                <td
-                  className={`text-xs ${
-                    r.ageDays >= 3 ? 'font-bold text-destructive' : 'text-muted-foreground'
-                  }`}
-                >
-                  {r.ageDays}j
-                </td>
+        <div className="-mx-5 overflow-x-auto px-5 md:mx-0 md:px-0">
+          <table className="w-full min-w-[640px] text-sm">
+            <thead>
+              <tr className="border-b text-left text-xs text-muted-foreground">
+                <th className="py-2">Commande</th>
+                <th>Vendeur</th>
+                <th>Montant</th>
+                <th>Âge</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y">
+              {state.data.rows.map((r) => (
+                <tr key={r.orderId}>
+                  <td className="py-2 font-mono text-xs">{r.code}</td>
+                  <td className="text-sm">{r.vendorName}</td>
+                  <td className="font-semibold">{formatXAF(r.totalXAF)}</td>
+                  <td
+                    className={`text-xs ${
+                      r.ageDays >= 3 ? 'font-bold text-destructive' : 'text-muted-foreground'
+                    }`}
+                  >
+                    {r.ageDays}j
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </section>
   );
@@ -498,13 +505,9 @@ function AuthGate({ label }: { label: string }) {
 }
 
 function LoadingSkeleton({ rows }: { rows: number }) {
-  return (
-    <div className="space-y-2">
-      {Array.from({ length: rows }).map((_, i) => (
-        <div key={i} className="h-12 animate-pulse rounded-md bg-muted/60" />
-      ))}
-    </div>
-  );
+  // Thin wrapper kept so the call sites' API stays `<LoadingSkeleton rows={N} />`.
+  // Real shape lives in the shared `<ListSkeleton variant="row" />` primitive.
+  return <ListSkeleton rows={rows} variant="row" className="space-y-2" />;
 }
 
 function EmptyState({ message }: { message: string }) {
