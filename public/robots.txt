@@ -9,10 +9,25 @@
 User-agent: *
 Allow: /
 
-# Actor-protected segments (redirect to /login or /admin/login at edge)
-Disallow: /admin
-Disallow: /vendor
-Disallow: /livreur
+# Actor-protected segments (redirect to /login or /admin/login at edge).
+# Trailing slashes are LOAD-BEARING here: robots.txt path matching is a
+# byte-wise prefix match (RFC 9309), so "Disallow: /vendor" would also
+# match "/vendors/[id]" because "/vendor" is a prefix of "/vendors/...".
+# Adding the trailing slash anchors the rule on byte 8 ("/"), which
+# splits "/vendor/dashboard" (blocked) from "/vendors/abc" (allowed).
+# Same precaution for /livreur — /livreurs doesn't exist today, but
+# someone could add it tomorrow.
+Disallow: /admin/
+Disallow: /vendor/
+Disallow: /livreur/
+
+# Public vendor detail pages — explicit Allow so Google indexes them.
+# Belt-and-braces: the trailing-slash discipline above already keeps
+# /vendors/ out of the Disallow's prefix-match, but a future regression
+# in this file (someone drops the trailing slash again) would silently
+# de-index every vendor page. The Allow rule wins via specificity
+# (longer path beats shorter Disallow) under Google's matcher.
+Allow: /vendors/
 
 # User-specific surfaces — render auth-gated chrome
 Disallow: /account
