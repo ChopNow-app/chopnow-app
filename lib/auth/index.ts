@@ -1,3 +1,4 @@
+import { track } from '@/lib/analytics';
 import { apiRaw } from '@/lib/api/api-client';
 import { accessTokenStore } from '@/lib/auth/access-token-store';
 import type { UserRole } from '@/lib/auth/role-redirect';
@@ -74,11 +75,23 @@ export const auth = {
   async requestOtp(phone: string, captchaToken?: string | null) {
     const body: { phone: string; cfTurnstileResponse?: string } = { phone };
     if (captchaToken) body.cfTurnstileResponse = captchaToken;
-    return apiRaw.post<{ ok: true; expiresInSeconds: number }>('/api/auth/request-otp', body);
+    const result = await apiRaw.post<{ ok: true; expiresInSeconds: number }>(
+      '/api/auth/request-otp',
+      body,
+    );
+    // Funnel event — no phone in the payload (PII contract in
+    // lib/analytics.ts). Tells the founder how many auth attempts
+    // are reaching the backend.
+    track('otp_requested');
+    return result;
   },
   async verifyOtp(phone: string, code: string) {
     const tokens = await apiRaw.post<AuthTokens>('/api/auth/verify-otp', { phone, code });
     this.saveTokens(tokens);
+    // Fires only on successful verify (a 4xx earlier throws). The
+    // otp_requested → otp_verified pair gives the OTP-delivery
+    // health rate.
+    track('otp_verified');
     return tokens;
   },
   /**

@@ -2,6 +2,7 @@
 
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import { track } from '@/lib/analytics';
 
 export interface CartLine {
   itemId: string;
@@ -95,6 +96,11 @@ export const useCartStore = create<CartState & CartActions>()(
             ],
           };
         });
+        // Funnel event — fires on every add (not just first-line),
+        // because re-adding from the menu signals continued intent.
+        // amountXAF is the line's contribution (qty * price), used
+        // for "average item price added" analysis.
+        track('cart_item_added', { vendorId, amountXAF: line.priceXAF * qty });
         return { ok: true };
       },
 
