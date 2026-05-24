@@ -1,5 +1,6 @@
 'use client';
 
+import * as Sentry from '@sentry/nextjs';
 import * as React from 'react';
 
 // Register the service worker and auto-reload the page when a new SW takes
@@ -18,6 +19,31 @@ import * as React from 'react';
 //
 // We skip the reload on FIRST registration (when there was no controller
 // at mount time) so users opening the app fresh don't get a flash reload.
+//
+// Phase Obs-O3 — SW error bridge.
+//   sw.js can't import Sentry directly (different JS context, different
+//   bundle). It reports errors via postMessage; we forward to Sentry in
+//   the page context (where Sentry IS initialized via sentry.client.config.ts).
+//   See public/sw.js `reportToClients()`.
+interface SwErrorPayload {
+  source: 'sw';
+  kind: 'error' | 'unhandledrejection';
+  context: 'push' | 'notificationclick' | 'fetch' | 'global';
+  message: string;
+  stack: string | null;
+  timestamp: number;
+}
+
+function isSwErrorPayload(data: unknown): data is SwErrorPayload {
+  return (
+    typeof data === 'object' &&
+    data !== null &&
+    (data as SwErrorPayload).source === 'sw' &&
+    ((data as SwErrorPayload).kind === 'error' ||
+      (data as SwErrorPayload).kind === 'unhandledrejection')
+  );
+}
+
 export function RegisterServiceWorker() {
   React.useEffect(() => {
     if (!('serviceWorker' in navigator)) return;
@@ -44,9 +70,31 @@ export function RegisterServiceWorker() {
       refreshing = true;
       window.location.reload();
     };
+
+    // Bridge: SW reports an error → page receives postMessage →
+    // we synthesize an Error (so Sentry's stack trace logic works) and
+    // capture it with the SW context as a tag for filtering in the
+    // dashboard. The synthetic Error's stack is the SW-side stack
+    // (already captured in the payload); we pass it through.
+    const onMessage = (event: MessageEvent) => {
+      if (!isSwErrorPayload(event.data)) return;
+      const err = new Error(event.data.message);
+      if (event.data.stack) err.stack = event.data.stack;
+      Sentry.captureException(err, {
+        tags: {
+          source: 'service-worker',
+          'sw.kind': event.data.kind,
+          'sw.context': event.data.context,
+        },
+        extra: { timestamp: event.data.timestamp },
+      });
+    };
+
     navigator.serviceWorker.addEventListener('controllerchange', onControllerChange);
+    navigator.serviceWorker.addEventListener('message', onMessage);
     return () => {
       navigator.serviceWorker.removeEventListener('controllerchange', onControllerChange);
+      navigator.serviceWorker.removeEventListener('message', onMessage);
     };
   }, []);
   return null;
