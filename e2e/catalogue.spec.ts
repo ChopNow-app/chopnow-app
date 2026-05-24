@@ -13,32 +13,37 @@ import { test, expect } from '@playwright/test';
  *   - VendorCard's next/image proxy for /r2/* paths
  */
 
+// Matches features/consumer/types.ts VendorCard exactly. Keeping the
+// fixture aligned with the real type guarantees the test fails for a
+// schema regression instead of silently passing on a half-shaped mock.
 const MOCK_VENDORS = [
   {
     id: 'v-makepe-001',
     name: 'Maman Mboué',
+    type: 'INFORMAL' as const,
     badge: 'Cuisine locale',
-    profilePhotoUrl: 'vendor-profile/makepe-001.webp',
-    isOpen: true,
-    plan: 1,
-    distanceM: 850,
-    etaMin: 18,
+    quartier: 'Makepe',
+    profilePhotoUrl: null,
+    description: null,
+    distanceKm: 0.85,
+    etaMinutes: 18,
     deliveryFeeXAF: 500,
-    ratingAvg: 4.6,
-    ratingCount: 32,
+    plan: 1 as const,
+    isOpenNow: true,
   },
   {
     id: 'v-bonamou-002',
     name: 'Le Bonamoussadi',
+    type: 'SEMI_FORMAL' as const,
     badge: 'Grillades',
-    profilePhotoUrl: 'vendor-profile/bonamou-002.webp',
-    isOpen: true,
-    plan: 1,
-    distanceM: 1200,
-    etaMin: 22,
+    quartier: 'Bonamoussadi',
+    profilePhotoUrl: null,
+    description: null,
+    distanceKm: 1.2,
+    etaMinutes: 22,
     deliveryFeeXAF: 700,
-    ratingAvg: 4.4,
-    ratingCount: 18,
+    plan: 1 as const,
+    isOpenNow: true,
   },
 ];
 
@@ -47,12 +52,7 @@ test('catalogue mounts + vendor cards render + category filter syncs to URL', as
     route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify({
-        vendors: MOCK_VENDORS,
-        plan1Count: MOCK_VENDORS.length,
-        plan2Count: 0,
-        plan3Count: 0,
-      }),
+      body: JSON.stringify({ vendors: MOCK_VENDORS }),
     }),
   );
   await page.route('**/api/v1/users/me**', (route) =>

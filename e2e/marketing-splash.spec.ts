@@ -19,7 +19,7 @@ test('marketing splash → click \"Commander\" → land on /restaurants', async 
     route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify({ vendors: [], plan1Count: 0, plan2Count: 0, plan3Count: 0 }),
+      body: JSON.stringify({ vendors: [] }),
     }),
   );
   // /users/me hit by RoleRedirector on the splash. 401 = anonymous,
@@ -33,12 +33,14 @@ test('marketing splash → click \"Commander\" → land on /restaurants', async 
     if (msg.type() === 'error') consoleErrors.push(msg.text());
   });
 
-  await page.goto('/');
+  await page.goto('/', { waitUntil: 'domcontentloaded' });
 
   // Editorial hero copy is the page identity; if this fails the
-  // marketing surface is broken in some fundamental way.
-  await expect(page.getByText('Mange', { exact: false })).toBeVisible();
-  await expect(page.getByText(/attendre\./i)).toBeVisible();
+  // marketing surface is broken in some fundamental way. Look for the
+  // brand-red "attendre." span — it's the most identity-specific
+  // single token on the page, less ambiguous than the plain "Mange"
+  // word which appears in multiple places (cards, prefetched routes).
+  await expect(page.getByText(/attendre\./i).first()).toBeVisible();
 
   await page.getByRole('link', { name: /commander maintenant/i }).click();
 
