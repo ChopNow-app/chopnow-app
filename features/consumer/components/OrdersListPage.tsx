@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { apiRaw, ApiClientError } from '@/lib/api/api-client';
 import type { OrderStatus, PaymentMethod, PaymentStatus } from '../hooks/useOrder';
+import { ConsumerPushPermissionBanner } from './ConsumerPushPermissionBanner';
 
 // Mirrors the backend's OrderListItem shape — narrow to fields this page
 // actually renders. Replace with an openapi-generated type once the
@@ -117,6 +118,9 @@ export function OrdersListPage() {
             Les 30 dernières commandes — touche pour suivre.
           </p>
         </header>
+        <div className="mb-4">
+          <ConsumerPushPermissionBanner />
+        </div>
         <ul className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4">
           {state.orders.map((o) => (
             <li key={o.id}>
