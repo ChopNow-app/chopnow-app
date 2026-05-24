@@ -1,15 +1,26 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import * as React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Turnstile, type TurnstileInstance } from '@marsidev/react-turnstile';
+import type { TurnstileInstance } from '@marsidev/react-turnstile';
 
 import { Button } from '@/components/ui/button';
 import { PhoneInput } from '@/components/PhoneInput';
 import { auth } from '@/lib/auth';
 import { useCaptchaConfig } from '@/features/auth/hooks/useCaptchaConfig';
+
+// Lazy: the Turnstile widget is ~30 KB and only renders when the backend's
+// CAPTCHA_ENABLED flag is on (fetched at runtime via /auth/captcha-config).
+// Most pilot installs run with captcha disabled, so deferring the bundle
+// saves the full weight on the common login path. `ssr: false` because
+// Turnstile is a third-party iframe-mounting widget that has no SSR shape.
+const Turnstile = dynamic(
+  () => import('@marsidev/react-turnstile').then((m) => ({ default: m.Turnstile })),
+  { ssr: false },
+);
 
 /**
  * Canonical example of the form pattern devs should copy for Sprint 1 stories:

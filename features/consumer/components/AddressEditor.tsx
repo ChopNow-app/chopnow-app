@@ -2,6 +2,7 @@
 
 /* eslint-disable react-hooks/set-state-in-effect */
 
+import dynamic from 'next/dynamic';
 import * as React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -11,8 +12,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { apiRaw, ApiClientError } from '@/lib/api/api-client';
 import { useGeolocation } from '../hooks/useGeolocation';
-import { GpsHelpDialog } from './GpsHelpDialog';
 import type { SavedAddress } from '@/features/cart/hooks/useAddresses';
+
+// Lazy: dialog only renders on the geo-denied branch, defer its bundle
+// from the address-editor's initial chunk.
+const GpsHelpDialog = dynamic(
+  () => import('./GpsHelpDialog').then((m) => ({ default: m.GpsHelpDialog })),
+  { ssr: false },
+);
 
 const schema = z.object({
   label: z.string().min(1, 'Donne-lui un nom (ex: Maison)').max(40),
