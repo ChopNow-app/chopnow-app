@@ -10,6 +10,7 @@ import { z } from 'zod';
 import { AuthRequired } from '@/components/ui/auth-required';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { toast } from '@/hooks/use-toast';
 import { apiRaw, ApiClientError } from '@/lib/api/api-client';
 import { auth } from '@/lib/auth';
 
@@ -69,6 +70,7 @@ export function AccountPage() {
   const onLogout = async () => {
     if (!window.confirm('Te déconnecter ?')) return;
     await auth.logout();
+    toast({ title: 'Déconnecté·e', description: 'À bientôt !' });
     router.replace('/login');
   };
 

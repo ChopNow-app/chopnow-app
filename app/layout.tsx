@@ -5,6 +5,7 @@ import { getLocale, getMessages } from 'next-intl/server';
 import { ConsumerBottomNav } from '@/components/ConsumerBottomNav';
 import { PilotBanner } from '@/components/PilotBanner';
 import { RegisterServiceWorker } from '@/components/RegisterServiceWorker';
+import { Toaster } from '@/components/ui/toaster';
 import { APPLE_SPLASH_SCREENS } from '@/lib/pwa/apple-splash-screens';
 import { SessionBoot } from '@/lib/auth/SessionBoot';
 import { QueryProvider } from '@/lib/query/QueryProvider';
@@ -97,6 +98,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             {/* ConsumerBottomNav hides itself on admin/livreur/vendor routes. */}
             <div className="min-h-dvh pb-20 lg:pb-0">{children}</div>
             <ConsumerBottomNav />
+            {/* Toast viewport — see hooks/use-toast.ts for the imperative API.
+                Mounted here (not in route layouts) so any surface — including
+                error boundaries, async callbacks, and the SW push handler —
+                can dispatch toasts without prop-drilling. */}
+            <Toaster />
           </QueryProvider>
         </NextIntlClientProvider>
         <RegisterServiceWorker />

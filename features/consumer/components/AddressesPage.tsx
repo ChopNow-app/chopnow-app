@@ -4,8 +4,9 @@ import * as React from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
-import { apiRaw, ApiClientError } from '@/lib/api/api-client';
 import { useAddresses, type SavedAddress } from '@/features/cart/hooks/useAddresses';
+import { toast } from '@/hooks/use-toast';
+import { apiRaw, ApiClientError } from '@/lib/api/api-client';
 import { AddressEditor } from './AddressEditor';
 
 /**
@@ -36,9 +37,10 @@ export function AddressesPage() {
     try {
       await apiRaw.delete(`/api/v1/users/me/addresses/${id}`);
       reload();
+      toast({ variant: 'success', title: 'Adresse supprimée' });
     } catch (err) {
       const msg = err instanceof ApiClientError ? `Erreur ${err.status}` : (err as Error).message;
-      window.alert(msg);
+      toast({ variant: 'error', title: 'Suppression échouée', description: msg });
     }
   };
 

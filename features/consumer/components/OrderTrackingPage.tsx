@@ -3,6 +3,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { toast } from '@/hooks/use-toast';
 import { apiRaw, ApiClientError } from '@/lib/api/api-client';
 import { useOrder, type OrderView } from '../hooks/useOrder';
 import { OrderTimeline } from './OrderTimeline';
@@ -67,9 +68,10 @@ function OrderContent({ order, onReload }: { order: OrderView; onReload: () => v
     try {
       await apiRaw.patch(`/api/v1/orders/${order.id}/cancel`, {});
       onReload();
+      toast({ variant: 'success', title: 'Commande annulée' });
     } catch (err) {
       const msg = err instanceof ApiClientError ? `Erreur ${err.status}` : (err as Error).message;
-      window.alert(`Annulation échouée : ${msg}`);
+      toast({ variant: 'error', title: 'Annulation échouée', description: msg });
     }
   };
 
@@ -360,14 +362,14 @@ function ConsumerCallActions({ order }: { order: OrderView }) {
           ? `/api/v1/orders/${order.id}/call-vendor`
           : `/api/v1/orders/${order.id}/call-rider`;
       await apiRaw.post(endpoint, {});
-      window.alert(
-        target === 'vendor'
-          ? 'Le restaurant reçoit ton appel. Ton téléphone va sonner.'
-          : 'Le livreur reçoit ton appel. Ton téléphone va sonner.',
-      );
+      toast({
+        variant: 'success',
+        title: target === 'vendor' ? 'Appel au restaurant en cours' : 'Appel au livreur en cours',
+        description: 'Ton téléphone va sonner.',
+      });
     } catch (err) {
       const msg = err instanceof ApiClientError ? `Erreur ${err.status}` : (err as Error).message;
-      window.alert(`Appel impossible : ${msg}`);
+      toast({ variant: 'error', title: 'Appel impossible', description: msg });
     } finally {
       setBusy(null);
     }
