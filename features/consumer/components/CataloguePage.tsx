@@ -316,6 +316,14 @@ export function CataloguePage() {
   );
 }
 
+// Default per-section render window. At 8 cards, a typical 320×568 phone
+// shows ~2.5 cards above the fold and the rest scroll into view — enough
+// to feel "full" without paying the DOM cost of rendering 30+ <VendorCard>
+// trees up-front (each card is an image + 4 text rows + gradient ribbons,
+// non-trivial). 8 was chosen because it also fills 2 full rows on the
+// xl 4-column grid without an awkward half-row.
+const SECTION_INITIAL_LIMIT = 8;
+
 function Section({
   title,
   subtitle,
@@ -327,6 +335,14 @@ function Section({
   vendors: VendorCardType[];
   emptyMessage: string;
 }) {
+  const [expanded, setExpanded] = React.useState(false);
+  // When the underlying list shrinks below the window (filter narrowed),
+  // the "Voir plus" button just stops rendering — no effect needed to
+  // reset `expanded`. The stale-true state is harmless because
+  // `visible` and `vendors` are identical when there's nothing to hide.
+  const visible = expanded ? vendors : vendors.slice(0, SECTION_INITIAL_LIMIT);
+  const hiddenCount = vendors.length - visible.length;
+
   return (
     <section>
       <SectionHeader title={title} subtitle={subtitle} />
@@ -335,13 +351,27 @@ function Section({
           {emptyMessage}
         </p>
       ) : (
-        <ul className="grid grid-cols-1 gap-4 px-5 sm:grid-cols-2 md:grid-cols-3 md:px-8 lg:grid-cols-3 lg:gap-5 lg:px-12 xl:grid-cols-4 xl:gap-6">
-          {vendors.map((v) => (
-            <li key={v.id}>
-              <VendorCard vendor={v} />
-            </li>
-          ))}
-        </ul>
+        <>
+          <ul className="grid grid-cols-1 gap-4 px-5 sm:grid-cols-2 md:grid-cols-3 md:px-8 lg:grid-cols-3 lg:gap-5 lg:px-12 xl:grid-cols-4 xl:gap-6">
+            {visible.map((v) => (
+              <li key={v.id}>
+                <VendorCard vendor={v} />
+              </li>
+            ))}
+          </ul>
+          {hiddenCount > 0 ? (
+            <div className="px-5 pt-4 md:px-8 lg:px-12">
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full"
+                onClick={() => setExpanded(true)}
+              >
+                Voir {hiddenCount} de plus
+              </Button>
+            </div>
+          ) : null}
+        </>
       )}
     </section>
   );
