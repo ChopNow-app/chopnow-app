@@ -269,7 +269,7 @@ function Section({
           {emptyMessage}
         </p>
       ) : (
-        <ul className="grid grid-cols-1 gap-4 px-5 sm:grid-cols-2 md:px-8 lg:grid-cols-3 lg:gap-5 lg:px-12 xl:grid-cols-4 xl:gap-6">
+        <ul className="grid grid-cols-1 gap-4 px-5 sm:grid-cols-2 md:grid-cols-3 md:px-8 lg:grid-cols-3 lg:gap-5 lg:px-12 xl:grid-cols-4 xl:gap-6">
           {vendors.map((v) => (
             <li key={v.id}>
               <VendorCard vendor={v} />
@@ -289,7 +289,7 @@ function SectionHeaderSkeleton() {
   return (
     <div className="space-y-4 px-5 pt-7 md:px-8 lg:px-12">
       <div className="h-8 w-2/3 animate-pulse rounded-md bg-chop-surface-gray" />
-      <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-5 xl:grid-cols-4 xl:gap-6">
+      <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 lg:gap-5 xl:grid-cols-4 xl:gap-6">
         {[0, 1, 2, 3, 4, 5].map((i) => (
           <li key={i} style={{ animationDelay: `${i * 80}ms` }}>
             <VendorCardSkeleton />
