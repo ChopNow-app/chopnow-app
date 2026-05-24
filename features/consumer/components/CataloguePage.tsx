@@ -12,6 +12,7 @@ import { GpsHelpDialog } from './GpsHelpDialog';
 import { HomeHeader } from './HomeHeader';
 import { SearchBar } from './SearchBar';
 import { CategoryRail, CATEGORIES, type CategoryId } from './CategoryRail';
+import { ConsumerPushPermissionBanner } from './ConsumerPushPermissionBanner';
 import { PromoCard } from './PromoCard';
 import { SectionHeader } from './SectionHeader';
 import type { VendorCard as VendorCardType } from '../types';
@@ -143,6 +144,13 @@ export function CataloguePage() {
         <CategoryRail selected={category} onChange={setCategory} />
 
         <PromoCard />
+
+        {/* Contextual push opt-in. Self-gated to surface from the 2nd
+            page-view onwards, only when permission isn't already decided,
+            with a 30-day dismissal TTL. Renders null in the common case. */}
+        <div className="mx-5 mt-4 md:mx-8 lg:mx-12">
+          <ConsumerPushPermissionBanner />
+        </div>
 
         {/* Loading + error states keep the editorial frame; we don't blow the
             page away to a centered spinner. */}
