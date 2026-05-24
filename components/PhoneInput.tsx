@@ -4,7 +4,10 @@ import * as React from 'react';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 
-export interface PhoneInputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'onChange' | 'value'> {
+export interface PhoneInputProps extends Omit<
+  React.InputHTMLAttributes<HTMLInputElement>,
+  'onChange' | 'value'
+> {
   value?: string;
   onChange?: (value: string) => void;
   error?: string;
@@ -25,7 +28,10 @@ export function PhoneInput({ value = '', onChange, error, className, ...props }:
           +237
         </span>
         <Input
+          type="tel"
           inputMode="numeric"
+          autoComplete="tel-national"
+          name="phone"
           maxLength={9}
           placeholder="6XX XXX XXX"
           value={value}

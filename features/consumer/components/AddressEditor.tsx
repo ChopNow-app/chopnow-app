@@ -121,7 +121,12 @@ export function AddressEditor({ initial, onSaved, onCancel }: AddressEditorProps
         <label htmlFor="quartier" className="mb-1 block text-sm font-semibold">
           Quartier
         </label>
-        <Input id="quartier" placeholder="Makepe, Bonamoussadi…" {...register('quartier')} />
+        <Input
+          id="quartier"
+          autoComplete="address-level2"
+          placeholder="Makepe, Bonamoussadi…"
+          {...register('quartier')}
+        />
         {errors.quartier ? (
           <p className="mt-1 text-xs text-destructive">{errors.quartier.message}</p>
         ) : null}
@@ -144,7 +149,14 @@ export function AddressEditor({ initial, onSaved, onCancel }: AddressEditorProps
           Numéro à appeler{' '}
           <span className="text-xs text-muted-foreground">(si différent du compte)</span>
         </label>
-        <Input id="phone" type="tel" placeholder="670000000" {...register('phone')} />
+        <Input
+          id="phone"
+          type="tel"
+          inputMode="numeric"
+          autoComplete="tel-national"
+          placeholder="670000000"
+          {...register('phone')}
+        />
         {errors.phone ? (
           <p className="mt-1 text-xs text-destructive">{errors.phone.message}</p>
         ) : null}

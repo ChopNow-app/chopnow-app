@@ -233,7 +233,12 @@ function NameEditor({
       <label htmlFor="displayName" className="block text-sm font-semibold">
         Nom affiché
       </label>
-      <Input id="displayName" placeholder="Maman Mboué" {...register('displayName')} />
+      <Input
+        id="displayName"
+        autoComplete="name"
+        placeholder="Maman Mboué"
+        {...register('displayName')}
+      />
       {errors.displayName ? (
         <p className="text-xs text-destructive">{errors.displayName.message}</p>
       ) : null}

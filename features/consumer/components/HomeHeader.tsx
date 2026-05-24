@@ -86,6 +86,22 @@ export function HomeHeader({
             <ChevronDown className="h-3.5 w-3.5 opacity-60" strokeWidth={2.4} />
           </button>
 
+          {/* Contextual rationale: visible BEHIND the browser permission
+              prompt (which is modal but transparent-edged on most browsers)
+              and AFTER denial as an explanation of what the user gave up.
+              Tiny, unobtrusive — doesn't shift the greeting layout. */}
+          {geo.status === 'requesting' ||
+          coordsSource === 'unavailable' ||
+          coordsSource === 'out-of-zone' ? (
+            <p className="mt-1.5 text-[11px] font-medium leading-snug text-chop-ink-secondary">
+              {geo.status === 'requesting'
+                ? 'On utilise ta position uniquement pour le rayon de livraison.'
+                : coordsSource === 'out-of-zone'
+                  ? 'Tu es hors de la zone TChopNow — on affiche les vendeurs du centre de Douala.'
+                  : 'Sans position, on affiche les vendeurs du centre de Douala.'}
+            </p>
+          ) : null}
+
           <h1 className="mt-3 text-[34px] font-extrabold leading-[1.05] tracking-tight text-chop-ink">
             {greetingWord}
             {firstName ? (
