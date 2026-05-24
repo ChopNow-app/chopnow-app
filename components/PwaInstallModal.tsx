@@ -121,7 +121,7 @@ export function PwaInstallModal() {
             <Bullet icon={<Clock className="h-4 w-4" aria-hidden />} label="Livraison en 30 min" />
             <Bullet
               icon={<ShoppingBag className="h-4 w-4" aria-hidden />}
-              label="Paiement à la livraison"
+              label="Paiement MTN MoMo + Orange Money"
             />
             <Bullet
               icon={<MapPin className="h-4 w-4" aria-hidden />}
@@ -168,7 +168,7 @@ function AppCard() {
           Mange sans attendre.
         </p>
         <p className="mt-0.5 font-mono text-[11px] uppercase tracking-widest text-chop-ink-secondary/70">
-          Douala · COD · gratuit
+          Douala · MoMo · gratuit
         </p>
       </div>
     </header>
