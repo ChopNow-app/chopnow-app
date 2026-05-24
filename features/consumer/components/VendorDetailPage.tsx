@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { ChevronLeft, MapPin, Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -170,11 +171,16 @@ function VendorHero({
           bottom so it doesn't span the entire viewport. */}
       <div className="relative mx-auto aspect-[16/9] w-full max-w-5xl overflow-hidden md:mt-4 md:rounded-3xl">
         {vendor.profilePhotoUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          // Vendor detail hero — above-the-fold LCP candidate, so `priority`
+          // tells Next.js to preload it instead of lazy-loading. `sizes`
+          // caps at max-w-5xl (1024px) on desktop, fluid 100vw on mobile.
+          <Image
             src={`/r2/${vendor.profilePhotoUrl}`}
             alt={vendor.name}
-            className="h-full w-full object-cover"
+            fill
+            priority
+            sizes="(min-width: 1024px) 1024px, 100vw"
+            className="object-cover"
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-chop-red/20 via-chop-warm to-chop-ink/5 text-6xl">
@@ -308,11 +314,14 @@ function MenuItem({
     >
       <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-xl bg-chop-surface-gray sm:h-28 sm:w-28">
         {item.photoUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          // Fixed 96px (sm: 112px) square thumbnail. `sizes` is small so
+          // Next serves the 128w variant — saves bytes vs. the full image.
+          <Image
             src={`/r2/${item.photoUrl}`}
             alt={item.name}
-            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+            fill
+            sizes="(min-width: 640px) 112px, 96px"
+            className="object-cover transition-transform duration-300 group-hover:scale-105"
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center text-3xl">🍽️</div>

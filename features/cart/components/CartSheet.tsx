@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { Minus, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -89,12 +90,19 @@ function CartLineRow({ line }: { line: CartLine }) {
   return (
     <li className="flex items-center gap-3 rounded-2xl bg-chop-card-white p-3 shadow-card">
       {line.photoUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={`/r2/${line.photoUrl}`}
-          alt={line.name}
-          className="h-14 w-14 shrink-0 rounded-xl object-cover"
-        />
+        // Cart line thumbnail. Fixed 56px square, eager-load is fine
+        // because the cart sheet only mounts when opened so the perf cost
+        // is bounded to actual usage. Wrapped in relative parent for
+        // next/image fill mode.
+        <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl">
+          <Image
+            src={`/r2/${line.photoUrl}`}
+            alt={line.name}
+            fill
+            sizes="56px"
+            className="object-cover"
+          />
+        </div>
       ) : (
         <div
           aria-hidden
