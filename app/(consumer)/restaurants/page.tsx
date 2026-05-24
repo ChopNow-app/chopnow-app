@@ -1,5 +1,22 @@
+import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import { CataloguePage } from '@/features/consumer/components/CataloguePage';
+
+// Per-route metadata override — distinct title + description so SERPs
+// and screen readers can tell this page apart from the marketing splash
+// at `/`. Title template `%s | TChopNow` is applied automatically.
+export const metadata: Metadata = {
+  title: 'Restaurants à Douala',
+  description:
+    'Découvre les restaurants livrés près de chez toi à Douala. Commande en ligne, paie via MoMo, reçois en 30 min.',
+  alternates: { canonical: '/restaurants' },
+  openGraph: {
+    title: 'Restaurants livrés à Douala',
+    description:
+      'Découvre les restaurants livrés près de chez toi à Douala. Commande en ligne, paie via MoMo, reçois en 30 min.',
+    url: '/restaurants',
+  },
+};
 
 // Story 2.5 — consumer catalogue browse. Public route (auth optional).
 // Browser geolocation + 3-plan tiering are handled inside CataloguePage.

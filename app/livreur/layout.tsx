@@ -1,6 +1,10 @@
 import { RoleGate } from '@/components/auth/RoleGate';
 
-export const metadata = { title: 'TChopNow — Livreur' };
+// Auth-gated subtree — see vendor/layout.tsx for the rationale.
+export const metadata = {
+  title: 'TChopNow — Livreur',
+  robots: { index: false, follow: false },
+};
 
 // Per DESIGN.md §2 surfaces: rider app is dark-by-default for outdoor
 // readability under Cameroon sun + protects driver night-vision. Deep ink

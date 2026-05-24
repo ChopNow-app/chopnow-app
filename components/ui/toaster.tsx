@@ -27,7 +27,12 @@ import { useToast } from '@/hooks/use-toast';
 export function Toaster() {
   const { toasts } = useToast();
   return (
-    <ToastProvider swipeDirection="right">
+    // `label` is read by Radix to (a) name the toast region in the
+    // accessibility tree (replaces the default English "Notifications")
+    // and (b) announce the F8 hotkey to screen readers when a toast
+    // appears. Setting it in French keeps the announcement consistent
+    // with the rest of the UI.
+    <ToastProvider swipeDirection="right" label="Notifications TChopNow">
       {toasts.map(({ id, title, description, action, variant, ...props }) => (
         <Toast key={id} variant={variant} {...props}>
           <Icon variant={variant} />

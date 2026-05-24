@@ -117,7 +117,15 @@ export function OtpRequestForm({ onRequested }: OtpRequestFormProps) {
         </div>
       ) : null}
 
-      {errors.root ? <p className="text-sm text-destructive">{errors.root.message}</p> : null}
+      {errors.root ? (
+        // role=alert auto-announces the error to screen readers when it
+        // appears (e.g., "Vérification anti-bot requise" or a network
+        // error from auth.requestOtp). Without it the message renders
+        // silently and a non-sighted user sees no feedback.
+        <p role="alert" className="text-sm text-destructive">
+          {errors.root.message}
+        </p>
+      ) : null}
 
       <Button
         type="submit"

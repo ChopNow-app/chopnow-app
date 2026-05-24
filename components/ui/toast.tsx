@@ -12,6 +12,9 @@ const ToastViewport = React.forwardRef<
   React.ElementRef<typeof ToastPrimitives.Viewport>,
   React.ComponentPropsWithoutRef<typeof ToastPrimitives.Viewport>
 >(({ className, ...props }, ref) => (
+  // Radix's Viewport renders an `<ol>` whose aria-label comes from the
+  // parent `<ToastProvider label="…">` (see components/ui/toaster.tsx).
+  // Each Toast.Root then announces via Radix's hidden polite live region.
   <ToastPrimitives.Viewport
     ref={ref}
     className={cn(
