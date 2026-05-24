@@ -26,10 +26,24 @@ import { redirectPathForRole, type UserRole } from '@/lib/auth/role-redirect';
  * area-inset of a PWA-installed screen even on tall iPhones, killing
  * the dead space we used to leave below the form.
  */
+// `?next=` is attacker-controlled (anyone can craft a phishing URL). Allow
+// only relative internal paths — strip protocol-relative `//evil.com`,
+// absolute `https://evil.com`, and anything that's not a leading `/`.
+// The proxy.ts route guard sanitizes outbound, but the login form may
+// receive `?next=` from any source (manual links, WhatsApp shares,
+// stale bookmarks) so we re-sanitize here.
+function sanitizeNext(raw: string | null): string | null {
+  if (!raw) return null;
+  if (!raw.startsWith('/')) return null;
+  if (raw.startsWith('//')) return null;
+  if (raw.includes('://')) return null;
+  return raw;
+}
+
 function LoginScreen() {
   const router = useRouter();
   const params = useSearchParams();
-  const explicitNext = params.get('next');
+  const explicitNext = sanitizeNext(params.get('next'));
 
   const [phone, setPhone] = React.useState<string | null>(null);
 
