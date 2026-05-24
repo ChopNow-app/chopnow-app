@@ -8,6 +8,8 @@
   "theme_color": "#E11D2A",
   "orientation": "portrait-primary",
   "lang": "fr",
+  "dir": "ltr",
+  "categories": ["food", "lifestyle", "shopping"],
   "icons": [
     {
       "src": "/icons/icon-192.png",
