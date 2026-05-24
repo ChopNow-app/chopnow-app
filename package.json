@@ -19,6 +19,7 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
+    "test:e2e:update-snapshots": "playwright test --update-snapshots",
     "analyze": "next build --experimental-analyze",
     "codegen:api": "openapi-typescript ../chopnow-api/openapi.json -o lib/api/types.ts",
     "prepare": "husky"
