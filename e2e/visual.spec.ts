@@ -44,7 +44,7 @@ const COMMON_MOCKS = {
   usersMe: { status: 401 as const, body: '{}' },
 };
 
-test.describe.skip('Visual regression (run --update-snapshots once to seed)', () => {
+test.describe('Visual regression', () => {
   test('marketing splash (/)', async ({ page }) => {
     await page.route('**/api/v1/catalogue**', (r) =>
       r.fulfill({
