@@ -107,6 +107,21 @@ export function OrdersListPage() {
     );
   }
 
+  return <OrdersListReady orders={state.orders} />;
+}
+
+// 10 fits one full screenful on iPhone SE width + a peek of the next
+// row to signal scrollability. Subsequent "Voir plus" taps reveal 10
+// more each — fast enough to feel responsive, slow enough that a user
+// with 30+ orders doesn't pay the full DOM-render cost on first paint.
+const ORDERS_INITIAL_LIMIT = 10;
+const ORDERS_PAGE_SIZE = 10;
+
+function OrdersListReady({ orders }: { orders: OrderListItem[] }) {
+  const [limit, setLimit] = React.useState(ORDERS_INITIAL_LIMIT);
+  const visible = orders.slice(0, limit);
+  const hiddenCount = orders.length - visible.length;
+
   return (
     <main className="min-h-dvh bg-chop-warm text-chop-ink">
       <div className="container max-w-md py-8 md:max-w-3xl md:py-12 lg:max-w-4xl">
@@ -122,12 +137,23 @@ export function OrdersListPage() {
           <ConsumerPushPermissionBanner />
         </div>
         <ul className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4">
-          {state.orders.map((o) => (
+          {visible.map((o) => (
             <li key={o.id}>
               <OrderRow order={o} />
             </li>
           ))}
         </ul>
+        {hiddenCount > 0 ? (
+          <div className="mt-4 flex justify-center">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setLimit((l) => l + ORDERS_PAGE_SIZE)}
+            >
+              Voir {Math.min(hiddenCount, ORDERS_PAGE_SIZE)} de plus
+            </Button>
+          </div>
+        ) : null}
       </div>
     </main>
   );
