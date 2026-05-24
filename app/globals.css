@@ -114,3 +114,29 @@ textarea,
 select {
   font-size: 16px;
 }
+
+/**
+ * Respect the user's OS-level "reduce motion" preference (Settings →
+ * Accessibility → Display & Text Size → Reduce Motion on iOS;
+ * Settings → Ease of Access → Display → Show animations on Windows).
+ *
+ * Globally neutralise hover-scale, hover-translate, fade-in, and other
+ * transform/opacity animations so users with vestibular disorders or
+ * motion sensitivity get a static UI. Functional transitions (focus,
+ * scroll-into-view) still happen — this only zeroes the *visual*
+ * animation properties.
+ *
+ * Closes a WCAG 2.3.3 (AAA) gap flagged in the 2026-05-24 responsive
+ * audit. Tailwind's `motion-safe:` / `motion-reduce:` modifiers stay
+ * available for per-element overrides where needed.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
