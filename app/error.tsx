@@ -1,5 +1,6 @@
 'use client';
 
+import * as Sentry from '@sentry/nextjs';
 import Link from 'next/link';
 import * as React from 'react';
 import { Button } from '@/components/ui/button';
@@ -23,9 +24,14 @@ export default function RouteError({
   reset: () => void;
 }) {
   React.useEffect(() => {
-    // Surface to Sentry / console when wired. Keeps the message visible
-    // in production logs even though the digest is the only client-side
-    // breadcrumb React gives us in prod.
+    // Sentry capture: when NEXT_PUBLIC_SENTRY_DSN is set, the SDK
+    // ships the error + the `digest` (so we can map user-reported
+    // "Code: xyz789" tickets back to the actual stack via Sentry's
+    // dashboard). Inert when DSN is empty.
+    Sentry.captureException(error, {
+      tags: { source: 'route-error', digest: error.digest ?? 'none' },
+    });
+    // Keep the console line for local dev where Sentry isn't wired.
 
     console.error('[route-error]', error);
   }, [error]);

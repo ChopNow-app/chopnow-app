@@ -1,5 +1,6 @@
 'use client';
 
+import * as Sentry from '@sentry/nextjs';
 import * as React from 'react';
 
 /**
@@ -20,6 +21,14 @@ export default function GlobalError({
   reset: () => void;
 }) {
   React.useEffect(() => {
+    // Global error = layout / Provider failure → even Sentry's
+    // Next.js wrapper might not have initialized cleanly. We still
+    // try (no-op if init failed) so any future fix to the layout
+    // crash benefits from the breadcrumb trail.
+    Sentry.captureException(error, {
+      tags: { source: 'global-error', digest: error.digest ?? 'none' },
+    });
+
     console.error('[global-error]', error);
   }, [error]);
 
