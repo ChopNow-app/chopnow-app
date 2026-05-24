@@ -20,8 +20,16 @@
 // every deploy that ships a new manifest, asset strategy, or push payload
 // shape guarantees PWA installs converge to the new behavior within one
 // page load instead of "until the browser feels like checking 24h later".
-const CACHE_VERSION = 'v0.4.0';
-const APP_SHELL = ['/'];
+const CACHE_VERSION = 'v0.5.0';
+
+// Precache list — fetched on install and pinned to CACHE_VERSION. The
+// /offline.html fallback is critical: when a navigation request fails
+// offline AND the requested page isn't in cache, we serve this branded
+// page instead of letting the browser render its default "no internet"
+// chrome (which feels like a website, not an app).
+const APP_SHELL = ['/', '/offline.html'];
+
+const OFFLINE_FALLBACK = '/offline.html';
 
 // Network-first paths beyond navigation requests. `/manifest.json` lives
 // here because manifest updates need to reach installs as fast as the HTML
@@ -76,7 +84,19 @@ self.addEventListener('fetch', (event) => {
           return res;
         })
         .catch(() =>
-          caches.match(req).then((cached) => cached || (isNavigation ? caches.match('/') : undefined)),
+          caches.match(req).then((cached) => {
+            if (cached) return cached;
+            if (!isNavigation) return undefined;
+            // Navigation request failed offline + no cache hit → serve
+            // branded offline page instead of falling back to '/'. The
+            // old behavior silently dropped users on the home shell with
+            // no offline indication; this gives them an explicit message
+            // + retry button. The '/' fallback is the final safety net
+            // in case /offline.html somehow wasn't precached.
+            return caches
+              .match(OFFLINE_FALLBACK)
+              .then((offline) => offline || caches.match('/'));
+          }),
         ),
     );
     return;
