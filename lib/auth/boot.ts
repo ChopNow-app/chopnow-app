@@ -57,6 +57,30 @@ async function callRefresh(body?: {
   }
 }
 
+/**
+ * Cross-tab sync handler (Phase D2 — security audit close-out).
+ *
+ * When another tab broadcasts `auth-changed`, this tab calls its own
+ * /auth/refresh to fetch a fresh access token (or learn it's been
+ * logged out). The broadcast itself carries NO token — see the
+ * security note in access-token-store.ts.
+ *
+ * Sets broadcast:false on the resulting store update so we don't
+ * re-broadcast and create a ping-pong loop with the originating tab.
+ */
+let crossTabRefreshInFlight: Promise<void> | null = null;
+async function handleCrossTabAuthChange(): Promise<void> {
+  if (crossTabRefreshInFlight) return crossTabRefreshInFlight;
+  crossTabRefreshInFlight = (async () => {
+    const result = await callRefresh();
+    accessTokenStore.set(result?.accessToken ?? null, { broadcast: false });
+    setStatus(result?.accessToken ? 'authenticated' : 'anonymous');
+  })().finally(() => {
+    crossTabRefreshInFlight = null;
+  });
+  return crossTabRefreshInFlight;
+}
+
 export function getBootStatus(): BootStatus {
   return status;
 }
@@ -74,6 +98,10 @@ export function bootRehydrate(): Promise<BootStatus> {
   if (typeof window === 'undefined') return Promise.resolve('anonymous');
   if (status !== 'pending') return Promise.resolve(status);
   if (inflight) return inflight;
+
+  // One-time wire of the cross-tab handler. accessTokenStore is module-
+  // singleton so registering once is sufficient for the app lifetime.
+  accessTokenStore.setCrossTabHandler(handleCrossTabAuthChange);
 
   inflight = (async () => {
     // 1) Cookie path — the common case post-migration.
@@ -124,5 +152,7 @@ export function bootRehydrate(): Promise<BootStatus> {
 export function __resetBootForTests() {
   status = 'pending';
   inflight = null;
+  crossTabRefreshInFlight = null;
   listeners.clear();
+  accessTokenStore.setCrossTabHandler(null);
 }
