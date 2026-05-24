@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { CartSheet } from '@/features/cart/components/CartSheet';
 import { useCart } from '@/features/cart/store';
+import { track } from '@/lib/analytics';
 import { useVendorPublic } from '../hooks/useVendorPublic';
 import type { PublicVendorView } from '../types';
 
@@ -15,6 +16,13 @@ const formatXAF = (n: number) => `${n.toLocaleString('fr-FR')} FCFA`;
 
 export function VendorDetailPage({ vendorId }: { vendorId: string }) {
   const state = useVendorPublic(vendorId);
+
+  // Funnel event — fires once per mount of a vendor detail page.
+  // Tracks the "discovery → consideration" step in the cart funnel.
+  // VendorId is a public identifier, not PII.
+  React.useEffect(() => {
+    track('vendor_viewed', { vendorId });
+  }, [vendorId]);
 
   if (state.status === 'loading' || state.status === 'idle') {
     return <Skeleton />;

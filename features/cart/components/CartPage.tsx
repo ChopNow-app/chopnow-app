@@ -14,6 +14,7 @@ import { useVendorPublic } from '@/features/consumer/hooks/useVendorPublic';
 import { useCart } from '../store';
 import { useAddresses, type SavedAddress } from '../hooks/useAddresses';
 import { toast } from '@/hooks/use-toast';
+import { track } from '@/lib/analytics';
 import { initiateMomo, placeOrder, type PaymentMethod } from '../api';
 import { PreOrderPicker } from './PreOrderPicker';
 
@@ -127,6 +128,14 @@ export function CartPage() {
     if (!selectedAddress || !cart.vendorId) return;
     setSubmitError(null);
     setSubmitting(true);
+    // Funnel event — fires the moment the user commits to checkout
+    // (button click + validation passes). Pairs with order_placed /
+    // order_failed below for "started → completed" conversion.
+    track('checkout_started', {
+      paymentMethod,
+      amountXAF: cart.subtotalXAF,
+      itemCount: cart.lines.length,
+    });
     try {
       const order = await placeOrder(
         {
@@ -154,6 +163,11 @@ export function CartPage() {
       await initiateMomo(order.id, payerPhone);
 
       cart.clear();
+      // Funnel event — order successfully created AND MoMo prompt
+      // dispatched. Backend webhook will later transition status
+      // to CONFIRMED; we don't track that here (server-side concern,
+      // captured in chopnow-api's Prometheus metrics).
+      track('order_placed', { paymentMethod, amountXAF: order.totalXAF });
       toast({
         variant: 'success',
         title: 'Commande envoyée',
@@ -162,6 +176,11 @@ export function CartPage() {
       router.replace(`/orders/${order.id}`);
     } catch (err) {
       const msg = (err as Error).message ?? 'Erreur lors de la création de la commande';
+      // Funnel event — DROPOUT signal. The errorCode comes from the
+      // structured backend error (extractCode in features/cart/api.ts);
+      // raw err.message can contain PII fragments so we use the code.
+      const errorCode = (err as { code?: string }).code ?? 'unknown';
+      track('order_failed', { paymentMethod, errorCode });
       setSubmitError(msg);
       toast({ variant: 'error', title: 'Commande non envoyée', description: msg });
     } finally {
