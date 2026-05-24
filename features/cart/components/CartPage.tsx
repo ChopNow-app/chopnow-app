@@ -270,7 +270,9 @@ export function CartPage() {
           <Input
             id="payerPhone"
             type="tel"
-            inputMode="tel"
+            inputMode="numeric"
+            autoComplete="tel-national"
+            name="payerPhone"
             placeholder="670000000"
             value={payerPhone}
             onChange={(e) => setPayerPhone(e.target.value.replace(/\s+/g, ''))}
