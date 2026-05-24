@@ -197,7 +197,7 @@ export default function HomePage() {
         </div>
 
         <footer className="mt-10 text-center text-[11px] font-medium text-chop-ink-secondary md:mt-14 md:text-[12px]">
-          Pilote COD · Bonamoussadi & Makepe · 2026
+          Pilote MoMo · Bonamoussadi & Makepe · 2026
         </footer>
       </section>
     </main>
