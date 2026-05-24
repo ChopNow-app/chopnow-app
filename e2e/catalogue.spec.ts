@@ -70,8 +70,10 @@ test('catalogue mounts + vendor cards render + category filter syncs to URL', as
   await expect(page.getByText('Le Bonamoussadi')).toBeVisible();
 
   // Filter chip → URL update → render still works. CategoryRail's
-  // "Grillades" chip should narrow to the bonamou-002 vendor.
+  // "Grillades" chip uses id="grill" (short id for URL brevity — see
+  // features/consumer/components/CategoryRail.tsx). The 350ms debounce
+  // in CataloguePage means the URL update lags the click; allow 2s.
   await page.getByRole('button', { name: /grillades/i }).click();
-  await expect(page).toHaveURL(/cat=grillades/, { timeout: 1500 });
+  await expect(page).toHaveURL(/cat=grill(\b|&|$)/, { timeout: 2000 });
   await expect(page.getByText('Le Bonamoussadi')).toBeVisible();
 });

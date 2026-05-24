@@ -20,6 +20,7 @@ import { test, expect } from '@playwright/test';
 test('OTP request form → submit → OTP verify step renders', async ({ page }) => {
   // Captcha config: disabled in the pilot. Mocking false avoids
   // loading the Turnstile script + iframe in the test.
+  // Note: captcha-config IS under /v1/ — see backend admin module.
   await page.route('**/api/v1/auth/captcha-config**', (route) =>
     route.fulfill({
       status: 200,
@@ -28,13 +29,14 @@ test('OTP request form → submit → OTP verify step renders', async ({ page })
     }),
   );
 
-  // OTP request endpoint: backend returns 200 + { sent: true }. We
-  // assert the UI transitions to the verify step on success.
-  await page.route('**/api/v1/auth/request-otp**', (route) =>
+  // OTP request endpoint — consumer auth routes (request-otp, verify-
+  // otp) use /api/auth/* directly, NOT /api/v1/auth/*. The form treats
+  // a 200 with { ok: true } as success and advances to the verify step.
+  await page.route('**/api/auth/request-otp**', (route) =>
     route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify({ sent: true, provider: 'whatsapp' }),
+      body: JSON.stringify({ ok: true, expiresInSeconds: 300 }),
     }),
   );
 
