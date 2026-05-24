@@ -1,5 +1,6 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import * as React from 'react';
 import { Button } from '@/components/ui/button';
@@ -9,8 +10,16 @@ import { resolveCoords, useGeolocation } from '../hooks/useGeolocation';
 import { VendorCard } from './VendorCard';
 import { VendorRiderEntryBand } from './VendorRiderEntryBand';
 import { VendorCardSkeleton } from './VendorCardSkeleton';
-import { GpsHelpDialog } from './GpsHelpDialog';
 import { HomeHeader } from './HomeHeader';
+
+// Lazy-load: GpsHelpDialog renders only when geo permission is denied.
+// Deferring saves ~5 KB on the initial catalogue chunk for the common
+// case (user grants location), and the dialog itself isn't rendered
+// until showGpsHelp flips to true anyway.
+const GpsHelpDialog = dynamic(
+  () => import('./GpsHelpDialog').then((m) => ({ default: m.GpsHelpDialog })),
+  { ssr: false },
+);
 import { SearchBar } from './SearchBar';
 import { CategoryRail, CATEGORIES, type CategoryId } from './CategoryRail';
 import { ConsumerPushPermissionBanner } from './ConsumerPushPermissionBanner';

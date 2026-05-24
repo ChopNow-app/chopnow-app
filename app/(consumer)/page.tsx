@@ -1,9 +1,19 @@
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { PwaInstallModal } from '@/components/PwaInstallModal';
 import { PwaRedirector } from '@/features/auth/components/PwaRedirector';
 import { RoleRedirector } from '@/features/auth/components/RoleRedirector';
 import { MobileOnboarding } from '@/features/onboarding/components/MobileOnboarding';
+
+// Lazy: PwaInstallModal is a sizable client island (platform detection,
+// beforeinstallprompt handling, iOS install guide UI) that's only shown
+// once per visitor and is below-the-fold on first paint. Splitting it
+// out keeps the marketing-splash initial JS lean. Can't pass ssr:false
+// here because the host page is a Server Component; chunk still splits
+// off and loads after first paint.
+const PwaInstallModal = dynamic(() =>
+  import('@/components/PwaInstallModal').then((m) => ({ default: m.PwaInstallModal })),
+);
 
 // Marketing splash at /. Editorial counterpart to /restaurants — same
 // "Hot Plate" aesthetic, but on desktop the hero opens into a 2-column
