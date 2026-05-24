@@ -10,6 +10,7 @@ import { X } from 'lucide-react';
 import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import { usePushSubscription } from '@/features/vendor/hooks/usePushSubscription';
+import { toast } from '@/hooks/use-toast';
 import { recordPageView } from '@/lib/pwa/page-view-counter';
 
 const DISMISSAL_KEY = 'chopnow.consumerPushBannerDismissedAt';
@@ -52,6 +53,21 @@ export function ConsumerPushPermissionBanner(): React.ReactElement | null {
     setPageViews(recordPageView());
     setDismissed(isDismissedRecently());
   }, []);
+
+  // Fire a one-shot success toast on the state transition prompt → subscribed
+  // so the user gets explicit confirmation. The banner itself unmounts on
+  // 'subscribed', so without this the action would complete silently.
+  const prevStatus = React.useRef(state.status);
+  React.useEffect(() => {
+    if (prevStatus.current !== 'subscribed' && state.status === 'subscribed') {
+      toast({
+        variant: 'success',
+        title: 'Notifications activées',
+        description: 'Tu seras prévenu·e dès que ta commande progresse.',
+      });
+    }
+    prevStatus.current = state.status;
+  }, [state.status]);
 
   if (dismissed) return null;
   if (pageViews < MIN_PAGE_VIEWS) return null;

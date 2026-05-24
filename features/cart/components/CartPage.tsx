@@ -13,6 +13,7 @@ import { auth } from '@/lib/auth';
 import { useVendorPublic } from '@/features/consumer/hooks/useVendorPublic';
 import { useCart } from '../store';
 import { useAddresses, type SavedAddress } from '../hooks/useAddresses';
+import { toast } from '@/hooks/use-toast';
 import { initiateMomo, placeOrder, type PaymentMethod } from '../api';
 import { PreOrderPicker } from './PreOrderPicker';
 
@@ -153,10 +154,16 @@ export function CartPage() {
       await initiateMomo(order.id, payerPhone);
 
       cart.clear();
+      toast({
+        variant: 'success',
+        title: 'Commande envoyée',
+        description: `Code ${order.code} — paiement MoMo en cours…`,
+      });
       router.replace(`/orders/${order.id}`);
     } catch (err) {
       const msg = (err as Error).message ?? 'Erreur lors de la création de la commande';
       setSubmitError(msg);
+      toast({ variant: 'error', title: 'Commande non envoyée', description: msg });
     } finally {
       setSubmitting(false);
     }
