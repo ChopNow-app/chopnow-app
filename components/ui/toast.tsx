@@ -12,11 +12,16 @@ const ToastViewport = React.forwardRef<
   React.ElementRef<typeof ToastPrimitives.Viewport>,
   React.ComponentPropsWithoutRef<typeof ToastPrimitives.Viewport>
 >(({ className, ...props }, ref) => (
-  // Radix's Viewport renders an `<ol>` whose aria-label comes from the
-  // parent `<ToastProvider label="…">` (see components/ui/toaster.tsx).
-  // Each Toast.Root then announces via Radix's hidden polite live region.
+  // Two separate Radix labels are at play here:
+  //   1. ToastProvider's `label` (set in toaster.tsx) — names each
+  //      individual toast for screen-reader announcement when it pops.
+  //   2. ToastViewport's `label` (this one) — names the `<ol>` landmark
+  //      region so users navigating by landmark hear the French name
+  //      instead of Radix's English default "Notifications".
+  // Caller-passed props still win (...props is spread last).
   <ToastPrimitives.Viewport
     ref={ref}
+    label="Notifications TChopNow"
     className={cn(
       // Bottom-positioned on mobile (above the 64px bottom nav + safe area),
       // top-right on md+ so it doesn't cover the catalogue/order list.
