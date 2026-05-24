@@ -1,0 +1,30 @@
+# TChopNow — crawler directives.
+#
+# Allow indexing of the public consumer surface (home, restaurant list,
+# vendor detail, marketing pages). Disallow the actor backends and any
+# user-specific surface: those redirect anonymous traffic to /login at
+# the edge (proxy.ts) so a crawler hitting them only sees the auth wall.
+# Leaving them crawlable wastes Google's per-site budget on dead ends.
+
+User-agent: *
+Allow: /
+
+# Actor-protected segments (redirect to /login or /admin/login at edge)
+Disallow: /admin
+Disallow: /vendor
+Disallow: /livreur
+
+# User-specific surfaces — render auth-gated chrome
+Disallow: /account
+Disallow: /cart
+Disallow: /orders
+Disallow: /notifications
+
+# Public order tracking — UUID-as-token, not meant to surface in SERPs
+Disallow: /t/
+
+# API + monitoring
+Disallow: /api/
+Disallow: /monitoring
+
+Sitemap: https://app.tchopnow.app/sitemap.xml

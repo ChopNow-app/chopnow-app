@@ -19,10 +19,23 @@ const jakarta = Plus_Jakarta_Sans({
   display: 'swap',
 });
 
+// metadataBase anchors all relative URLs in OG / Twitter / canonical so
+// crawlers + WhatsApp / Facebook see absolute URLs. Falls back to the
+// production host when NEXT_PUBLIC_SITE_URL isn't set (PR previews use
+// their Vercel URL; that's fine — they're noindex anyway via Vercel SSO).
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://app.tchopnow.app';
+
 export const metadata: Metadata = {
-  title: 'TChopNow — Mange sans attendre',
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: 'TChopNow — Mange sans attendre',
+    // Per-route metadata exports get sandwiched into "%s | TChopNow" so
+    // every browser tab + screen-reader announcement carries the brand.
+    template: '%s | TChopNow',
+  },
   description: 'De la rue à ta porte. Livraison de nourriture à Douala.',
   manifest: '/manifest.json',
+  applicationName: 'TChopNow',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
@@ -38,6 +51,24 @@ export const metadata: Metadata = {
     ],
     apple: { url: '/icons/icon-180.png', sizes: '180x180' },
     shortcut: '/favicon.ico',
+  },
+  openGraph: {
+    type: 'website',
+    siteName: 'TChopNow',
+    title: 'TChopNow — Mange sans attendre',
+    description: 'De la rue à ta porte. Livraison de nourriture à Douala.',
+    locale: 'fr_CM',
+    url: SITE_URL,
+    // /opengraph-image.tsx generates a 1200×630 PNG dynamically at build
+    // time using @vercel/og — branded for WhatsApp / Facebook shares.
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'TChopNow — Mange sans attendre',
+    description: 'De la rue à ta porte. Livraison de nourriture à Douala.',
+  },
+  alternates: {
+    canonical: '/',
   },
 };
 
@@ -87,6 +118,18 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         ))}
       </head>
       <body>
+        {/* Skip-to-main link — WCAG 2.4.1 (Bypass Blocks). Hidden until
+            keyboard-focused, then jumps screen-reader / keyboard users
+            past the PilotBanner + bottom nav to the page content. The
+            target `#main-content` is the wrapping <div> below; we expose
+            it as a programmatic landmark via id + tabIndex={-1} so
+            focus actually moves there on activation. */}
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-full focus:bg-chop-ink focus:px-4 focus:py-2 focus:text-sm focus:font-bold focus:text-white focus:shadow-elevated focus:outline-none focus:ring-2 focus:ring-chop-red"
+        >
+          Aller au contenu principal
+        </a>
         <NextIntlClientProvider locale={locale} messages={messages}>
           <QueryProvider>
             {/* Phase B1 — fires /auth/refresh on app start, populates the
@@ -98,7 +141,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <PilotBanner />
             {/* pb-20 = 80px reserve for bottom nav (64px + safe-area-inset). */}
             {/* ConsumerBottomNav hides itself on admin/livreur/vendor routes. */}
-            <div className="min-h-dvh pb-20 lg:pb-0">{children}</div>
+            <div id="main-content" tabIndex={-1} className="min-h-dvh pb-20 outline-none lg:pb-0">
+              {children}
+            </div>
             <ConsumerBottomNav />
             {/* Toast viewport — see hooks/use-toast.ts for the imperative API.
                 Mounted here (not in route layouts) so any surface — including

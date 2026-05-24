@@ -74,11 +74,17 @@ export function OtpVerifyForm({ phone, onVerified, onResend }: OtpVerifyFormProp
   };
 
   const { ref: codeRegisterRef, ...codeRegisterRest } = register('code');
+  const codeFieldId = React.useId();
+  const codeHintId = `${codeFieldId}-hint`;
+  const codeErrorId = `${codeFieldId}-error`;
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <div className="space-y-2">
-        <p className="text-sm text-muted-foreground">
+        <label htmlFor={codeFieldId} className="text-sm font-semibold text-chop-ink">
+          Code de vérification
+        </label>
+        <p id={codeHintId} className="text-sm text-muted-foreground">
           Un code de 6 chiffres a été envoyé sur WhatsApp au <strong>{phone}</strong>.
         </p>
         <Input
@@ -87,13 +93,24 @@ export function OtpVerifyForm({ phone, onVerified, onResend }: OtpVerifyFormProp
             codeRegisterRef(el);
             codeRef.current = el;
           }}
+          id={codeFieldId}
           inputMode="numeric"
           autoComplete="one-time-code"
           maxLength={6}
           placeholder="123456"
           aria-invalid={!!errors.code}
+          // Link both the helper text and (when present) the validation
+          // error so screen readers read "Code de vérification, Un code
+          // de 6 chiffres a été envoyé… [Code invalide ou expiré]" when
+          // focus lands on the input.
+          aria-describedby={errors.code ? `${codeHintId} ${codeErrorId}` : codeHintId}
+          aria-required="true"
         />
-        {errors.code ? <p className="text-sm text-destructive">{errors.code.message}</p> : null}
+        {errors.code ? (
+          <p id={codeErrorId} className="text-sm text-destructive">
+            {errors.code.message}
+          </p>
+        ) : null}
       </div>
 
       <Button type="submit" disabled={isSubmitting} className="w-full">

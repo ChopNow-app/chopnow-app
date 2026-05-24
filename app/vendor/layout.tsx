@@ -1,6 +1,13 @@
 import { RoleGate } from '@/components/auth/RoleGate';
 
-export const metadata = { title: 'TChopNow — Vendeur' };
+// Auth-gated subtree: proxy.ts bounces anonymous traffic at the edge so
+// crawlers only ever see the /login redirect. Marking robots.index=false
+// on the layout signals "don't even try" to compliant crawlers — saves
+// budget that would otherwise be spent re-crawling the redirect chain.
+export const metadata = {
+  title: 'TChopNow — Vendeur',
+  robots: { index: false, follow: false },
+};
 
 // Per DESIGN.md §1: vendor surface is "fonctionnel, dense, efficace —
 // Linear/Notion vibes". Tighter spacing than consumer/livreur; designed

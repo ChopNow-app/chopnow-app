@@ -1,6 +1,10 @@
 import { CampayCircuitBadge } from '@/features/admin/components/CampayCircuitBadge';
 
-export const metadata = { title: 'TChopNow — Admin' };
+// Auth-gated subtree — see vendor/layout.tsx for the rationale.
+export const metadata = {
+  title: 'TChopNow — Admin',
+  robots: { index: false, follow: false },
+};
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
