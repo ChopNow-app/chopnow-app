@@ -7,6 +7,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 
+import { AlertDialog } from '@/components/ui/alert-dialog';
 import { AuthRequired } from '@/components/ui/auth-required';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -45,6 +46,8 @@ type NameFormValues = z.infer<typeof nameSchema>;
 export function AccountPage() {
   const [state, setState] = React.useState<State>({ status: 'loading' });
   const [editingName, setEditingName] = React.useState(false);
+  const [confirmingLogout, setConfirmingLogout] = React.useState(false);
+  const [loggingOut, setLoggingOut] = React.useState(false);
   const router = useRouter();
 
   React.useEffect(() => {
@@ -67,11 +70,15 @@ export function AccountPage() {
     };
   }, []);
 
-  const onLogout = async () => {
-    if (!window.confirm('Te déconnecter ?')) return;
-    await auth.logout();
-    toast({ title: 'Déconnecté·e', description: 'À bientôt !' });
-    router.replace('/login');
+  const doLogout = async () => {
+    setLoggingOut(true);
+    try {
+      await auth.logout();
+      toast({ title: 'Déconnecté·e', description: 'À bientôt !' });
+      router.replace('/login');
+    } finally {
+      setLoggingOut(false);
+    }
   };
 
   if (state.status === 'loading') {
@@ -162,11 +169,22 @@ export function AccountPage() {
           type="button"
           variant="outline"
           className="w-full text-destructive"
-          onClick={onLogout}
+          onClick={() => setConfirmingLogout(true)}
         >
           Se déconnecter
         </Button>
       </section>
+
+      <AlertDialog
+        open={confirmingLogout}
+        onOpenChange={setConfirmingLogout}
+        title="Te déconnecter ?"
+        description="Tu devras renvoyer un code OTP via WhatsApp pour te reconnecter."
+        confirmLabel="Se déconnecter"
+        cancelLabel="Annuler"
+        onConfirm={doLogout}
+        busy={loggingOut}
+      />
     </main>
   );
 }

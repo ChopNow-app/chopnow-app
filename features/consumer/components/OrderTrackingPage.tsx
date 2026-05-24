@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
+import { AlertDialog } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
 import { apiRaw, ApiClientError } from '@/lib/api/api-client';
@@ -63,15 +64,20 @@ function OrderContent({ order, onReload }: { order: OrderView; onReload: () => v
   const isPreOrder = order.scheduledFor !== null;
   const canCancel = !isPreOrder && (order.status === 'PENDING' || order.status === 'CONFIRMED');
 
-  const onCancel = async () => {
-    if (!window.confirm('Annuler cette commande ? Cette action est irréversible.')) return;
+  const [confirmingCancel, setConfirmingCancel] = React.useState(false);
+  const [cancelling, setCancelling] = React.useState(false);
+  const doCancel = async () => {
+    setCancelling(true);
     try {
       await apiRaw.patch(`/api/v1/orders/${order.id}/cancel`, {});
       onReload();
       toast({ variant: 'success', title: 'Commande annulée' });
+      setConfirmingCancel(false);
     } catch (err) {
       const msg = err instanceof ApiClientError ? `Erreur ${err.status}` : (err as Error).message;
       toast({ variant: 'error', title: 'Annulation échouée', description: msg });
+    } finally {
+      setCancelling(false);
     }
   };
 
@@ -180,11 +186,27 @@ function OrderContent({ order, onReload }: { order: OrderView; onReload: () => v
         ) : null}
 
         {canCancel ? (
-          <Button type="button" variant="outline" className="w-full" onClick={onCancel}>
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            onClick={() => setConfirmingCancel(true)}
+          >
             Annuler la commande
           </Button>
         ) : null}
       </section>
+
+      <AlertDialog
+        open={confirmingCancel}
+        onOpenChange={setConfirmingCancel}
+        title="Annuler cette commande ?"
+        description="Cette action est irréversible. Le restaurant ne sera pas notifié si la commande n'a pas encore été acceptée."
+        confirmLabel="Oui, annuler"
+        cancelLabel="Non, garder"
+        onConfirm={doCancel}
+        busy={cancelling}
+      />
     </main>
   );
 }
