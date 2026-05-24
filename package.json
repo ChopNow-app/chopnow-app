@@ -17,6 +17,7 @@
     "format": "prettier --write \"**/*.{ts,tsx,md,json}\"",
     "test": "vitest run",
     "test:watch": "vitest",
+    "analyze": "next build --experimental-analyze",
     "codegen:api": "openapi-typescript ../chopnow-api/openapi.json -o lib/api/types.ts",
     "prepare": "husky"
   },
