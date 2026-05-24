@@ -126,7 +126,11 @@ export default withSentryConfig(withNextIntl(config), {
   sourcemaps: {
     deleteSourcemapsAfterUpload: true,
   },
-  // Don't bundle the Sentry tracing code into client chunks that
-  // don't use it (Vercel Analytics + Speed Insights routes etc.).
-  disableLogger: true,
+  // `disableLogger` was deprecated in Sentry v10 — they emit a warning
+  // on every build and announce removal in a future major. The
+  // replacement webpack.treeshake.removeDebugLogging only applies to
+  // Webpack builds; Next.js 16 uses Turbopack by default, so neither
+  // flag is honored here. Letting Sentry's debug-logging code stay
+  // in the bundle adds maybe ~1 KB gzipped and is the lowest-friction
+  // resolution until Sentry ships a Turbopack-aware equivalent.
 });
