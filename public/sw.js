@@ -20,7 +20,7 @@
 // every deploy that ships a new manifest, asset strategy, or push payload
 // shape guarantees PWA installs converge to the new behavior within one
 // page load instead of "until the browser feels like checking 24h later".
-const CACHE_VERSION = 'v0.5.0';
+const CACHE_VERSION = 'v0.6.0';
 
 // Precache list — fetched on install and pinned to CACHE_VERSION. The
 // /offline.html fallback is critical: when a navigation request fails
@@ -37,6 +37,49 @@ const OFFLINE_FALLBACK = '/offline.html';
 // propagate (iOS even bakes some manifest fields at install, separate
 // problem). Future first-class-citizen network-first paths get added here.
 const NETWORK_FIRST_PATHS = new Set(['/manifest.json']);
+
+// Phase Obs-O3 — Service worker error capture.
+//
+// The SW runs in a different JS context from the page; Sentry's browser
+// SDK loaded in app/layout.tsx doesn't see SW errors. We bridge them by
+// posting `{ source: 'sw', kind: 'error', context, message, stack }` to
+// every controlled client. RegisterServiceWorker.tsx listens for that
+// shape and forwards to Sentry.captureException() in the page context
+// (where Sentry IS initialized).
+//
+// Why not Sentry's `@sentry/browser` SDK in the SW directly? The SDK's
+// service-worker support is partial + adds ~30 KB to the SW bundle. The
+// postMessage bridge is ~30 lines + adds zero KB to the SW.
+function reportToClients(kind, context, error) {
+  const payload = {
+    source: 'sw',
+    kind, // 'error' | 'unhandledrejection'
+    context, // 'push' | 'notificationclick' | 'fetch' | 'global'
+    // Stringify the error here — Error objects don't survive
+    // postMessage's structured clone in all browsers (Safari quirks).
+    message: error && error.message ? String(error.message) : String(error),
+    stack: error && error.stack ? String(error.stack) : null,
+    timestamp: Date.now(),
+  };
+  self.clients
+    .matchAll({ type: 'window', includeUncontrolled: true })
+    .then((clientList) => {
+      for (const client of clientList) client.postMessage(payload);
+    })
+    .catch(() => {
+      /* nothing to do — if we can't post, we can't post */
+    });
+}
+
+// Global error trap — catches anything that escapes the handler-level
+// try/catches below (e.g., a syntax error in this file would land here,
+// though it'd more typically prevent SW registration entirely).
+self.addEventListener('error', (event) => {
+  reportToClients('error', 'global', event.error || { message: event.message });
+});
+self.addEventListener('unhandledrejection', (event) => {
+  reportToClients('unhandledrejection', 'global', event.reason);
+});
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE_VERSION).then((cache) => cache.addAll(APP_SHELL)));
@@ -105,16 +148,25 @@ self.addEventListener('fetch', (event) => {
   // Cache-first for static + hashed assets. Safe because filename hashes
   // change with content.
   event.respondWith(
-    caches.match(req).then((cached) => {
-      if (cached) return cached;
-      return fetch(req).then((res) => {
-        if (res.ok && res.type === 'basic') {
-          const clone = res.clone();
-          caches.open(CACHE_VERSION).then((c) => c.put(req, clone));
-        }
-        return res;
-      });
-    }),
+    caches
+      .match(req)
+      .then((cached) => {
+        if (cached) return cached;
+        return fetch(req).then((res) => {
+          if (res.ok && res.type === 'basic') {
+            const clone = res.clone();
+            caches.open(CACHE_VERSION).then((c) => c.put(req, clone));
+          }
+          return res;
+        });
+      })
+      .catch((err) => {
+        // Cache lookup itself can throw (storage quota exceeded, etc.).
+        // Report so we know if this starts happening at scale, but
+        // re-throw — there's no recovery from "the cache API broke".
+        reportToClients('error', 'fetch', err);
+        throw err;
+      }),
   );
 });
 
@@ -128,34 +180,56 @@ self.addEventListener('fetch', (event) => {
 //      the user even sees the notification — play a chime, refresh the
 //      vendor dashboard, etc. This is what makes Web Push double as our
 //      "live channel" without needing a separate SSE/WebSocket layer.
+//
+// Phase Obs-O3: wrap the whole handler body in a try/catch. A malformed
+// payload (e.g., Campay sends a push with bad JSON) used to crash the
+// handler silently — user got no notification + no breadcrumb. Now we
+// report to Sentry via the postMessage bridge AND fall back to a generic
+// "Une mise à jour ChopNow" notification so the user at least sees
+// something.
 self.addEventListener('push', (event) => {
-  const data = (() => {
-    try {
-      return event.data ? event.data.json() : {};
-    } catch {
-      return { title: 'ChopNow', body: event.data ? event.data.text() : '' };
-    }
-  })();
-  const title = data.title || 'ChopNow';
-  const orderId = data.data && data.data.orderId;
   event.waitUntil(
-    Promise.all([
-      self.registration.showNotification(title, {
-        body: data.body,
-        icon: data.icon || '/icons/icon-192.png',
-        badge: '/icons/icon-192.png',
-        data: data.data || {},
-        // tag collapses duplicate retries of the same order into one banner.
-        tag: orderId || undefined,
-      }),
-      self.clients
-        .matchAll({ type: 'window', includeUncontrolled: true })
-        .then((clientList) =>
-          clientList.forEach((client) =>
-            client.postMessage({ source: 'push', data }),
-          ),
-        ),
-    ]),
+    (async () => {
+      try {
+        const data = (() => {
+          try {
+            return event.data ? event.data.json() : {};
+          } catch {
+            return { title: 'ChopNow', body: event.data ? event.data.text() : '' };
+          }
+        })();
+        const title = data.title || 'ChopNow';
+        const orderId = data.data && data.data.orderId;
+        await Promise.all([
+          self.registration.showNotification(title, {
+            body: data.body,
+            icon: data.icon || '/icons/icon-192.png',
+            badge: '/icons/icon-192.png',
+            data: data.data || {},
+            // tag collapses duplicate retries of the same order into one banner.
+            tag: orderId || undefined,
+          }),
+          self.clients
+            .matchAll({ type: 'window', includeUncontrolled: true })
+            .then((clientList) =>
+              clientList.forEach((client) => client.postMessage({ source: 'push', data })),
+            ),
+        ]);
+      } catch (err) {
+        reportToClients('error', 'push', err);
+        // Belt-and-braces user-facing fallback. Without this, a push
+        // handler crash leaves the user with no notification at all.
+        try {
+          await self.registration.showNotification('ChopNow', {
+            body: 'Une mise à jour est disponible.',
+            icon: '/icons/icon-192.png',
+            badge: '/icons/icon-192.png',
+          });
+        } catch {
+          /* notification API itself broken — nothing useful to do */
+        }
+      }
+    })(),
   );
 });
 
@@ -164,18 +238,31 @@ self.addEventListener('push', (event) => {
 // keep working via the fallback below.
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const d = event.notification.data || {};
-  const url = d.deepLink || (d.orderId ? `/orders/${d.orderId}` : '/');
   event.waitUntil(
-    self.clients
-      .matchAll({ type: 'window', includeUncontrolled: true })
-      .then((clientList) => {
+    (async () => {
+      try {
+        const d = event.notification.data || {};
+        const url = d.deepLink || (d.orderId ? `/orders/${d.orderId}` : '/');
+        const clientList = await self.clients.matchAll({
+          type: 'window',
+          includeUncontrolled: true,
+        });
         // Focus an existing tab if one is open on the target URL — beats
         // opening a duplicate.
         for (const client of clientList) {
           if (client.url.includes(url) && 'focus' in client) return client.focus();
         }
         return self.clients.openWindow(url);
-      }),
+      } catch (err) {
+        reportToClients('error', 'notificationclick', err);
+        // Best-effort fallback: open the app root so the user lands
+        // somewhere instead of nothing happening.
+        try {
+          return await self.clients.openWindow('/');
+        } catch {
+          return undefined;
+        }
+      }
+    })(),
   );
 });
