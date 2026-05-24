@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
+import { AlertDialog } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useAddresses, type SavedAddress } from '@/features/cart/hooks/useAddresses';
@@ -17,6 +18,11 @@ export function AddressesPage() {
   const { reload, ...state } = useAddresses();
   const [editing, setEditing] = React.useState<SavedAddress | null>(null);
   const [creating, setCreating] = React.useState(false);
+  // The address pending deletion (drives the confirm dialog). null = no
+  // dialog open. Carries the SavedAddress (not just id) so we can echo
+  // the label back to the user in the confirm copy.
+  const [pendingDelete, setPendingDelete] = React.useState<SavedAddress | null>(null);
+  const [deleting, setDeleting] = React.useState(false);
 
   if (state.status === 'unauthenticated') {
     return (
@@ -32,15 +38,19 @@ export function AddressesPage() {
   const addresses = state.status === 'ready' ? state.addresses : [];
   const canAdd = addresses.length < 3;
 
-  const onDelete = async (id: string) => {
-    if (!window.confirm('Supprimer cette adresse ?')) return;
+  const confirmDelete = async () => {
+    if (!pendingDelete) return;
+    setDeleting(true);
     try {
-      await apiRaw.delete(`/api/v1/users/me/addresses/${id}`);
+      await apiRaw.delete(`/api/v1/users/me/addresses/${pendingDelete.id}`);
       reload();
       toast({ variant: 'success', title: 'Adresse supprimée' });
+      setPendingDelete(null);
     } catch (err) {
       const msg = err instanceof ApiClientError ? `Erreur ${err.status}` : (err as Error).message;
       toast({ variant: 'error', title: 'Suppression échouée', description: msg });
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -89,7 +99,7 @@ export function AddressesPage() {
                   <AddressCard
                     addr={addr}
                     onEdit={() => setEditing(addr)}
-                    onDelete={() => onDelete(addr.id)}
+                    onDelete={() => setPendingDelete(addr)}
                   />
                 )}
               </li>
@@ -116,6 +126,20 @@ export function AddressesPage() {
           </Button>
         )}
       </section>
+
+      <AlertDialog
+        open={pendingDelete !== null}
+        onOpenChange={(o) => !o && setPendingDelete(null)}
+        title="Supprimer cette adresse ?"
+        description={
+          pendingDelete
+            ? `« ${pendingDelete.label ?? pendingDelete.quartier ?? 'Adresse'} » sera retirée de tes adresses enregistrées. Action irréversible.`
+            : undefined
+        }
+        confirmLabel="Supprimer"
+        onConfirm={confirmDelete}
+        busy={deleting}
+      />
     </main>
   );
 }
