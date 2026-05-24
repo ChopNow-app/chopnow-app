@@ -1,3 +1,4 @@
+import { withSentryConfig } from '@sentry/nextjs';
 import type { NextConfig } from 'next';
 import createNextIntlPlugin from 'next-intl/plugin';
 
@@ -27,10 +28,14 @@ const isDev = process.env.NODE_ENV !== 'production';
 //     prop generates inline style attributes that CSP would otherwise
 //     block. Removing this would break every dynamically-styled
 //     component — out of scope for a security tightening pass.
+// Sentry ingest endpoints — `https://<orgId>.ingest.{us,de,…}.sentry.io`
+// per the DSN. Wildcard `*.sentry.io` covers the regional variants
+// without having to update CSP every time we change orgs/regions.
+// Only beacons when NEXT_PUBLIC_SENTRY_DSN is set (inert otherwise).
 const connectSrc = isDev
   ? "connect-src 'self' http://localhost:* https: wss: ws:"
   : // Prod: explicit allowlist. Add prod API origin once it goes live.
-    "connect-src 'self' https://api-staging.tchopnow.app https://api.tchopnow.app wss://api-staging.tchopnow.app wss://api.tchopnow.app";
+    "connect-src 'self' https://api-staging.tchopnow.app https://api.tchopnow.app wss://api-staging.tchopnow.app wss://api.tchopnow.app https://*.sentry.io";
 
 const scriptSrc = isDev
   ? "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com"
@@ -96,4 +101,32 @@ const config: NextConfig = {
   },
 };
 
-export default withNextIntl(config);
+// Sentry wrapper handles:
+//   - source-map upload to Sentry on prod builds (gated on
+//     SENTRY_AUTH_TOKEN being present — silently skipped in CI/local
+//     when missing, so the build still works without Sentry creds)
+//   - automatic React server-component + route-handler instrumentation
+//   - tunnel route to bypass ad-blockers that strip *.sentry.io requests
+//     (the /monitoring path is same-origin, then forwarded to Sentry)
+//
+// All Sentry options here are inert when NEXT_PUBLIC_SENTRY_DSN is empty.
+export default withSentryConfig(withNextIntl(config), {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  // Upload source maps only when an auth token is provided (CI/prod).
+  // Dev + PR previews skip this step gracefully.
+  silent: !process.env.SENTRY_AUTH_TOKEN,
+  // Beacons go to /monitoring on our own origin → Vercel proxies to
+  // Sentry. Adblockers can't see "sentry.io" in the URL.
+  tunnelRoute: '/monitoring',
+  // Source maps: upload to Sentry (for symbolication) AND delete
+  // from the deployed JS output afterwards so end-users can't
+  // download them. The deleteSourcemapsAfterUpload flag is the
+  // current Sentry SDK v10 name (was hideSourceMaps in v8).
+  sourcemaps: {
+    deleteSourcemapsAfterUpload: true,
+  },
+  // Don't bundle the Sentry tracing code into client chunks that
+  // don't use it (Vercel Analytics + Speed Insights routes etc.).
+  disableLogger: true,
+});
