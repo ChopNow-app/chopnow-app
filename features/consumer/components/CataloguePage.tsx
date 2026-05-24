@@ -1,5 +1,6 @@
 'use client';
 
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import { useCurrentUser } from '@/features/auth/hooks/useCurrentUser';
@@ -39,13 +40,61 @@ const PLAN_LABEL: Record<1 | 2 | 3, { title: string; subtitle: string }> = {
   3: { title: 'Tout Douala', subtitle: 'Plus de 5 km · frais plus élevés' },
 };
 
+// URL params we sync the filter state to. `q` for query (matches conventions
+// across search engines + most marketplaces), `cat` for category (short, no
+// ambiguity vs. category-tag). Persisting these lets users share a curated
+// view (e.g. "all the grillades I can see") AND refreshing keeps the filter.
+const URL_PARAM_QUERY = 'q';
+const URL_PARAM_CATEGORY = 'cat';
+// 350ms — long enough that we don't push N URL updates per keystroke, short
+// enough that the URL is correct by the time the user taps Share.
+const URL_DEBOUNCE_MS = 350;
+
+function readCategoryFromParams(params: URLSearchParams): CategoryId {
+  const raw = params.get(URL_PARAM_CATEGORY);
+  if (!raw) return 'all';
+  const known = CATEGORIES.find((c) => c.id === raw);
+  return known ? known.id : 'all';
+}
+
 export function CataloguePage() {
   const geo = useGeolocation();
   const user = useCurrentUser();
-  const [query, setQuery] = React.useState('');
-  const [category, setCategory] = React.useState<CategoryId>('all');
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  // Hydrate from URL on first render so a deep-link like
+  // /restaurants?q=ndolé&cat=local renders the filtered view immediately.
+  const [query, setQuery] = React.useState(() => searchParams.get(URL_PARAM_QUERY) ?? '');
+  const [category, setCategory] = React.useState<CategoryId>(() =>
+    readCategoryFromParams(new URLSearchParams(searchParams.toString())),
+  );
   const [showPlan3, setShowPlan3] = React.useState(false);
   const [showGpsHelp, setShowGpsHelp] = React.useState(false);
+
+  // Sync state → URL. Debounced for `query` so each keystroke doesn't push
+  // a separate URL update. `category` writes synchronously through the same
+  // path because debouncing it would feel laggy.
+  React.useEffect(() => {
+    const handle = setTimeout(() => {
+      const next = new URLSearchParams(searchParams.toString());
+      const trimmed = query.trim();
+      if (trimmed) next.set(URL_PARAM_QUERY, trimmed);
+      else next.delete(URL_PARAM_QUERY);
+      if (category !== 'all') next.set(URL_PARAM_CATEGORY, category);
+      else next.delete(URL_PARAM_CATEGORY);
+      const nextSearch = next.toString();
+      const currentSearch = searchParams.toString();
+      if (nextSearch === currentSearch) return;
+      // replace() rather than push() so the back button doesn't churn
+      // through every keystroke or chip tap. { scroll: false } keeps the
+      // user at their current scroll position (else the URL change snaps
+      // them to top of /restaurants which is jarring mid-browse).
+      router.replace(nextSearch ? `${pathname}?${nextSearch}` : pathname, { scroll: false });
+    }, URL_DEBOUNCE_MS);
+    return () => clearTimeout(handle);
+  }, [query, category, pathname, router, searchParams]);
 
   // Pull the user's first word from displayName for the home greeting. Splits
   // on whitespace so multi-word display names render as just "Kouamé" in the
