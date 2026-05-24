@@ -1,3 +1,5 @@
+import { Analytics } from '@vercel/analytics/next';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 import type { Metadata, Viewport } from 'next';
 import { Plus_Jakarta_Sans } from 'next/font/google';
 import { NextIntlClientProvider } from 'next-intl';
@@ -106,6 +108,18 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           </QueryProvider>
         </NextIntlClientProvider>
         <RegisterServiceWorker />
+        {/* Vercel Analytics + Speed Insights — both are inert in dev (only
+            beacon from the deployed prod / preview URLs) and ship a tiny
+            (~1 KB) script that beacons:
+              - Analytics: pageviews + custom events per route
+              - SpeedInsights: Core Web Vitals (LCP, CLS, INP, FCP, TTFB)
+                aggregated by route / device / connection in the Vercel
+                dashboard.
+            Mounted here so every route is instrumented without per-page
+            wiring. Both are zero-config on Vercel (no env var needed —
+            they auto-detect VERCEL_URL and disable on localhost). */}
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
