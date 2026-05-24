@@ -42,6 +42,10 @@ if (dsn) {
     // latency is visible per endpoint. Bump to 1.0 if free-tier
     // headroom allows it; drop if cost spikes.
     tracesSampleRate: 0.1,
+    // App Router transition instrumentation — required by Sentry v10
+    // to capture client-side route nav as spans. Without this the
+    // build log nags ACTION REQUIRED on every prod build. Wired via
+    // the named export below (not in init options).
     // No session replay at pilot scale — covered in the audit's
     // dimension #4 (deferred to scale-up).
     replaysSessionSampleRate: 0,
@@ -70,3 +74,10 @@ if (dsn) {
     },
   });
 }
+
+// Sentry App Router transition hook — must be a named export at module
+// scope. Sentry's Next.js wrapper picks this up automatically and
+// converts client-side route changes into transaction spans (visible
+// in Sentry → Performance). Inert when DSN is empty (captureRouter-
+// TransitionStart is a no-op without init).
+export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;
