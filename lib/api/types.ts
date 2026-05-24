@@ -51,7 +51,7 @@ export interface paths {
         put?: never;
         /**
          * Verify OTP
-         * @description Returns access + refresh JWT on success. Creates the user on first verify.
+         * @description On success: 200 with { accessToken, refreshToken } in body AND sets the HttpOnly `chopnow_rt` refresh cookie (Phase B1). The body refreshToken is kept for backwards compatibility while the consumer PWA cuts over from localStorage to cookie storage; new clients should ignore the body and rely on the cookie.
          */
         post: operations["AuthController_verifyOtp_v1"];
         delete?: never;
@@ -71,10 +71,94 @@ export interface paths {
         put?: never;
         /**
          * Rotate refresh token
-         * @description Story 1.2 — returns a new access + refresh pair. Old refresh becomes invalid (rotation). Replaying an already-rotated refresh revokes the entire family. Error codes (body.code on 401): refresh_invalid_or_expired, refresh_reuse_detected, user_suspended.
+         * @description Story 1.2 — returns a new access + refresh pair. Phase B1: prefers the HttpOnly `chopnow_rt` cookie; falls back to body `refreshToken` during the frontend cutover. Old refresh becomes invalid (rotation). Replaying an already-rotated refresh revokes the entire family. Error codes (body.code on 401): refresh_invalid_or_expired, refresh_reuse_detected, user_suspended.
          */
         post: operations["AuthController_refresh_v1"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Logout — revoke this device's refresh token + clear cookie
+         * @description Idempotent: a stale or already-revoked refresh token still clears the cookie + returns 204. Use `/admin/auth/revoke-user` (forthcoming) for "log out of all devices."
+         */
+        post: operations["AuthController_logout_v1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/sessions/revoke-all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Revoke all refresh tokens for the authenticated user
+         * @description Phase C2 — 'log out of every device.' Idempotent. Auth required (global access-token guard). Returns 204 with no body.
+         */
+        post: operations["AuthController_revokeAllSessions_v1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/captcha-config": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Public CAPTCHA / Turnstile configuration
+         * @description Single source of truth for whether the consumer PWA should render the Turnstile widget. Edge-cached 60s.
+         */
+        get: operations["AuthCaptchaConfigController_captchaConfig_v1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notifications/push/subscribe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Register or refresh a Web Push subscription for the current user
+         * @description Upserts by (userId, deviceFingerprint). Same device re-granting permission updates the row in place — the endpoint URL may have rotated.
+         */
+        post: operations["PushSubscriptionsController_subscribe_v1"];
+        /**
+         * Remove a push subscription for the current user
+         * @description Idempotent: 204 even if the row is already gone.
+         */
+        delete: operations["PushSubscriptionsController_unsubscribe_v1"];
         options?: never;
         head?: never;
         patch?: never;
@@ -350,30 +434,6 @@ export interface paths {
          * @description Only valid for pre-orders (scheduledFor != null) currently in ACCEPTED or IN_PREP. Pre-acceptance cancellations should use the regular refuse endpoint (no penalty). Returns the cancelled status + the penalty amount in FCFA.
          */
         patch: operations["OrdersController_vendorCancelPreOrder_v1"];
-        trace?: never;
-    };
-    "/api/v1/notifications/push/subscribe": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Register or refresh a Web Push subscription for the current user
-         * @description Upserts by (userId, deviceFingerprint). Same device re-granting permission updates the row in place — the endpoint URL may have rotated.
-         */
-        post: operations["PushSubscriptionsController_subscribe_v1"];
-        /**
-         * Remove a push subscription for the current user
-         * @description Idempotent: 204 even if the row is already gone.
-         */
-        delete: operations["PushSubscriptionsController_unsubscribe_v1"];
-        options?: never;
-        head?: never;
-        patch?: never;
         trace?: never;
     };
     "/api/webhooks/campay/transfer": {
@@ -977,10 +1037,73 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Admin login (email + password)
-         * @description Story 1.6 — issues an 8h access JWT for ADMIN/SUPER_ADMIN/OPERATOR/VIEWER users. No refresh-token flow (admin re-enters password at end of session). Lockout: 5 failed attempts in 15 min → account_locked; super-admin must unlock. Error codes (body.code on 401): invalid_credentials, account_locked.
+         * Admin login step 1 — email + password
+         * @description Story 1.6 / Phase A1. Returns one of two shapes:
+         *       - { stage: "totp_required", challenge, challengeExpiresIn } — admin has TOTP enrolled. Client must POST /admin/auth/2fa within 5 minutes.
+         *       - { stage: "success", accessToken, role, email, expiresIn } — admin does not yet have TOTP enrolled (legacy / first-login). 8h access JWT issued directly. Client should redirect to enrollment.
+         *     Error codes (body.code on 401): invalid_credentials, account_locked.
          */
         post: operations["AdminAuthController_login_v1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/auth/2fa": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Admin login step 2 — TOTP code or recovery code
+         * @description Redeems the challenge from step 1. On success: 8h access JWT (same shape as /admin/auth/login when not 2fa-required). Recovery codes are single-use; consuming one decrements the remaining pool. Error codes: totp_challenge_expired, totp_invalid_code.
+         */
+        post: operations["AdminAuthController_verify2fa_v1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/auth/2fa/setup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start TOTP enrollment — returns QR + cleartext secret
+         * @description Generates an RFC 6238 secret + otpauth:// URI. Admin scans the QR with Authy / Google Authenticator / 1Password, then POSTs /admin/auth/2fa/confirm with the first code to lock the enrollment in. Recovery codes are minted at confirmation time, NOT here.
+         */
+        post: operations["AdminAuthController_start2faSetup_v1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/auth/2fa/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm TOTP enrollment with the first code, get recovery codes
+         * @description Locks the enrollment + mints 10 single-use recovery codes. Codes are shown ONCE — argon2 hashed at rest, no way to retrieve them later. Admin MUST save them (password manager / printed sheet) before leaving this screen.
+         */
+        post: operations["AdminAuthController_confirm2faSetup_v1"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1195,7 +1318,7 @@ export interface paths {
         };
         /**
          * Pilot KPI snapshot (7-day reorder rate, completion, avg times)
-         * @description Drives the Week-3 decision point of the COD-only pilot. Defaults to a rolling 7-day window. Pass ?from=&to= (ISO 8601) to inspect a custom range.
+         * @description Drives the Week-3 decision point of the MoMo-only pilot. Defaults to a rolling 7-day window. Pass ?from=&to= (ISO 8601) to inspect a custom range.
          */
         get: operations["AdminMetricsController_getMetrics_v1"];
         put?: never;
@@ -1511,6 +1634,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/audit-logs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List admin audit log entries (Phase A2) — SUPER_ADMIN only
+         * @description Append-only record of every admin write request. Filterable by adminId, action, targetType, targetId. Results sorted by createdAt DESC, default page size 50, max 200. Sensitive payload fields (password, code, token, recoveryCode, ...) are [REDACTED] at write time so this endpoint never echoes them.
+         */
+        get: operations["AdminAuditController_list_v1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/orders/{orderId}/call-consumer": {
         parameters: {
             query?: never;
@@ -1646,6 +1789,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/openapi.json": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["OpenApiController_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1656,6 +1815,8 @@ export interface components {
              * @example 670000000
              */
             phone: string;
+            /** @description Cloudflare Turnstile response token. Only required when CAPTCHA_ENABLED=true on the server. */
+            cfTurnstileResponse?: string;
         };
         VerifyOtpDto: {
             /** @example 670000000 */
@@ -1667,8 +1828,25 @@ export interface components {
             code: string;
         };
         RefreshTokenDto: {
-            /** @description Refresh JWT obtained from /auth/verify-otp or a prior /auth/refresh call. */
-            refreshToken: string;
+            /** @description Refresh JWT. Optional: the HttpOnly chopnow_rt cookie is the preferred source. Body field accepted for backward compatibility while the PWA cuts over. */
+            refreshToken?: string;
+        };
+        PushKeysDto: {
+            /** @description P-256 ECDH public key (base64url) */
+            p256dh: string;
+            /** @description Auth secret (base64url) */
+            auth: string;
+        };
+        SubscribePushDto: {
+            /** @description Push service endpoint URL (FCM/APNs/Mozilla) */
+            endpoint: string;
+            keys: components["schemas"]["PushKeysDto"];
+            /** @description Opaque per-device ID minted by the client (localStorage) so re-subscribes from the same device dedupe */
+            deviceFingerprint: string;
+        };
+        UnsubscribePushDto: {
+            /** @description Push service endpoint URL to deactivate */
+            endpoint: string;
         };
         UpdateUserProfileDto: {
             /**
@@ -1701,12 +1879,13 @@ export interface components {
             /** @example 1 */
             quantity: number;
         };
+        /** @enum {string} */
+        PaymentMethod: "MTN_MOMO" | "ORANGE_MONEY";
         CreateOrderDto: {
             /** @description Target vendor UUID. All cart lines must belong to it. */
             vendorId: string;
             items: components["schemas"]["CartLineDto"][];
-            /** @enum {string} */
-            paymentMethod: "MTN_MOMO" | "ORANGE_MONEY";
+            paymentMethod: components["schemas"]["PaymentMethod"];
             /**
              * @description Note for the vendor — the only client→vendor channel. Max 120 chars.
              * @example Sans piment
@@ -1738,6 +1917,8 @@ export interface components {
             riderScore: number;
             comment?: string;
         };
+        /** @enum {string} */
+        OrderStatus: "PENDING" | "CONFIRMED" | "ACCEPTED" | "IN_PREP" | "READY_PICKUP" | "PICKED_UP" | "DELIVERED" | "CANCELLED" | "REFUSED" | "EXPIRED";
         RefuseOrderDto: {
             /** @enum {string} */
             reason: "ITEM_OUT_OF_STOCK" | "CLOSED" | "TOO_MANY_ORDERS" | "POWER_OUTAGE" | "OTHER";
@@ -1754,23 +1935,6 @@ export interface components {
              * @example Pas de courant depuis 2h, impossible de finir la cuisson.
              */
             note?: string;
-        };
-        PushKeysDto: {
-            /** @description P-256 ECDH public key (base64url) */
-            p256dh: string;
-            /** @description Auth secret (base64url) */
-            auth: string;
-        };
-        SubscribePushDto: {
-            /** @description Push service endpoint URL (FCM/APNs/Mozilla) */
-            endpoint: string;
-            keys: components["schemas"]["PushKeysDto"];
-            /** @description Opaque per-device ID minted by the client (localStorage) so re-subscribes from the same device dedupe */
-            deviceFingerprint: string;
-        };
-        UnsubscribePushDto: {
-            /** @description Push service endpoint URL to deactivate */
-            endpoint: string;
         };
         InitiateMomoPaymentDto: {
             /**
@@ -2055,6 +2219,21 @@ export interface components {
              */
             password: string;
         };
+        VerifyAdminTotpDto: {
+            /** @description Opaque challenge token returned by /admin/auth/login when totp_required. */
+            challenge: string;
+            /**
+             * @description 6-digit TOTP from the authenticator app, OR a recovery code in XXXX-YYYY format.
+             * @example 123456
+             */
+            code: string;
+            /** @default false */
+            isRecoveryCode: boolean;
+        };
+        ConfirmAdminTotpDto: {
+            /** @example 123456 */
+            code: string;
+        };
         AdminDecisionDto: {
             /**
              * @description Free-text reason — shown to the vendor/rider in their WhatsApp notification.
@@ -2066,6 +2245,12 @@ export interface components {
             /** @description Whether the vendor should accept pre-orders. */
             acceptsPreOrders: boolean;
         };
+        /** @enum {string} */
+        VendorStatus: "PENDING_REVIEW" | "CORRECTION_REQUESTED" | "ACTIVE" | "SUSPENDED" | "REJECTED";
+        /** @enum {string} */
+        VendorType: "INFORMAL" | "SEMI_FORMAL" | "RESTAURANT";
+        /** @enum {string} */
+        RiderVehicleType: "MOTO" | "BICYCLE" | "CAR" | "ON_FOOT";
         RejectCashoutRequestDto: Record<string, never>;
         ManualMarkPaidDto: {
             /** @description Campay transaction reference from the manual fire */
@@ -2171,6 +2356,104 @@ export interface operations {
         };
         responses: {
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AuthController_logout_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AuthController_revokeAllSessions_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AuthCaptchaConfigController_captchaConfig_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        enabled: boolean;
+                        siteKey: string | null;
+                    };
+                };
+            };
+        };
+    };
+    PushSubscriptionsController_subscribe_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubscribePushDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PushSubscriptionsController_unsubscribe_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UnsubscribePushDto"];
+            };
+        };
+        responses: {
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -2419,8 +2702,8 @@ export interface operations {
     OrdersController_vendorList_v1: {
         parameters: {
             query?: {
+                status?: components["schemas"]["OrderStatus"];
                 type?: "immediate" | "preorder";
-                status?: "PENDING" | "CONFIRMED" | "ACCEPTED" | "IN_PREP" | "READY_PICKUP" | "PICKED_UP" | "DELIVERED" | "CANCELLED" | "REFUSED" | "EXPIRED";
             };
             header?: never;
             path?: never;
@@ -2537,48 +2820,6 @@ export interface operations {
         };
         responses: {
             200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    PushSubscriptionsController_subscribe_v1: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["SubscribePushDto"];
-            };
-        };
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    PushSubscriptionsController_unsubscribe_v1: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UnsubscribePushDto"];
-            };
-        };
-        responses: {
-            204: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -3320,6 +3561,65 @@ export interface operations {
             };
         };
     };
+    AdminAuthController_verify2fa_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VerifyAdminTotpDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminAuthController_start2faSetup_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AdminAuthController_confirm2faSetup_v1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConfirmAdminTotpDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     AdminValidationController_listPendingVendors_v1: {
         parameters: {
             query?: never;
@@ -3606,8 +3906,8 @@ export interface operations {
     AdminFinanceController_listVendorBalances_v1: {
         parameters: {
             query?: {
-                status?: "PENDING_REVIEW" | "CORRECTION_REQUESTED" | "ACTIVE" | "SUSPENDED" | "REJECTED";
-                type?: "INFORMAL" | "SEMI_FORMAL" | "RESTAURANT";
+                status?: components["schemas"]["VendorStatus"];
+                type?: components["schemas"]["VendorType"];
                 /** @description Minimum balance in FCFA (signed) */
                 minBalanceXAF?: number;
                 limit?: number;
@@ -3630,7 +3930,7 @@ export interface operations {
     AdminFinanceController_listRiderBalances_v1: {
         parameters: {
             query?: {
-                vehicleType?: "MOTO" | "BICYCLE" | "CAR" | "ON_FOOT";
+                vehicleType?: components["schemas"]["RiderVehicleType"];
                 /** @description Minimum balance in FCFA (signed) */
                 minBalanceXAF?: number;
                 limit?: number;
@@ -3891,6 +4191,34 @@ export interface operations {
             };
         };
     };
+    AdminAuditController_list_v1: {
+        parameters: {
+            query?: {
+                /** @description Filter by admin user id. */
+                adminId?: string;
+                /** @description Exact action match — e.g. "validation.approveVendor". */
+                action?: string;
+                /** @description Filter by target type — e.g. "vendor", "rider", "order". */
+                targetType?: string;
+                /** @description Filter by the audited target id. */
+                targetId?: string;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     VoiceProxyController_riderCallConsumer_v1: {
         parameters: {
             query?: never;
@@ -4044,6 +4372,23 @@ export interface operations {
         };
     };
     HealthController_ready: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    OpenApiController_get: {
         parameters: {
             query?: never;
             header?: never;
