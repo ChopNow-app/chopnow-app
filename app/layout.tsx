@@ -5,6 +5,7 @@ import { getLocale, getMessages } from 'next-intl/server';
 import { ConsumerBottomNav } from '@/components/ConsumerBottomNav';
 import { PilotBanner } from '@/components/PilotBanner';
 import { RegisterServiceWorker } from '@/components/RegisterServiceWorker';
+import { APPLE_SPLASH_SCREENS } from '@/lib/pwa/apple-splash-screens';
 import { SessionBoot } from '@/lib/auth/SessionBoot';
 import { QueryProvider } from '@/lib/query/QueryProvider';
 import './globals.css';
@@ -68,6 +69,19 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             __html: `(function(){try{if(location.pathname!=="/")return;var s=window.matchMedia&&window.matchMedia("(display-mode: standalone)").matches;var i=window.navigator&&window.navigator.standalone===true;if(s||i)location.replace("/launch?source=pwa");}catch(e){}})();`,
           }}
         />
+        {/* iOS PWA splash screens. iOS Safari doesn't read manifest.json's
+            splash entries — it needs <link rel="apple-touch-startup-image">
+            per device size + orientation. Without these, an installed PWA
+            launches with ~500ms of blank white before the page paints —
+            longer on 3G. See `lib/pwa/apple-splash-screens.ts`. */}
+        {APPLE_SPLASH_SCREENS.map((s) => (
+          <link
+            key={`${s.file}-${s.orientation}`}
+            rel="apple-touch-startup-image"
+            href={`/icons/splash/${s.file}`}
+            media={`(device-width: ${s.deviceWidth}px) and (device-height: ${s.deviceHeight}px) and (-webkit-device-pixel-ratio: ${s.pixelRatio}) and (orientation: ${s.orientation})`}
+          />
+        ))}
       </head>
       <body>
         <NextIntlClientProvider locale={locale} messages={messages}>
