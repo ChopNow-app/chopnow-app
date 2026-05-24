@@ -23,7 +23,11 @@ const buttonVariants = cva(
         lg: 'h-12 px-8 text-base',
         // Used on the rider app's outdoor CTAs (Picked-up, Delivered).
         jumbo: 'min-h-14 px-8 text-base font-bold',
-        icon: 'h-10 w-10',
+        // 44px square — meets the WCAG 2.5.5 / Apple HIG touch-target floor
+        // (was 40px which is below it). Affects close buttons, chips,
+        // bottom-nav icons used standalone (icons inside a wider button
+        // inherit the parent's `default`/`lg` height).
+        icon: 'h-11 w-11',
       },
     },
     defaultVariants: { variant: 'default', size: 'default' },
