@@ -78,6 +78,12 @@ const config: NextConfig = {
   experimental: {
     optimizePackageImports: ['lucide-react'],
   },
+  images: {
+    // Unsplash hosts our editorial food photography (hero, seed-vendor
+    // demo images). Restricted to https + the exact hostname so we
+    // don't accidentally proxy arbitrary remote images through Next.
+    remotePatterns: [{ protocol: 'https', hostname: 'images.unsplash.com' }],
+  },
   async headers() {
     return [
       { source: '/:path*', headers: securityHeaders },
