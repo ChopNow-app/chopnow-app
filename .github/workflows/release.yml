@@ -139,29 +139,22 @@ jobs:
         if: steps.bump.outputs.bump == 'none'
         run: echo "Nothing to release; exiting cleanly."
 
-      # All subsequent steps gated on the bump existing.
-      - name: Update package.json version
-        if: steps.bump.outputs.bump != 'none'
-        shell: bash
-        env:
-          NEW: ${{ steps.bump.outputs.new }}
-        run: |
-          set -euo pipefail
-          VERSION=${NEW#v}
-          npm version --no-git-tag-version --allow-same-version "$VERSION"
-
-          # Stage + commit the bump. `[skip ci]` in the message is a
-          # GitHub Actions convention that prevents the push from
-          # triggering CI again — but our loop guard (job-level `if:`)
-          # is the actual safety net.
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add package.json package-lock.json
-          git commit -m "chore(release): $NEW [skip ci]"
-          git push origin HEAD:develop
+      # Tag-only release model — we deliberately DON'T bump package.json
+      # and push it back to develop. The branch ruleset blocks direct
+      # bot pushes (PRs only), and bypassing the ruleset for a bot
+      # actor introduces a wider attack surface than is warranted.
+      # The git tag is the canonical version; package.json stays at
+      # whatever the founder last set manually (or stays at 0.1.0
+      # forever — it isn't user-visible).
+      #
+      # If a runtime needs the version (e.g. Sentry release tag), read
+      # it from the tag at build time via `git describe --tags` instead
+      # of package.json.
 
       # Group the changelog by commit type so the release page reads
       # like a feature/fix breakdown rather than a flat commit list.
+      # Range is LAST..HEAD (inclusive) — no version-bump commit to
+      # exclude, since we don't push one anymore (tag-only model).
       - name: Generate release notes
         if: steps.bump.outputs.bump != 'none'
         id: notes
@@ -172,25 +165,24 @@ jobs:
         run: |
           set -euo pipefail
           NOTES=/tmp/release-notes.md
+          # Capture all commits since LAST into a variable, then grep
+          # the variable via here-strings. Same pipefail-dodge pattern
+          # as the bump-detection step above.
+          ALL_LOG=$(git log "$LAST..HEAD" --pretty=format:'- %s (%h)')
+
           {
             echo "## What's changed"
             echo ""
             echo "### ✨ Features"
-            git log "$LAST..HEAD^" --pretty=format:'- %s (%h)' \
-              | grep -E '^- feat' \
-              || echo "_(none)_"
+            grep -E '^- feat' <<< "$ALL_LOG" || echo "_(none)_"
             echo ""
             echo ""
             echo "### 🐛 Fixes"
-            git log "$LAST..HEAD^" --pretty=format:'- %s (%h)' \
-              | grep -E '^- fix' \
-              || echo "_(none)_"
+            grep -E '^- fix' <<< "$ALL_LOG" || echo "_(none)_"
             echo ""
             echo ""
             echo "### 🔧 Chores / docs / tests"
-            git log "$LAST..HEAD^" --pretty=format:'- %s (%h)' \
-              | grep -vE '^- (feat|fix|chore\(release\))' \
-              || echo "_(none)_"
+            grep -vE '^- (feat|fix)' <<< "$ALL_LOG" || echo "_(none)_"
             echo ""
             echo ""
             echo "**Full changelog:** https://github.com/${{ github.repository }}/compare/$LAST...$NEW"
@@ -208,11 +200,12 @@ jobs:
           NEW: ${{ steps.bump.outputs.new }}
         run: |
           set -euo pipefail
-          # Tag the bump commit we just pushed (HEAD after the rebase
-          # from `git push`).
-          git fetch origin develop
-          git checkout develop
-          git tag "$NEW" -m "Release $NEW"
+          # Tag the current develop HEAD (the merge commit that
+          # triggered us). Tags aren't ref updates that the branch
+          # ruleset blocks — only branch pushes are.
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$NEW" -m "Release $NEW"
           git push origin "$NEW"
           gh release create "$NEW" \
             --title "$NEW" \
