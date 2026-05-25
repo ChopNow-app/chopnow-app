@@ -37,6 +37,10 @@
     "fr": "Français",
     "en": "English"
   },
+  "Metadata": {
+    "siteTitle": "TChopNow — Mange sans attendre",
+    "siteDescription": "De la rue à ta porte. Livraison de nourriture à Douala."
+  },
   "LaunchPromo": {
     "eyebrow": "Offre de lancement",
     "headline": "Livraison gratuite pour ta première commande",

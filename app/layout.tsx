@@ -3,7 +3,7 @@ import { SpeedInsights } from '@vercel/speed-insights/next';
 import type { Metadata, Viewport } from 'next';
 import { Plus_Jakarta_Sans } from 'next/font/google';
 import { NextIntlClientProvider } from 'next-intl';
-import { getLocale, getMessages } from 'next-intl/server';
+import { getLocale, getMessages, getTranslations } from 'next-intl/server';
 import { ConsumerBottomNav } from '@/components/ConsumerBottomNav';
 import { ConsumerTopNav } from '@/components/ConsumerTopNav';
 import { PilotBanner } from '@/components/PilotBanner';
@@ -26,52 +26,63 @@ const jakarta = Plus_Jakarta_Sans({
 // their Vercel URL; that's fine — they're noindex anyway via Vercel SSO).
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://app.tchopnow.app';
 
-export const metadata: Metadata = {
-  metadataBase: new URL(SITE_URL),
-  title: {
-    default: 'TChopNow — Mange sans attendre',
-    // Per-route metadata exports get sandwiched into "%s | TChopNow" so
-    // every browser tab + screen-reader announcement carries the brand.
-    template: '%s | TChopNow',
-  },
-  description: 'De la rue à ta porte. Livraison de nourriture à Douala.',
-  manifest: '/manifest.json',
-  applicationName: 'TChopNow',
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: 'default',
-    title: 'TChopNow',
-  },
-  formatDetection: {
-    telephone: false,
-  },
-  icons: {
-    icon: [
-      { url: '/icons/icon-32.png', sizes: '32x32', type: 'image/png' },
-      { url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
-    ],
-    apple: { url: '/icons/icon-180.png', sizes: '180x180' },
-    shortcut: '/favicon.ico',
-  },
-  openGraph: {
-    type: 'website',
-    siteName: 'TChopNow',
-    title: 'TChopNow — Mange sans attendre',
-    description: 'De la rue à ta porte. Livraison de nourriture à Douala.',
-    locale: 'fr_CM',
-    url: SITE_URL,
-    // /opengraph-image.tsx generates a 1200×630 PNG dynamically at build
-    // time using @vercel/og — branded for WhatsApp / Facebook shares.
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'TChopNow — Mange sans attendre',
-    description: 'De la rue à ta porte. Livraison de nourriture à Douala.',
-  },
-  alternates: {
-    canonical: '/',
-  },
-};
+// Locale-aware metadata. `generateMetadata` runs per-request and reads
+// the same locale resolution as the page render (cookie → Accept-Language
+// → 'fr'), so the browser tab + OG cards stay in sync with the rendered
+// copy. We can't use a static `metadata` export here because the title
+// + description + og:locale all depend on the active locale.
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('Metadata');
+  const locale = await getLocale();
+  const title = t('siteTitle');
+  const description = t('siteDescription');
+  return {
+    metadataBase: new URL(SITE_URL),
+    title: {
+      default: title,
+      // Per-route metadata exports get sandwiched into "%s | TChopNow" so
+      // every browser tab + screen-reader announcement carries the brand.
+      template: '%s | TChopNow',
+    },
+    description,
+    manifest: '/manifest.json',
+    applicationName: 'TChopNow',
+    appleWebApp: {
+      capable: true,
+      statusBarStyle: 'default',
+      title: 'TChopNow',
+    },
+    formatDetection: {
+      telephone: false,
+    },
+    icons: {
+      icon: [
+        { url: '/icons/icon-32.png', sizes: '32x32', type: 'image/png' },
+        { url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+      ],
+      apple: { url: '/icons/icon-180.png', sizes: '180x180' },
+      shortcut: '/favicon.ico',
+    },
+    openGraph: {
+      type: 'website',
+      siteName: 'TChopNow',
+      title,
+      description,
+      locale: locale === 'en' ? 'en_US' : 'fr_CM',
+      url: SITE_URL,
+      // /opengraph-image.tsx generates a 1200×630 PNG dynamically at build
+      // time using @vercel/og — branded for WhatsApp / Facebook shares.
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+    },
+    alternates: {
+      canonical: '/',
+    },
+  };
+}
 
 export const viewport: Viewport = {
   themeColor: '#E11D2A',
