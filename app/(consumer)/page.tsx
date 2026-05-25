@@ -340,7 +340,7 @@ function TrustPillar({
   sub: string;
 }) {
   return (
-    <div className="group relative flex h-full min-h-[200px] flex-col gap-6 overflow-hidden rounded-3xl border border-divider bg-chop-card-white p-6 transition-all hover:-translate-y-0.5 hover:border-chop-ink/20 hover:shadow-elevated md:min-h-[240px] md:p-8">
+    <div className="group relative flex h-full min-h-[200px] flex-col gap-6 overflow-hidden rounded-3xl border border-divider bg-chop-card-white p-6 transition-all hover:border-chop-ink/20 hover:shadow-elevated motion-safe:hover:-translate-y-0.5 md:min-h-[240px] md:p-8">
       {/* Watermark ordinal — same rhythm as RoleCard so the two sections
           read as a coordinated pair. */}
       <span
@@ -470,7 +470,7 @@ function RoleCard({
         className={
           isPrimary
             ? 'group relative flex h-full min-h-[200px] flex-col justify-between gap-8 overflow-hidden rounded-3xl bg-chop-red p-6 text-white shadow-card transition-all hover:shadow-elevated md:min-h-[260px] md:p-8 lg:min-h-[300px] lg:p-10'
-            : 'group relative flex h-full min-h-[200px] flex-col justify-between gap-8 overflow-hidden rounded-3xl border-2 border-chop-ink/10 bg-chop-card-white p-6 text-chop-ink transition-all hover:-translate-y-0.5 hover:border-chop-ink hover:bg-chop-warm hover:shadow-elevated md:min-h-[260px] md:p-8 lg:min-h-[300px] lg:p-10'
+            : 'group relative flex h-full min-h-[200px] flex-col justify-between gap-8 overflow-hidden rounded-3xl border-2 border-chop-ink/10 bg-chop-card-white p-6 text-chop-ink transition-all hover:border-chop-ink hover:bg-chop-warm hover:shadow-elevated motion-safe:hover:-translate-y-0.5 md:min-h-[260px] md:p-8 lg:min-h-[300px] lg:p-10'
         }
       >
         {/* Giant ornamental eyebrow number that fills the empty top-right
@@ -508,7 +508,7 @@ function RoleCard({
         </div>
         <span
           aria-hidden
-          className={`relative inline-flex h-10 w-10 items-center justify-center rounded-full text-[20px] font-bold transition-transform group-hover:translate-x-1 md:h-12 md:w-12 md:text-[22px] ${
+          className={`relative inline-flex h-10 w-10 items-center justify-center rounded-full text-[20px] font-bold transition-transform motion-safe:group-hover:translate-x-1 md:h-12 md:w-12 md:text-[22px] ${
             isPrimary
               ? 'bg-white/15 text-white group-hover:bg-white/25'
               : 'bg-chop-ink/5 text-chop-ink group-hover:bg-chop-ink group-hover:text-white'
