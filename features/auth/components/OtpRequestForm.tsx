@@ -7,6 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import type { TurnstileInstance } from '@marsidev/react-turnstile';
 
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { PhoneInput } from '@/components/PhoneInput';
 import { auth } from '@/lib/auth';
@@ -41,24 +42,26 @@ const Turnstile = dynamic(
 // regex in chopnow-api/src/modules/auth/dto/request-otp.dto.ts — keeps
 // front + back validation aligned so diaspora users with +33/+1/+44/etc.
 // WhatsApp numbers can sign in without owning a local SIM.
-const schema = z.object({
-  phone: z
-    .string()
-    .regex(
-      /^(?:6[5-9]\d{7}|\+[1-9]\d{6,14})$/,
-      'Numéro invalide — choisis ton pays puis saisis ton numéro',
-    ),
-});
+// Built inside the component so the error message is locale-aware.
+const PHONE_PATTERN = /^(?:6[5-9]\d{7}|\+[1-9]\d{6,14})$/;
 
-type FormValues = z.infer<typeof schema>;
+type FormValues = { phone: string };
 
 export interface OtpRequestFormProps {
   onRequested: (phone: string) => void;
 }
 
 export function OtpRequestForm({ onRequested }: OtpRequestFormProps) {
+  const t = useTranslations('Auth');
   const captcha = useCaptchaConfig();
   const captchaActive = captcha.enabled && Boolean(captcha.siteKey);
+  const schema = React.useMemo(
+    () =>
+      z.object({
+        phone: z.string().regex(PHONE_PATTERN, t('phoneSchemaInvalid')),
+      }),
+    [t],
+  );
 
   const {
     handleSubmit,
@@ -86,7 +89,7 @@ export function OtpRequestForm({ onRequested }: OtpRequestFormProps) {
 
   const onSubmit = async (values: FormValues) => {
     if (captchaActive && !captchaToken) {
-      setError('root', { message: 'Vérification anti-bot requise — patientez un instant.' });
+      setError('root', { message: t('captchaPending') });
       return;
     }
     try {
@@ -99,7 +102,7 @@ export function OtpRequestForm({ onRequested }: OtpRequestFormProps) {
         turnstileRef.current?.reset();
         setCaptchaToken(null);
       }
-      setError('root', { message: (err as Error).message || 'Erreur réseau' });
+      setError('root', { message: (err as Error).message || t('networkError') });
     }
   };
 
@@ -139,7 +142,7 @@ export function OtpRequestForm({ onRequested }: OtpRequestFormProps) {
         disabled={isSubmitting || (captchaActive && !captchaToken)}
         className="w-full"
       >
-        {isSubmitting ? 'Envoi…' : 'Recevoir le code'}
+        {isSubmitting ? t('sending') : t('requestOtp')}
       </Button>
     </form>
   );

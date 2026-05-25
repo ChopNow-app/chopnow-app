@@ -4,6 +4,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Home, ShoppingBag, ClipboardList, User } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 
 // Bottom tab bar for the consumer PWA — per DESIGN.md §4 Navigation.
@@ -13,7 +14,8 @@ import { cn } from '@/lib/utils';
 
 interface Tab {
   href: string;
-  label: string;
+  /** Translation key under the `Consumer` namespace */
+  labelKey: 'navHome' | 'navRestaurants' | 'navOrders' | 'navAccount';
   icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
   // `match` decides if this tab is "active" for the given path.
   // Default is exact match; deeper routes need a prefix predicate.
@@ -21,22 +23,22 @@ interface Tab {
 }
 
 const TABS: Tab[] = [
-  { href: '/', label: 'Accueil', icon: Home, match: (p) => p === '/' },
+  { href: '/', labelKey: 'navHome', icon: Home, match: (p) => p === '/' },
   {
     href: '/restaurants',
-    label: 'Restos',
+    labelKey: 'navRestaurants',
     icon: ShoppingBag,
     match: (p) => p === '/restaurants' || p.startsWith('/vendors/'),
   },
   {
     href: '/orders',
-    label: 'Commandes',
+    labelKey: 'navOrders',
     icon: ClipboardList,
     match: (p) => p.startsWith('/orders'),
   },
   {
     href: '/account',
-    label: 'Compte',
+    labelKey: 'navAccount',
     icon: User,
     match: (p) => p.startsWith('/account'),
   },
@@ -66,13 +68,14 @@ const HIDE_ON: ReadonlyArray<string | RegExp> = [
 
 export function ConsumerBottomNav() {
   const pathname = usePathname() ?? '/';
+  const t = useTranslations('Consumer');
 
   const hidden = HIDE_ON.some((p) => (typeof p === 'string' ? pathname === p : p.test(pathname)));
   if (hidden) return null;
 
   return (
     <nav
-      aria-label="Navigation principale"
+      aria-label={t('navHome')}
       className="fixed inset-x-0 bottom-0 z-40 border-t border-divider bg-background lg:hidden"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
@@ -91,7 +94,9 @@ export function ConsumerBottomNav() {
                 )}
               >
                 <Icon className="h-6 w-6" strokeWidth={active ? 2.4 : 2} />
-                <span className={cn('text-[11px]', active && 'font-semibold')}>{tab.label}</span>
+                <span className={cn('text-[11px]', active && 'font-semibold')}>
+                  {t(tab.labelKey)}
+                </span>
                 {active ? (
                   <span
                     aria-hidden="true"
