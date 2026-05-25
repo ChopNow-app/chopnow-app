@@ -92,8 +92,15 @@ export function AccountPage() {
     return (
       <AuthRequired
         theme="light"
-        subtitle="Connecte-toi pour accéder à ton profil, tes adresses et tes préférences."
+        subtitle="Connecte-toi pour gérer ton profil, tes adresses et tes préférences."
         loginHref="/login?next=/account"
+        features={[
+          { icon: '👤', label: 'Ton profil et tes infos personnelles' },
+          { icon: '📍', label: 'Plusieurs adresses sauvegardées' },
+          { icon: '💳', label: 'Numéros MoMo pour payer en 1 tap' },
+          { icon: '🔔', label: 'Préférences de notifications' },
+        ]}
+        reassurance="Connexion par OTP WhatsApp · 30 secondes · pas de carte bancaire."
       />
     );
   }

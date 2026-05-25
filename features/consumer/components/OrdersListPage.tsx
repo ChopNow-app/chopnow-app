@@ -71,8 +71,15 @@ export function OrdersListPage() {
     return (
       <AuthRequired
         theme="light"
-        subtitle="Connecte-toi pour voir l'historique de tes commandes."
+        subtitle="Connecte-toi pour voir l'historique de tes commandes et re-commander en 2 taps."
         loginHref="/login?next=/orders"
+        features={[
+          { icon: '📦', label: 'Historique de toutes tes commandes passées' },
+          { icon: '⏱️', label: 'Re-commander ton dernier repas en 2 taps' },
+          { icon: '📍', label: 'Livraison à tes adresses sauvegardées' },
+          { icon: '🔔', label: 'Notifications quand ta commande arrive' },
+        ]}
+        reassurance="Connexion par OTP WhatsApp · 30 secondes · pas de carte bancaire."
       />
     );
   }
