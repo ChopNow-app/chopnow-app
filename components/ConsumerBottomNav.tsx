@@ -58,6 +58,10 @@ const HIDE_ON: ReadonlyArray<string | RegExp> = [
   '/livrer',
   '/vendre',
   /^\/t\//, // public order tracking — no app shell
+  // Legal routes have their own minimal editorial chrome; no app nav.
+  '/mentions-legales',
+  '/cgu',
+  '/confidentialite',
 ];
 
 export function ConsumerBottomNav() {

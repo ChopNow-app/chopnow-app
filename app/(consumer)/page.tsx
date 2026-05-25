@@ -1,6 +1,7 @@
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { SiteFooter } from '@/components/SiteFooter';
 import { PwaRedirector } from '@/features/auth/components/PwaRedirector';
 import { RoleRedirector } from '@/features/auth/components/RoleRedirector';
 import { MobileOnboarding } from '@/features/onboarding/components/MobileOnboarding';
@@ -197,12 +198,135 @@ export default function HomePage() {
             />
           </ul>
         </div>
-
-        <footer className="mt-10 text-center text-[11px] font-medium text-chop-ink-secondary md:mt-14 md:text-[12px]">
-          Pilote MoMo · Bonamoussadi & Makepe · 2026
-        </footer>
       </section>
+
+      {/* ── Trust + zones + FAQ + Site footer ──────────────────────
+          Marketing-splash content blocks beyond the hero / role picker.
+          Each section is a separate <section> so SEO crawlers and
+          screen readers can navigate cleanly. ───────────────────── */}
+      <TrustRow />
+      <ServiceZones />
+      <Faq />
+      <SiteFooter />
     </main>
+  );
+}
+
+/* ── Trust signals — short row of 3 chips ──────────────────────────── */
+function TrustRow() {
+  return (
+    <section className="relative z-10 mx-auto mt-16 max-w-7xl px-5 md:mt-24 md:px-8 lg:px-12">
+      <div className="grid gap-3 md:grid-cols-3 md:gap-4">
+        <TrustChip icon="🔒" label="Paiement sécurisé" sub="MTN MoMo + Orange Money" />
+        <TrustChip icon="🛵" label="Livraison 30 min" sub="Par moto dans ton quartier" />
+        <TrustChip icon="💬" label="Support WhatsApp" sub="On répond 7j/7" />
+      </div>
+    </section>
+  );
+}
+
+function TrustChip({ icon, label, sub }: { icon: string; label: string; sub: string }) {
+  return (
+    <div className="flex items-center gap-3 rounded-2xl border border-divider bg-chop-card-white p-4 shadow-card">
+      <span aria-hidden className="text-2xl">
+        {icon}
+      </span>
+      <div className="min-w-0">
+        <p className="text-[14px] font-extrabold leading-tight text-chop-ink">{label}</p>
+        <p className="mt-0.5 text-[12px] font-medium text-chop-ink-secondary">{sub}</p>
+      </div>
+    </div>
+  );
+}
+
+/* ── Service zones ──────────────────────────────────────────────────── */
+function ServiceZones() {
+  return (
+    <section className="relative z-10 mx-auto mt-16 max-w-7xl px-5 md:mt-24 md:px-8 lg:px-12">
+      <div className="border-t border-divider pt-8 md:pt-12">
+        <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-chop-ink-secondary md:text-[12px]">
+          On livre ici
+        </p>
+        <h2 className="mt-3 text-[28px] font-extrabold leading-tight tracking-tight md:text-[36px]">
+          Bonamoussadi <span className="text-chop-red">&</span> Makepe
+        </h2>
+        <p className="mt-4 max-w-[60ch] text-[15px] font-medium leading-relaxed text-chop-ink-secondary md:text-[16px]">
+          On démarre dans ces deux quartiers pendant la phase pilote. Élargissement progressif vers{' '}
+          <strong>Bonapriso</strong>, <strong>Akwa</strong>, <strong>Bonanjo</strong>,{' '}
+          <strong>Logbessou</strong> et la suite — inscris-toi pour être notifié dès que ton
+          quartier ouvre.
+        </p>
+      </div>
+    </section>
+  );
+}
+
+/* ── FAQ ────────────────────────────────────────────────────────────── */
+function Faq() {
+  const QUESTIONS = [
+    {
+      q: 'Comment ça marche ?',
+      a: 'Tu choisis un vendeur autour de toi, tu commandes en 3 taps, tu paies par MoMo. Un livreur récupère ta commande et te l’apporte à moto en 30 minutes.',
+    },
+    {
+      q: 'Quelles zones livrez-vous ?',
+      a: 'Pendant la phase pilote, on livre à Bonamoussadi et Makepe à Douala. On élargit progressivement vers d’autres quartiers de Douala.',
+    },
+    {
+      q: 'Comment je paie ?',
+      a: 'Uniquement par MTN Mobile Money ou Orange Money. Le paiement est traité par Campay (agrégateur régulé ANTIC + ART). Aucune carte bancaire requise, aucun paiement en espèces pour le moment.',
+    },
+    {
+      q: 'Combien coûte la livraison ?',
+      a: 'Les frais de livraison dépendent de la distance entre toi et le vendeur. Le montant exact s’affiche au checkout avant que tu valides — pas de surprise.',
+    },
+    {
+      q: 'Que se passe-t-il si le restaurant refuse ma commande ?',
+      a: 'Si le restaurant ne confirme pas dans les 60 secondes après ton paiement, la commande est annulée automatiquement et le montant est remboursé intégralement sur ton compte MoMo dans les 24 heures.',
+    },
+    {
+      q: 'Comment devenir vendeur ou livreur ?',
+      a: 'Vendeur : dépose ton dossier sur /vendre (validation sous 24h, commission seulement quand on te livre une commande). Livreur : /livrer (paie quotidienne via MoMo, validation sous 4h, pas de caution).',
+    },
+  ];
+
+  return (
+    <section className="relative z-10 mx-auto mt-16 max-w-7xl px-5 md:mt-24 md:px-8 lg:px-12">
+      <div className="border-t border-divider pt-8 md:pt-12">
+        <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-chop-ink-secondary md:text-[12px]">
+          On répond
+        </p>
+        <h2 className="mt-3 text-[28px] font-extrabold leading-tight tracking-tight md:text-[36px]">
+          Questions <span className="text-chop-red">fréquentes.</span>
+        </h2>
+
+        {/* Native <details> for collapsible Q&A — zero JS, accessible by
+            default, supports keyboard + screen-reader interaction. The
+            chevron indicator is purely CSS via the [open] selector. */}
+        <ul className="mt-8 divide-y divide-divider border-y border-divider">
+          {QUESTIONS.map((item, i) => (
+            <li key={i}>
+              <details className="group py-5">
+                <summary className="flex cursor-pointer list-none items-start justify-between gap-4 text-left">
+                  <span className="text-[15px] font-extrabold leading-snug text-chop-ink md:text-[17px]">
+                    {item.q}
+                  </span>
+                  <span
+                    aria-hidden
+                    className="mt-1 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-chop-surface-gray text-[13px] font-bold text-chop-ink transition-transform group-open:rotate-45"
+                  >
+                    +
+                  </span>
+                </summary>
+                <p className="mt-3 max-w-[68ch] text-[14px] leading-relaxed text-chop-ink-secondary md:text-[15px]">
+                  {item.a}
+                </p>
+              </details>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
   );
 }
 

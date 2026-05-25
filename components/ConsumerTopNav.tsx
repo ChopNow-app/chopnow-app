@@ -70,6 +70,13 @@ const HIDE_ON: ReadonlyArray<string | RegExp> = [
   '/livrer',
   '/vendre',
   /^\/t\//, // public order tracking — no app shell
+  // Legal routes have their own minimal chrome (back-to-home link +
+  // brand mark) inside (legal)/layout.tsx. Showing the app nav on top
+  // would compete with the SiteFooter that already lists the legal
+  // pages — keep these surfaces editorial.
+  '/mentions-legales',
+  '/cgu',
+  '/confidentialite',
 ];
 
 export function ConsumerTopNav() {
