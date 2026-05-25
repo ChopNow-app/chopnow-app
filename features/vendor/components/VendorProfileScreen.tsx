@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { ChevronLeft, Save } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import {
   BrandInput,
@@ -20,13 +21,11 @@ import { useVendorProfile } from '../hooks/useVendorProfile';
 // Same phone pattern as onboarding — 9-digit Cameroon local or E.164.
 const PHONE = /^(?:6[5-9]\d{7}|\+?[1-9]\d{7,14})$/;
 
-const schema = z.object({
-  name: z.string().min(2, '2 caractères minimum').max(80),
-  description: z.string().max(500).optional().or(z.literal('')),
-  momoPhone: z.string().regex(PHONE, 'Numéro MoMo invalide'),
-});
-
-type FormValues = z.input<typeof schema>;
+type FormValues = {
+  name: string;
+  description?: string | '';
+  momoPhone: string;
+};
 
 /**
  * Vendor self-service profile editor. Saves trigger up to 3 API calls:
@@ -46,12 +45,25 @@ type FormValues = z.input<typeof schema>;
  * self-serve.
  */
 export function VendorProfileScreen() {
+  const t = useTranslations('Vendor');
   const profile = useVendorProfile();
   const [profilePhoto, setProfilePhoto] = React.useState<File | null>(null);
   const [coverPhoto, setCoverPhoto] = React.useState<File | null>(null);
   const [saving, setSaving] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [success, setSuccess] = React.useState(false);
+
+  // Built inside the component so the validation messages pick up the
+  // current locale.
+  const schema = React.useMemo(
+    () =>
+      z.object({
+        name: z.string().min(2, t('profileValidationName')).max(80),
+        description: z.string().max(500).optional().or(z.literal('')),
+        momoPhone: z.string().regex(PHONE, t('profileValidationMomo')),
+      }),
+    [t],
+  );
 
   const {
     register,
@@ -101,10 +113,10 @@ export function VendorProfileScreen() {
     return (
       <Shell>
         <EmptyState
-          title="Connexion requise"
-          message="Connecte-toi pour gérer ton profil."
+          title={t('profileAuthTitle')}
+          message={t('profileAuthBody')}
           ctaHref="/login?next=/vendor/profile"
-          ctaLabel="Se connecter"
+          ctaLabel={t('profileAuthCta')}
         />
       </Shell>
     );
@@ -114,10 +126,10 @@ export function VendorProfileScreen() {
     return (
       <Shell>
         <EmptyState
-          title="Aucun profil vendeur"
-          message="Ton compte n'est pas associé à une cuisine."
+          title={t('profileNotFoundTitle')}
+          message={t('profileNotFoundBody')}
           ctaHref="/vendre"
-          ctaLabel="Devenir vendeur"
+          ctaLabel={t('profileNotFoundCta')}
         />
       </Shell>
     );
@@ -165,7 +177,7 @@ export function VendorProfileScreen() {
       profile.reload();
       setSuccess(true);
     } catch (err) {
-      setError(extractMessage(err));
+      setError(extractMessage(err, t));
     } finally {
       setSaving(false);
     }
@@ -178,7 +190,7 @@ export function VendorProfileScreen() {
       <header className="mt-3 flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
-            Mon profil
+            {t('profileEyebrow')}
           </p>
           <h1 className="mt-0.5 truncate text-xl font-extrabold tracking-tight">
             {profile.data.name}
@@ -190,45 +202,45 @@ export function VendorProfileScreen() {
       </header>
 
       <form onSubmit={handleSubmit(onSubmit)} className="mt-5 space-y-5">
-        <FormSection num="01" title="Informations">
-          <Field label="Nom de la cuisine" error={errors.name?.message}>
-            <BrandInput placeholder="Chez Maman Mboué" {...register('name')} />
+        <FormSection num="01" title={t('profileInfoSection')}>
+          <Field label={t('profileInfoName')} error={errors.name?.message}>
+            <BrandInput placeholder={t('profileInfoNamePh')} {...register('name')} />
           </Field>
           <Field
-            label="Description"
-            hint="optionnel · ce que les clients verront sous ton nom"
+            label={t('profileInfoDesc')}
+            hint={t('profileInfoDescHint')}
             error={errors.description?.message}
           >
             <BrandInput
-              placeholder="Cuisine maison camerounaise"
+              placeholder={t('profileInfoDescPh')}
               maxLength={500}
               {...register('description')}
             />
           </Field>
           <Field
-            label="Numéro MoMo"
-            hint="pour recevoir tes paiements"
+            label={t('profileInfoMomo')}
+            hint={t('profileInfoMomoHint')}
             error={errors.momoPhone?.message}
           >
             <BrandInput
               type="tel"
               autoComplete="tel"
-              placeholder="670000000"
+              placeholder={t('profileInfoMomoPh')}
               {...register('momoPhone')}
             />
           </Field>
         </FormSection>
 
-        <FormSection num="02" title="Photos">
+        <FormSection num="02" title={t('profilePhotosSection')}>
           <PhotoPicker
-            label="Photo de profil"
-            hint="affichée sur la carte du catalogue"
+            label={t('profilePhotoProfile')}
+            hint={t('profilePhotoProfileHint')}
             file={profilePhoto}
             onPick={setProfilePhoto}
           />
           <PhotoPicker
-            label="Photo de couverture"
-            hint="hero en haut de ta page vendeur"
+            label={t('profilePhotoCover')}
+            hint={t('profilePhotoCoverHint')}
             file={coverPhoto}
             onPick={setCoverPhoto}
           />
@@ -237,7 +249,7 @@ export function VendorProfileScreen() {
         {error ? <ErrorBanner message={error} /> : null}
         {success ? (
           <div className="rounded-xl border-l-4 border-chop-mboue bg-chop-mboue-light px-4 py-3 text-[13px] font-medium text-chop-mboue">
-            ✓ Profil mis à jour.
+            {t('profileUpdatedToast')}
           </div>
         ) : null}
 
@@ -248,7 +260,7 @@ export function VendorProfileScreen() {
           className="w-full gap-2 bg-chop-red text-base shadow-card hover:bg-chop-red/90 disabled:opacity-50"
         >
           <Save className="h-5 w-5" aria-hidden />
-          {saving ? '…' : 'Enregistrer'}
+          {saving ? t('saveProgress') : t('profileSaveCta')}
         </Button>
 
         <Link
@@ -256,7 +268,7 @@ export function VendorProfileScreen() {
           className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-divider bg-chop-card-white px-4 py-3 text-sm font-semibold text-muted-foreground transition-colors hover:bg-chop-surface-gray"
         >
           <ChevronLeft className="h-4 w-4" aria-hidden />
-          Retour au dashboard
+          {t('ctaBackDashboard')}
         </Link>
       </form>
     </Shell>
@@ -264,11 +276,12 @@ export function VendorProfileScreen() {
 }
 
 function BackBar() {
+  const t = useTranslations('Vendor');
   return (
     <Link
       href="/vendor"
       className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-chop-card-white text-chop-ink shadow-card transition-colors hover:bg-chop-surface-gray"
-      aria-label="Retour au dashboard"
+      aria-label={t('ariaBack')}
     >
       <ChevronLeft className="h-5 w-5" aria-hidden />
     </Link>
@@ -296,13 +309,14 @@ function EmptyState({
   ctaHref: string;
   ctaLabel: string;
 }) {
+  const t = useTranslations('Vendor');
   return (
     <div className="mt-20 flex flex-col items-center text-center">
       <p
         aria-hidden
         className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-chop-red"
       >
-        — Profil
+        {t('profileEyebrowSection')}
       </p>
       <h2 className="mt-2 text-2xl font-extrabold tracking-tight">{title}</h2>
       <p className="mt-1.5 max-w-xs text-sm text-muted-foreground">{message}</p>
@@ -313,10 +327,10 @@ function EmptyState({
   );
 }
 
-function extractMessage(err: unknown): string {
+function extractMessage(err: unknown, t: ReturnType<typeof useTranslations<'Vendor'>>): string {
   if (err instanceof ApiClientError) {
     const body = err.body as { message?: string } | undefined;
-    return body?.message ?? `Erreur ${err.status}`;
+    return body?.message ?? t('errorPrefix', { status: err.status });
   }
-  return (err as Error)?.message ?? 'Erreur réseau';
+  return (err as Error)?.message ?? t('errorNetwork');
 }

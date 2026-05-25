@@ -3,6 +3,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { ChevronLeft, Check, Clock } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { useQueryClient } from '@tanstack/react-query';
 import { apiRaw, ApiClientError } from '@/lib/api/api-client';
@@ -19,6 +20,7 @@ interface Props {
 }
 
 export function OrderPreparationScreen({ orderId }: Props) {
+  const t = useTranslations('Vendor');
   const orderState = useVendorOrder(orderId);
 
   if (orderState.status === 'loading') {
@@ -37,10 +39,10 @@ export function OrderPreparationScreen({ orderId }: Props) {
     return (
       <Shell>
         <EmptyState
-          title="Connexion requise"
-          message="Connecte-toi pour gérer cette commande."
+          title={t('orderPrepLoadingAuthTitle')}
+          message={t('orderPrepLoadingAuthBody')}
           ctaHref="/login?next=/vendor"
-          ctaLabel="Se connecter"
+          ctaLabel={t('menuScreenAuthCta')}
         />
       </Shell>
     );
@@ -50,10 +52,10 @@ export function OrderPreparationScreen({ orderId }: Props) {
     return (
       <Shell>
         <EmptyState
-          title="Commande introuvable"
-          message="Elle a peut-être été annulée ou n'existe plus."
+          title={t('orderPrepNotFoundTitle')}
+          message={t('orderPrepNotFoundBody')}
           ctaHref="/vendor"
-          ctaLabel="Retour au dashboard"
+          ctaLabel={t('ctaBackDashboard')}
         />
       </Shell>
     );
@@ -63,10 +65,10 @@ export function OrderPreparationScreen({ orderId }: Props) {
     return (
       <Shell>
         <EmptyState
-          title="Erreur de chargement"
+          title={t('orderPrepErrTitle')}
           message={orderState.message}
           ctaHref="/vendor"
-          ctaLabel="Retour au dashboard"
+          ctaLabel={t('ctaBackDashboard')}
         />
       </Shell>
     );
@@ -76,6 +78,7 @@ export function OrderPreparationScreen({ orderId }: Props) {
 }
 
 function PreparationView({ order, reload }: { order: VendorOrder; reload: () => void }) {
+  const t = useTranslations('Vendor');
   // The preparation surface is intended for the kitchen workflow: ACCEPTED
   // / IN_PREP / READY_PICKUP. If the vendor lands here on an order that
   // hasn't been accepted yet (rare; would mean a stale link or out-of-band
@@ -85,10 +88,10 @@ function PreparationView({ order, reload }: { order: VendorOrder; reload: () => 
     return (
       <Shell>
         <EmptyState
-          title="Décision en attente"
-          message="Cette commande n'est pas encore acceptée — passe par l'écran d'acceptation."
+          title={t('orderPrepDecisionPendingTitle')}
+          message={t('orderPrepDecisionPendingBody')}
           ctaHref={`/vendor/commande/${order.id}`}
-          ctaLabel="Aller à l'acceptation"
+          ctaLabel={t('orderPrepDecisionPendingCta')}
         />
       </Shell>
     );
@@ -118,7 +121,7 @@ function PreparationView({ order, reload }: { order: VendorOrder; reload: () => 
       <header className="mt-3 flex items-start justify-between gap-3">
         <div>
           <p className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
-            Commande
+            {t('orderPrepHeaderEyebrow')}
           </p>
           <h1 className="mt-0.5 text-xl font-extrabold tracking-tight">{order.code}</h1>
           <p className="text-xs text-muted-foreground">{formatXAF(order.totalXAF)}</p>
@@ -156,13 +159,14 @@ function PreparationView({ order, reload }: { order: VendorOrder; reload: () => 
         className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-full border border-divider bg-chop-card-white px-4 py-3 text-sm font-semibold text-muted-foreground transition-colors hover:bg-chop-surface-gray"
       >
         <ChevronLeft className="h-4 w-4" aria-hidden />
-        Retour au dashboard
+        {t('ctaBackDashboard')}
       </Link>
     </Shell>
   );
 }
 
 function PreOrderCancelCta({ order, onDone }: { order: VendorOrder; onDone: () => void }) {
+  const t = useTranslations('Vendor');
   const [open, setOpen] = React.useState(false);
   const [note, setNote] = React.useState('');
   const [busy, setBusy] = React.useState(false);
@@ -183,9 +187,10 @@ function PreOrderCancelCta({ order, onDone }: { order: VendorOrder; onDone: () =
     } catch (err) {
       const msg =
         err instanceof ApiClientError
-          ? ((err.body as { message?: string } | undefined)?.message ?? `Erreur ${err.status}`)
+          ? ((err.body as { message?: string } | undefined)?.message ??
+            t('errorPrefix', { status: err.status }))
           : (err as Error).message;
-      setError(msg ?? 'Échec');
+      setError(msg ?? t('orderPrepFail'));
     } finally {
       setBusy(false);
     }
@@ -198,21 +203,22 @@ function PreOrderCancelCta({ order, onDone }: { order: VendorOrder; onDone: () =
         onClick={() => setOpen(true)}
         className="mt-3 w-full rounded-full border border-chop-danger/40 bg-chop-danger-light px-4 py-3 text-sm font-semibold text-chop-danger transition-colors hover:bg-chop-danger/15"
       >
-        Annuler cette pré-commande
+        {t('orderPrepPreorderCancelCta')}
       </button>
     );
   }
 
   return (
     <div className="mt-3 rounded-2xl border border-chop-danger/40 bg-chop-danger-light p-4">
-      <p className="text-sm font-bold text-chop-danger">Confirmer l&apos;annulation</p>
+      <p className="text-sm font-bold text-chop-danger">{t('orderPrepPreorderCancelHeading')}</p>
       <p className="mt-1 text-xs text-chop-ink">
-        Le client sera remboursé intégralement. Une pénalité de{' '}
-        <strong>{formatXAF(penalty)}</strong> (10% du total) sera prélevée sur ton prochain
-        versement.
+        {t.rich('orderPrepPreorderCancelBody', {
+          penalty: formatXAF(penalty),
+          strong: (chunks) => <strong>{chunks}</strong>,
+        })}
       </p>
       <label htmlFor="cancel-note" className="mt-3 block text-xs font-semibold">
-        Raison (optionnel, vu par le client) :
+        {t('orderPrepPreorderCancelNoteLabel')}
       </label>
       <textarea
         id="cancel-note"
@@ -220,7 +226,7 @@ function PreOrderCancelCta({ order, onDone }: { order: VendorOrder; onDone: () =
         maxLength={200}
         value={note}
         onChange={(e) => setNote(e.target.value)}
-        placeholder="Pas de courant depuis 2h, impossible de finir."
+        placeholder={t('orderPrepPreorderCancelNotePh')}
         className="mt-1 w-full rounded-xl border border-divider bg-chop-card-white p-2 text-sm"
       />
       {error ? <p className="mt-2 text-xs text-chop-danger">{error}</p> : null}
@@ -231,7 +237,7 @@ function PreOrderCancelCta({ order, onDone }: { order: VendorOrder; onDone: () =
           disabled={busy}
           className="flex-1 rounded-full border border-divider bg-chop-card-white px-4 py-2 text-sm font-semibold text-chop-ink-secondary hover:bg-chop-surface-gray disabled:opacity-50"
         >
-          Garder la commande
+          {t('orderPrepPreorderCancelKeep')}
         </button>
         <button
           type="button"
@@ -239,7 +245,9 @@ function PreOrderCancelCta({ order, onDone }: { order: VendorOrder; onDone: () =
           disabled={busy}
           className="flex-1 rounded-full bg-chop-danger px-4 py-2 text-sm font-bold text-white shadow-card hover:bg-chop-danger/90 disabled:opacity-50"
         >
-          {busy ? '…' : `Annuler (-${formatXAF(penalty)})`}
+          {busy
+            ? t('saveProgress')
+            : t('orderPrepPreorderCancelConfirm', { penalty: formatXAF(penalty) })}
         </button>
       </div>
     </div>
@@ -255,6 +263,7 @@ function PrepChecklistPanel({
   preparedCount: number;
   onChange: () => void;
 }) {
+  const t = useTranslations('Vendor');
   // Optimistic toggle: flip locally first, then call the API. If the call
   // fails, revert and surface the error. Without this the perceived lag on
   // a busy 3G connection makes the checklist feel broken.
@@ -274,14 +283,15 @@ function PrepChecklistPanel({
       setOptimistic((m) => ({ ...m, [itemId]: currentPrepared }));
       const msg =
         err instanceof ApiClientError
-          ? ((err.body as { message?: string } | undefined)?.message ?? `Erreur ${err.status}`)
+          ? ((err.body as { message?: string } | undefined)?.message ??
+            t('errorPrefix', { status: err.status }))
           : (err as Error).message;
-      window.alert(msg ?? 'Échec de la mise à jour');
+      window.alert(msg ?? t('orderPrepUpdateFailed'));
     } finally {
       setBusy((s) => {
-        const next = new Set(s);
-        next.delete(itemId);
-        return next;
+        const nextSet = new Set(s);
+        nextSet.delete(itemId);
+        return nextSet;
       });
     }
   };
@@ -290,10 +300,10 @@ function PrepChecklistPanel({
     <section className="mt-5 rounded-2xl bg-chop-card-white p-4 shadow-card">
       <header className="flex items-center justify-between border-b border-divider pb-3">
         <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
-          Articles à préparer
+          {t('orderPrepArticlesHeading')}
         </p>
         <p className="font-mono text-xs font-semibold tabular-nums text-chop-ink">
-          {preparedCount} / {order.items.length} prêts
+          {t('orderPrepArticlesRatio', { prepared: preparedCount, total: order.items.length })}
         </p>
       </header>
       <ul className="mt-3 space-y-2">
@@ -371,21 +381,21 @@ function ProgressBar({
 }
 
 function PickupCodePanel({ order }: { order: VendorOrder }) {
+  const t = useTranslations('Vendor');
   return (
     <section className="mt-5 rounded-2xl bg-chop-card-white p-5 shadow-card">
       <div className="flex flex-col items-center text-center">
         <span className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
-          Code à donner au livreur
+          {t('orderPrepPickupCodeLabel')}
         </span>
         <p
           className="mt-2 font-mono text-5xl font-extrabold tracking-[0.25em] text-chop-red"
-          aria-label={`Code pickup ${order.pickupCode ?? ''}`}
+          aria-label={t('orderPrepPickupCodeAria', { code: order.pickupCode ?? '' })}
         >
           {order.pickupCode ?? '----'}
         </p>
         <p className="mt-3 max-w-xs text-xs text-muted-foreground">
-          Le livreur a été notifié. Donne-lui ce code à la remise du sac pour confirmer la prise en
-          charge.
+          {t('orderPrepPickupCodeHint')}
         </p>
       </div>
     </section>
@@ -405,16 +415,15 @@ function ReadyCta({
   onDone: () => void;
   onError: (msg: string) => void;
 }) {
+  const t = useTranslations('Vendor');
   const qc = useQueryClient();
   const [busy, setBusy] = React.useState(false);
 
   if (isReady) {
     return (
       <div className="mt-5 rounded-2xl border border-chop-mboue/30 bg-chop-mboue-light p-4 text-center">
-        <p className="text-sm font-bold text-chop-mboue">✅ Commande prête — livreur en route</p>
-        <p className="mt-1 text-xs text-chop-mboue/80">
-          Tu peux revenir au dashboard. On te ping quand la livraison est terminée.
-        </p>
+        <p className="text-sm font-bold text-chop-mboue">{t('orderPrepReadyMessage')}</p>
+        <p className="mt-1 text-xs text-chop-mboue/80">{t('orderPrepReadyMessageSub')}</p>
       </div>
     );
   }
@@ -432,9 +441,10 @@ function ReadyCta({
     } catch (err) {
       const msg =
         err instanceof ApiClientError
-          ? ((err.body as { message?: string } | undefined)?.message ?? `Erreur ${err.status}`)
+          ? ((err.body as { message?: string } | undefined)?.message ??
+            t('errorPrefix', { status: err.status }))
           : (err as Error).message;
-      onError(msg ?? 'Échec');
+      onError(msg ?? t('orderPrepFail'));
     } finally {
       setBusy(false);
     }
@@ -448,7 +458,7 @@ function ReadyCta({
       onClick={submit}
       className="mt-5 w-full gap-2 bg-chop-red text-base shadow-card hover:bg-chop-red/90 disabled:opacity-50"
     >
-      {busy ? '…' : 'Commande prête — appeler livreur 🛵'}
+      {busy ? t('saveProgress') : t('orderPrepReadyCta')}
     </Button>
   );
 }
@@ -460,6 +470,7 @@ function ElapsedTimer({
   fromIso: string | null;
   status: VendorOrder['status'];
 }) {
+  const t = useTranslations('Vendor');
   const fromMs = React.useMemo(() => (fromIso ? new Date(fromIso).getTime() : null), [fromIso]);
   const [now, setNow] = React.useState(() => Date.now());
   const isActive = status === 'ACCEPTED' || status === 'IN_PREP';
@@ -484,47 +495,47 @@ function ElapsedTimer({
         {mm}:{ss}
       </p>
       <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-        En préparation
+        {t('orderPrepElapsedLabel')}
       </p>
     </div>
   );
 }
 
 function DoneView({ order }: { order: VendorOrder }) {
+  const t = useTranslations('Vendor');
   const headline =
     order.status === 'PICKED_UP'
-      ? 'Livraison en cours'
+      ? t('orderPrepDoneHeadingPickedUp')
       : order.status === 'DELIVERED'
-        ? 'Livrée 🎉'
+        ? t('orderPrepDoneHeadingDelivered')
         : order.status === 'REFUSED' || order.status === 'EXPIRED'
-          ? 'Commande refusée'
-          : 'Commande annulée';
+          ? t('orderPrepDoneHeadingRefused')
+          : t('orderPrepDoneHeadingCancelled');
   return (
     <Shell>
       <BackBar />
       <div className="mt-12 flex flex-col items-center text-center">
         <h1 className="text-2xl font-extrabold tracking-tight">{headline}</h1>
-        <p className="mt-1 max-w-xs text-sm text-muted-foreground">
-          Cette commande n&apos;est plus dans la file d&apos;attente cuisine.
-        </p>
+        <p className="mt-1 max-w-xs text-sm text-muted-foreground">{t('orderPrepDoneSub')}</p>
       </div>
       <OrderStepper className="mt-8" status={order.status} />
       <Link
         href="/vendor"
         className="mt-8 inline-flex w-full items-center justify-center gap-2 rounded-full bg-chop-ink px-4 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-chop-ink/90"
       >
-        Retour au dashboard
+        {t('ctaBackDashboard')}
       </Link>
     </Shell>
   );
 }
 
 function BackBar() {
+  const t = useTranslations('Vendor');
   return (
     <Link
       href="/vendor"
       className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-chop-card-white text-chop-ink shadow-card transition-colors hover:bg-chop-surface-gray"
-      aria-label="Retour au dashboard"
+      aria-label={t('ariaBack')}
     >
       <ChevronLeft className="h-5 w-5" aria-hidden />
     </Link>
@@ -569,6 +580,7 @@ function EmptyState({
 // proxy (Story 3.17). Customer call always available during prep; rider
 // call only after dispatch assigns one.
 function VendorCallActions({ order }: { order: VendorOrder }) {
+  const t = useTranslations('Vendor');
   const [busy, setBusy] = React.useState<'consumer' | 'rider' | null>(null);
 
   const call = async (target: 'consumer' | 'rider') => {
@@ -580,13 +592,14 @@ function VendorCallActions({ order }: { order: VendorOrder }) {
           : `/api/v1/orders/${order.id}/vendor-call-rider`;
       await apiRaw.post(endpoint, {});
       window.alert(
-        target === 'consumer'
-          ? 'Le client reçoit ton appel. Ton téléphone va sonner.'
-          : 'Le livreur reçoit ton appel. Ton téléphone va sonner.',
+        target === 'consumer' ? t('orderPrepCallConsumerSuccess') : t('orderPrepCallRiderSuccess'),
       );
     } catch (err) {
-      const msg = err instanceof ApiClientError ? `Erreur ${err.status}` : (err as Error).message;
-      window.alert(`Appel impossible : ${msg}`);
+      const msg =
+        err instanceof ApiClientError
+          ? t('errorPrefix', { status: err.status })
+          : (err as Error).message;
+      window.alert(t('orderPrepCallImpossible', { message: msg }));
     } finally {
       setBusy(null);
     }
@@ -604,7 +617,7 @@ function VendorCallActions({ order }: { order: VendorOrder }) {
         onClick={() => call('consumer')}
         disabled={busy !== null}
       >
-        {busy === 'consumer' ? 'Appel…' : '📞 Appeler le client'}
+        {busy === 'consumer' ? t('orderPrepCallConsumerBusy') : t('orderPrepCallConsumer')}
       </Button>
       <Button
         type="button"
@@ -613,9 +626,9 @@ function VendorCallActions({ order }: { order: VendorOrder }) {
         className="flex-1"
         onClick={() => call('rider')}
         disabled={busy !== null || !riderAssigned}
-        title={riderAssigned ? '' : 'Livreur pas encore assigné'}
+        title={riderAssigned ? '' : t('orderPrepRiderNotAssigned')}
       >
-        {busy === 'rider' ? 'Appel…' : '🛵 Appeler le livreur'}
+        {busy === 'rider' ? t('orderPrepCallRiderBusy') : t('orderPrepCallRider')}
       </Button>
     </div>
   );

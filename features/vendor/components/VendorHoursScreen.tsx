@@ -5,19 +5,29 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { ChevronLeft, Clock } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { BrandInput, FormSection } from '@/components/forms/onboarding-atoms';
 import { cn } from '@/lib/utils';
 import { DAY_KEYS, useVendorHours, type DayKey, type WeeklyHours } from '../hooks/useVendorHours';
 
-const DAY_LABELS: Record<DayKey, string> = {
-  mon: 'Lundi',
-  tue: 'Mardi',
-  wed: 'Mercredi',
-  thu: 'Jeudi',
-  fri: 'Vendredi',
-  sat: 'Samedi',
-  sun: 'Dimanche',
+type DayLabelKey =
+  | 'hoursMonday'
+  | 'hoursTuesday'
+  | 'hoursWednesday'
+  | 'hoursThursday'
+  | 'hoursFriday'
+  | 'hoursSaturday'
+  | 'hoursSunday';
+
+const DAY_LABEL_KEYS: Record<DayKey, DayLabelKey> = {
+  mon: 'hoursMonday',
+  tue: 'hoursTuesday',
+  wed: 'hoursWednesday',
+  thu: 'hoursThursday',
+  fri: 'hoursFriday',
+  sat: 'hoursSaturday',
+  sun: 'hoursSunday',
 };
 
 // Sensible defaults for a fresh row — restaurants in Douala typically open
@@ -58,6 +68,7 @@ function rowsToHours(rows: Record<DayKey, Row>): WeeklyHours {
  * "Aucune horaire" hint when the vendor unchecks all days.
  */
 export function VendorHoursScreen() {
+  const t = useTranslations('Vendor');
   const hoursState = useVendorHours();
   const [rows, setRows] = React.useState<Record<DayKey, Row> | null>(null);
 
@@ -90,10 +101,10 @@ export function VendorHoursScreen() {
     return (
       <Shell>
         <EmptyState
-          title="Connexion requise"
-          message="Connecte-toi pour gérer tes horaires."
+          title={t('hoursAuthTitle')}
+          message={t('hoursAuthBody')}
           ctaHref="/login?next=/vendor/hours"
-          ctaLabel="Se connecter"
+          ctaLabel={t('hoursAuthCta')}
         />
       </Shell>
     );
@@ -144,27 +155,27 @@ export function VendorHoursScreen() {
       <header className="mt-3 flex items-start justify-between gap-3">
         <div>
           <p className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
-            Mes horaires
+            {t('hoursEyebrow')}
           </p>
-          <h1 className="mt-0.5 text-xl font-extrabold tracking-tight">Quand es-tu ouvert ?</h1>
+          <h1 className="mt-0.5 text-xl font-extrabold tracking-tight">{t('hoursH1')}</h1>
         </div>
         <NowChip isOpen={isOpen} isOpenNow={isOpenNow} />
       </header>
 
       <p className="mt-3 rounded-2xl bg-chop-warm p-3 text-[12px] font-medium leading-snug text-chop-ink-secondary">
-        ⏱️ Tes horaires définissent quand les clients peuvent commander chez toi. N&apos;oublie pas
-        de cliquer <span className="font-bold text-chop-ink">Ouvrir</span> sur ton tableau de bord —
-        sans le toggle, tu restes invisible même pendant tes heures.
+        {t.rich('hoursWarn', {
+          strong: (chunks) => <span className="font-bold text-chop-ink">{chunks}</span>,
+        })}
       </p>
 
       <div className="mt-5">
-        <FormSection num="01" title="Semaine">
+        <FormSection num="01" title={t('hoursWeekSection')}>
           <ul className="space-y-2.5">
             {DAY_KEYS.map((day) => (
               <li key={day}>
                 <DayRow
                   day={day}
-                  label={DAY_LABELS[day]}
+                  label={t(DAY_LABEL_KEYS[day])}
                   row={rows[day]}
                   onToggle={() => toggle(day)}
                   onChangeTime={(field, value) => setTime(day, field, value)}
@@ -174,8 +185,9 @@ export function VendorHoursScreen() {
           </ul>
           {!anyEnabled ? (
             <p className="mt-2 text-[12px] font-medium text-amber-700">
-              Aucune horaire configurée — tu seras visible uniquement quand tu cliqueras{' '}
-              <span className="font-bold">Ouvrir</span> sur le dashboard.
+              {t.rich('hoursNoScheduleWarning', {
+                strong: (chunks) => <span className="font-bold">{chunks}</span>,
+              })}
             </p>
           ) : null}
         </FormSection>
@@ -195,7 +207,7 @@ export function VendorHoursScreen() {
         className="mt-5 w-full gap-2 bg-chop-red text-base shadow-card hover:bg-chop-red/90"
       >
         <Clock className="h-5 w-5" aria-hidden />
-        {hoursState.saving ? '…' : 'Enregistrer'}
+        {hoursState.saving ? t('saveProgress') : t('hoursSaveCta')}
       </Button>
 
       <Link
@@ -203,7 +215,7 @@ export function VendorHoursScreen() {
         className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-full border border-divider bg-chop-card-white px-4 py-3 text-sm font-semibold text-muted-foreground transition-colors hover:bg-chop-surface-gray"
       >
         <ChevronLeft className="h-4 w-4" aria-hidden />
-        Retour au dashboard
+        {t('ctaBackDashboard')}
       </Link>
     </Shell>
   );
@@ -222,6 +234,7 @@ function DayRow({
   onToggle: () => void;
   onChangeTime: (field: 'open' | 'close', value: string) => void;
 }) {
+  const t = useTranslations('Vendor');
   // Guard against malformed times (some browsers may yield "" on a blur);
   // fall back to the previous valid value via the input's required attr.
   const inputId = `hours-${day}`;
@@ -232,7 +245,11 @@ function DayRow({
         row.enabled ? 'border-chop-red/30 bg-chop-red-light' : 'border-divider',
       )}
     >
-      <Switch checked={row.enabled} onChange={onToggle} ariaLabel={`Activer ${label}`} />
+      <Switch
+        checked={row.enabled}
+        onChange={onToggle}
+        ariaLabel={t('hoursAriaActivate', { day: label })}
+      />
       <span
         className={cn(
           'w-20 shrink-0 text-[13px] font-bold uppercase tracking-wider',
@@ -263,7 +280,7 @@ function DayRow({
         </div>
       ) : (
         <span className="flex-1 text-right text-[12px] font-medium text-muted-foreground">
-          Fermé
+          {t('hoursDayClosed')}
         </span>
       )}
     </div>
@@ -302,7 +319,8 @@ function Switch({
 }
 
 function NowChip({ isOpen, isOpenNow }: { isOpen: boolean; isOpenNow: boolean }) {
-  const label = isOpenNow ? 'Ouvert maintenant' : isOpen ? 'Hors horaire' : 'Fermé';
+  const t = useTranslations('Vendor');
+  const label = isOpenNow ? t('hoursOpenNow') : isOpen ? t('hoursOffHours') : t('hoursClosed');
   return (
     <span
       className={cn(
@@ -320,11 +338,12 @@ function NowChip({ isOpen, isOpenNow }: { isOpen: boolean; isOpenNow: boolean })
 }
 
 function BackBar() {
+  const t = useTranslations('Vendor');
   return (
     <Link
       href="/vendor"
       className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-chop-card-white text-chop-ink shadow-card transition-colors hover:bg-chop-surface-gray"
-      aria-label="Retour au dashboard"
+      aria-label={t('ariaBack')}
     >
       <ChevronLeft className="h-5 w-5" aria-hidden />
     </Link>

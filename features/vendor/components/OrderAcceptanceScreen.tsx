@@ -4,6 +4,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft, MapPin, Check, X } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { useQueryClient } from '@tanstack/react-query';
 import { apiRaw, ApiClientError } from '@/lib/api/api-client';
@@ -17,12 +18,21 @@ const ACCEPTANCE_TTL_SECONDS = 60; // mirrors chopnow-api/src/modules/orders/ord
 
 const formatXAF = (n: number) => `${n.toLocaleString('fr-FR')} FCFA`;
 
-const REFUSAL_REASONS = [
-  { value: 'ITEM_OUT_OF_STOCK', label: 'Plat épuisé' },
-  { value: 'CLOSED', label: 'Fermé' },
-  { value: 'TOO_MANY_ORDERS', label: 'Trop de commandes' },
-  { value: 'POWER_OUTAGE', label: 'Coupure de courant (non pénalisant)' },
-  { value: 'OTHER', label: 'Autre' },
+type RefusalReason = 'ITEM_OUT_OF_STOCK' | 'CLOSED' | 'TOO_MANY_ORDERS' | 'POWER_OUTAGE' | 'OTHER';
+
+type RefusalReasonLabelKey =
+  | 'orderAcceptanceRefuseReasonItemOos'
+  | 'orderAcceptanceRefuseReasonClosed'
+  | 'orderAcceptanceRefuseReasonTooMany'
+  | 'orderAcceptanceRefuseReasonPowerOutage'
+  | 'orderAcceptanceRefuseReasonOther';
+
+const REFUSAL_REASONS: ReadonlyArray<{ value: RefusalReason; labelKey: RefusalReasonLabelKey }> = [
+  { value: 'ITEM_OUT_OF_STOCK', labelKey: 'orderAcceptanceRefuseReasonItemOos' },
+  { value: 'CLOSED', labelKey: 'orderAcceptanceRefuseReasonClosed' },
+  { value: 'TOO_MANY_ORDERS', labelKey: 'orderAcceptanceRefuseReasonTooMany' },
+  { value: 'POWER_OUTAGE', labelKey: 'orderAcceptanceRefuseReasonPowerOutage' },
+  { value: 'OTHER', labelKey: 'orderAcceptanceRefuseReasonOther' },
 ] as const;
 
 interface Props {
@@ -30,6 +40,7 @@ interface Props {
 }
 
 export function OrderAcceptanceScreen({ orderId }: Props) {
+  const t = useTranslations('Vendor');
   const orderState = useVendorOrder(orderId);
 
   if (orderState.status === 'loading') {
@@ -47,10 +58,10 @@ export function OrderAcceptanceScreen({ orderId }: Props) {
     return (
       <Shell>
         <EmptyState
-          title="Connexion requise"
-          message="Connecte-toi pour voir cette commande."
+          title={t('orderAcceptanceLoadingTitle')}
+          message={t('orderAcceptanceLoadingBody')}
           ctaHref="/login?next=/vendor"
-          ctaLabel="Se connecter"
+          ctaLabel={t('menuScreenAuthCta')}
         />
       </Shell>
     );
@@ -60,10 +71,10 @@ export function OrderAcceptanceScreen({ orderId }: Props) {
     return (
       <Shell>
         <EmptyState
-          title="Commande introuvable"
-          message="Elle a peut-être été annulée ou n'existe plus."
+          title={t('orderAcceptanceNotFoundTitle')}
+          message={t('orderAcceptanceNotFoundBody')}
           ctaHref="/vendor"
-          ctaLabel="Retour au dashboard"
+          ctaLabel={t('ctaBackDashboard')}
         />
       </Shell>
     );
@@ -73,10 +84,10 @@ export function OrderAcceptanceScreen({ orderId }: Props) {
     return (
       <Shell>
         <EmptyState
-          title="Erreur de chargement"
+          title={t('orderAcceptanceErrTitle')}
           message={orderState.message}
           ctaHref="/vendor"
-          ctaLabel="Retour au dashboard"
+          ctaLabel={t('ctaBackDashboard')}
         />
       </Shell>
     );
@@ -86,6 +97,7 @@ export function OrderAcceptanceScreen({ orderId }: Props) {
 }
 
 function DecisionView({ order }: { order: VendorOrder }) {
+  const t = useTranslations('Vendor');
   const router = useRouter();
   const decidable = order.status === 'PENDING' || order.status === 'CONFIRMED';
 
@@ -100,13 +112,10 @@ function DecisionView({ order }: { order: VendorOrder }) {
           aria-hidden
           className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-chop-red"
         >
-          — Nouvelle
+          {t('orderAcceptanceEyebrowNew')}
         </p>
-        <h1 className="mt-2 text-3xl font-extrabold tracking-tight">Nouvelle commande&nbsp;!</h1>
-        <p className="mt-1.5 max-w-xs text-sm text-muted-foreground">
-          Accepte ou refuse avant la fin du compte à rebours. Sinon elle sera refusée
-          automatiquement.
-        </p>
+        <h1 className="mt-2 text-3xl font-extrabold tracking-tight">{t('orderAcceptanceH1')}</h1>
+        <p className="mt-1.5 max-w-xs text-sm text-muted-foreground">{t('orderAcceptanceBody')}</p>
 
         {order.acceptanceDeadlineAt ? (
           <CountdownCircle
@@ -115,7 +124,7 @@ function DecisionView({ order }: { order: VendorOrder }) {
             ttlSeconds={ACCEPTANCE_TTL_SECONDS}
           />
         ) : (
-          <p className="mt-8 text-sm text-amber-700">Pas de délai défini — décide quand tu veux.</p>
+          <p className="mt-8 text-sm text-amber-700">{t('orderAcceptanceNoDeadline')}</p>
         )}
       </div>
 
@@ -133,20 +142,21 @@ function DecisionView({ order }: { order: VendorOrder }) {
         className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-full border border-divider bg-chop-card-white px-4 py-3 text-sm font-semibold text-muted-foreground transition-colors hover:bg-chop-surface-gray"
       >
         <ChevronLeft className="h-4 w-4" aria-hidden />
-        Retour au dashboard
+        {t('ctaBackDashboard')}
       </Link>
     </Shell>
   );
 }
 
 function TerminalView({ order }: { order: VendorOrder }) {
+  const t = useTranslations('Vendor');
   const label =
     order.status === 'ACCEPTED' || order.status === 'IN_PREP' || order.status === 'READY_PICKUP'
-      ? 'Acceptée ✓'
+      ? t('orderAcceptanceTerminalAccepted')
       : order.status === 'REFUSED'
-        ? 'Refusée'
+        ? t('orderAcceptanceTerminalRefused')
         : order.status === 'CANCELLED'
-          ? 'Annulée'
+          ? t('orderAcceptanceTerminalCancelled')
           : order.status;
   const isPositive =
     order.status === 'ACCEPTED' || order.status === 'IN_PREP' || order.status === 'READY_PICKUP';
@@ -161,11 +171,11 @@ function TerminalView({ order }: { order: VendorOrder }) {
             isPositive ? 'text-chop-mboue' : 'text-chop-ink-secondary',
           )}
         >
-          — Statut
+          {t('orderAcceptanceTerminalEyebrow')}
         </p>
         <h1 className="mt-2 text-3xl font-extrabold tracking-tight">{label}</h1>
         <p className="mt-1.5 max-w-xs text-sm text-muted-foreground">
-          Cette commande n&apos;attend plus de décision.
+          {t('orderAcceptanceTerminalNoDecision')}
         </p>
       </div>
 
@@ -175,19 +185,20 @@ function TerminalView({ order }: { order: VendorOrder }) {
         href="/vendor"
         className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-full bg-chop-ink px-4 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-chop-ink/90"
       >
-        Retour au dashboard
+        {t('ctaBackDashboard')}
       </Link>
     </Shell>
   );
 }
 
 function OrderSummaryCard({ order }: { order: VendorOrder }) {
+  const t = useTranslations('Vendor');
   return (
     <section className="mt-6 rounded-2xl bg-chop-card-white p-4 shadow-card">
       <header className="flex items-baseline justify-between border-b border-divider pb-3">
         <div>
           <p className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
-            Commande
+            {t('orderAcceptanceSummaryEyebrow')}
           </p>
           <p className="mt-0.5 text-base font-extrabold tracking-wide">{order.code}</p>
         </div>
@@ -211,7 +222,7 @@ function OrderSummaryCard({ order }: { order: VendorOrder }) {
         ))}
       </ul>
       <footer className="mt-3 flex items-center justify-between border-t border-divider pt-3">
-        <span className="text-sm font-semibold">Total commande</span>
+        <span className="text-sm font-semibold">{t('orderAcceptanceSummaryTotal')}</span>
         <span className="text-lg font-extrabold text-chop-red">{formatXAF(order.totalXAF)}</span>
       </footer>
       {order.noteForVendor ? (
@@ -222,6 +233,7 @@ function OrderSummaryCard({ order }: { order: VendorOrder }) {
 }
 
 function DeliveryCard({ order }: { order: VendorOrder }) {
+  const t = useTranslations('Vendor');
   return (
     <section className="mt-3 flex items-start gap-3 rounded-2xl bg-chop-card-white p-4 shadow-card">
       <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-chop-red-light text-chop-red">
@@ -229,12 +241,14 @@ function DeliveryCard({ order }: { order: VendorOrder }) {
       </span>
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-bold">
-          Livraison · {order.deliveryQuartier}
-          {order.deliveryLandmark ? `, ${order.deliveryLandmark}` : ''}
+          {order.deliveryLandmark
+            ? t('orderAcceptanceDeliveryLabelLandmark', {
+                quartier: order.deliveryQuartier,
+                landmark: order.deliveryLandmark,
+              })
+            : t('orderAcceptanceDeliveryLabel', { quartier: order.deliveryQuartier })}
         </p>
-        <p className="mt-0.5 text-xs text-muted-foreground">
-          Livreur assigné automatiquement après acceptation
-        </p>
+        <p className="mt-0.5 text-xs text-muted-foreground">{t('orderAcceptanceDeliveryAuto')}</p>
       </div>
     </section>
   );
@@ -249,11 +263,11 @@ function DecisionButtons({
   onDone: () => void;
   onError: (msg: string) => void;
 }) {
+  const t = useTranslations('Vendor');
   const qc = useQueryClient();
   const [busy, setBusy] = React.useState<null | 'accept' | 'refuse'>(null);
   const [refusing, setRefusing] = React.useState(false);
-  const [reason, setReason] =
-    React.useState<(typeof REFUSAL_REASONS)[number]['value']>('ITEM_OUT_OF_STOCK');
+  const [reason, setReason] = React.useState<RefusalReason>('ITEM_OUT_OF_STOCK');
 
   const invalidateOrders = () => {
     // Vendor list (both immediate + preorder tabs) and the single-order
@@ -269,7 +283,7 @@ function DecisionButtons({
       invalidateOrders();
       onDone();
     } catch (err) {
-      onError(extract(err) ?? 'Acceptation échouée');
+      onError(extract(err) ?? t('orderAcceptanceAcceptFailed'));
     } finally {
       setBusy(null);
     }
@@ -282,7 +296,7 @@ function DecisionButtons({
       invalidateOrders();
       onDone();
     } catch (err) {
-      onError(extract(err) ?? 'Refus échoué');
+      onError(extract(err) ?? t('orderAcceptanceRefuseFailed'));
     } finally {
       setBusy(null);
       setRefusing(false);
@@ -292,15 +306,15 @@ function DecisionButtons({
   if (refusing) {
     return (
       <section className="mt-6 space-y-3 rounded-2xl bg-chop-card-white p-4 shadow-card">
-        <p className="text-sm font-semibold">Motif du refus</p>
+        <p className="text-sm font-semibold">{t('orderAcceptanceMotifLabel')}</p>
         <select
           value={reason}
-          onChange={(e) => setReason(e.target.value as typeof reason)}
+          onChange={(e) => setReason(e.target.value as RefusalReason)}
           className="w-full rounded-xl border border-divider bg-background px-3 py-2.5 text-sm focus:border-chop-red focus:outline-none focus:ring-2 focus:ring-chop-red/30"
         >
           {REFUSAL_REASONS.map((r) => (
             <option key={r.value} value={r.value}>
-              {r.label}
+              {t(r.labelKey)}
             </option>
           ))}
         </select>
@@ -312,7 +326,7 @@ function DecisionButtons({
             onClick={submitRefuse}
             className="flex-1"
           >
-            {busy === 'refuse' ? '…' : 'Confirmer le refus'}
+            {busy === 'refuse' ? t('saveProgress') : t('orderAcceptanceConfirmRefuse')}
           </Button>
           <Button
             type="button"
@@ -320,7 +334,7 @@ function DecisionButtons({
             onClick={() => setRefusing(false)}
             disabled={busy !== null}
           >
-            Annuler
+            {t('orderAcceptanceCancelRefuse')}
           </Button>
         </div>
       </section>
@@ -337,7 +351,7 @@ function DecisionButtons({
         className="flex-[2] gap-2 bg-chop-red text-base shadow-card hover:bg-chop-red/90"
       >
         <Check className="h-5 w-5" aria-hidden />
-        {busy === 'accept' ? '…' : 'Accepter'}
+        {busy === 'accept' ? t('saveProgress') : t('orderAcceptanceCtaAccept')}
       </Button>
       <Button
         type="button"
@@ -348,7 +362,7 @@ function DecisionButtons({
         className="flex-1 gap-2 border-chop-danger text-chop-danger hover:bg-chop-danger-light"
       >
         <X className="h-5 w-5" aria-hidden />
-        Refuser
+        {t('orderAcceptanceCtaRefuse')}
       </Button>
     </section>
   );
@@ -392,6 +406,7 @@ function EmptyState({
 }
 
 function labelForPayment(m: VendorOrder['paymentMethod']): string {
+  // MTN MoMo / Orange Money — brand names, locale-independent.
   return m === 'MTN_MOMO' ? 'MTN MoMo' : 'Orange Money';
 }
 

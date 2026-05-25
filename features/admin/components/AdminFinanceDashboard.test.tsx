@@ -1,5 +1,6 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { renderWithIntlSync as render } from '@/tests/render-with-intl';
 import { AdminFinanceDashboard } from './AdminFinanceDashboard';
 
 vi.mock('../api', () => ({
