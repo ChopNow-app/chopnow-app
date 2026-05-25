@@ -1,5 +1,8 @@
+'use client';
+
 import Link from 'next/link';
 import * as React from 'react';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -87,16 +90,19 @@ export interface AuthRequiredProps {
  */
 export function AuthRequired({
   theme = 'light',
-  title = 'Connexion requise',
+  title,
   subtitle,
   loginHref,
-  ctaLabel = 'Se connecter',
+  ctaLabel,
   secondary,
   features,
   reassurance,
   className,
 }: AuthRequiredProps) {
+  const t = useTranslations('AuthRequired');
   const isDark = theme === 'dark';
+  const resolvedTitle = title ?? t('title');
+  const resolvedCtaLabel = ctaLabel ?? t('ctaLogin');
 
   return (
     <div
@@ -121,9 +127,11 @@ export function AuthRequired({
             aria-hidden
             className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-chop-red"
           >
-            — Accès
+            — {t('eyebrow')}
           </p>
-          <h2 className="mt-2 text-2xl font-extrabold tracking-tight md:text-[26px]">{title}</h2>
+          <h2 className="mt-2 text-2xl font-extrabold tracking-tight md:text-[26px]">
+            {resolvedTitle}
+          </h2>
           {subtitle ? (
             <p
               className={cn(
@@ -136,7 +144,7 @@ export function AuthRequired({
           ) : null}
 
           <Button asChild size={isDark ? 'jumbo' : 'default'} className="mt-5 w-full">
-            <Link href={loginHref}>{ctaLabel}</Link>
+            <Link href={loginHref}>{resolvedCtaLabel}</Link>
           </Button>
 
           {secondary ? (
@@ -162,7 +170,7 @@ export function AuthRequired({
                 isDark ? 'text-white/55' : 'text-chop-ink-secondary',
               )}
             >
-              Ce que tu débloques
+              {t('featuresHeading')}
             </p>
             <ul className="mt-4 space-y-2.5">
               {features.map((f, i) => (

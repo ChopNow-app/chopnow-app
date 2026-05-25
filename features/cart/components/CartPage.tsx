@@ -4,6 +4,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
+import { useTranslations } from 'next-intl';
 import { AuthRequired } from '@/components/ui/auth-required';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -627,6 +628,7 @@ function CouponPanel({
 }
 
 function AuthRequiredPanel() {
+  const t = useTranslations('AuthRequired');
   // Mark logout-state so the next view of /login redirects back to /cart on success.
   React.useEffect(() => {
     auth.clear();
@@ -634,15 +636,15 @@ function AuthRequiredPanel() {
   return (
     <AuthRequired
       theme="light"
-      subtitle="Ton panier reste rempli — connecte-toi pour finaliser ta commande."
+      subtitle={t('subtitleCart')}
       loginHref="/login?next=/cart"
       features={[
-        { icon: '🛒', label: 'Ton panier déjà rempli reste sauvegardé' },
-        { icon: '💳', label: 'Paiement MTN MoMo + Orange Money' },
-        { icon: '📍', label: 'Livraison à ton adresse en 30 min' },
-        { icon: '🔔', label: 'Notifications quand ton plat arrive' },
+        { icon: '🛒', label: t('featureCart') },
+        { icon: '💳', label: t('featurePayment') },
+        { icon: '📍', label: t('featureDelivery') },
+        { icon: '🔔', label: t('featureNotifications') },
       ]}
-      reassurance="Connexion par OTP WhatsApp · 30 secondes · pas de carte bancaire."
+      reassurance={t('reassurance')}
     />
   );
 }
