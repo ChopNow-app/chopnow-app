@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? '';
@@ -27,6 +28,7 @@ interface DeliveryMapProps {
  * the visual preview.
  */
 export function DeliveryMap({ lat, lng, pickupLat, pickupLng, label }: DeliveryMapProps) {
+  const t = useTranslations('Livreur');
   const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
   const hasPickup = typeof pickupLat === 'number' && typeof pickupLng === 'number';
   const staticUrl = MAPBOX_TOKEN
@@ -40,7 +42,7 @@ export function DeliveryMap({ lat, lng, pickupLat, pickupLng, label }: DeliveryM
           href={mapsUrl}
           target="_blank"
           rel="noopener noreferrer"
-          aria-label={`Ouvrir l'itinéraire vers ${label ?? 'la livraison'} dans Maps`}
+          aria-label={t('mapsAriaOpen', { target: label ?? t('mapsAriaTargetDelivery') })}
           className="block overflow-hidden rounded-lg border border-white/10"
         >
           {/* Mapbox already optimizes the PNG — Next/Image would require host
@@ -48,7 +50,7 @@ export function DeliveryMap({ lat, lng, pickupLat, pickupLng, label }: DeliveryM
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={staticUrl}
-            alt={`Position de livraison ${label ? `— ${label}` : ''}`}
+            alt={t('mapsAltPosition', { label: label ? `— ${label}` : '' })}
             className="h-44 w-full object-cover"
             loading="lazy"
           />
@@ -57,7 +59,7 @@ export function DeliveryMap({ lat, lng, pickupLat, pickupLng, label }: DeliveryM
 
       <Button asChild variant="outline" className="w-full">
         <a href={mapsUrl} target="_blank" rel="noopener noreferrer">
-          🗺️ {hasPickup ? "Ouvrir l'itinéraire dans Maps" : 'Ouvrir dans Maps'}
+          🗺️ {hasPickup ? t('mapsOpenItinerary') : t('mapsOpen')}
         </a>
       </Button>
     </div>
