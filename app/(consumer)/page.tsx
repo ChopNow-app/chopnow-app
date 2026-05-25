@@ -69,8 +69,10 @@ export default function HomePage() {
         }}
       />
 
-      {/* ── Top nav — full-width band, content constrained ──────── */}
-      <header className="relative z-10 border-b border-divider/50">
+      {/* ── Top nav — mobile only. ConsumerTopNav in the root layout
+          takes over on lg+ with the same logo + the 4 navigation tabs
+          (mirrors the bottom nav for desktop parity). ───────────── */}
+      <header className="relative z-10 border-b border-divider/50 lg:hidden">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 md:px-8 lg:px-12">
           <span className="text-[15px] font-extrabold uppercase tracking-[0.18em] text-chop-ink md:text-[17px]">
             TChop<span className="text-chop-red">Now.</span>

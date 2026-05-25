@@ -5,6 +5,7 @@ import { Plus_Jakarta_Sans } from 'next/font/google';
 import { NextIntlClientProvider } from 'next-intl';
 import { getLocale, getMessages } from 'next-intl/server';
 import { ConsumerBottomNav } from '@/components/ConsumerBottomNav';
+import { ConsumerTopNav } from '@/components/ConsumerTopNav';
 import { PilotBanner } from '@/components/PilotBanner';
 import { RegisterServiceWorker } from '@/components/RegisterServiceWorker';
 import { Toaster } from '@/components/ui/toaster';
@@ -139,6 +140,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 "logged out". */}
             <SessionBoot />
             <PilotBanner />
+            {/* ConsumerTopNav appears at the top on lg+ viewports; both
+                nav components share the same hide-list so they're mutually
+                exclusive on non-consumer surfaces (admin/livreur/vendor). */}
+            <ConsumerTopNav />
             {/* pb-20 = 80px reserve for bottom nav (64px + safe-area-inset). */}
             {/* ConsumerBottomNav hides itself on admin/livreur/vendor routes. */}
             <div id="main-content" tabIndex={-1} className="min-h-dvh pb-20 outline-none lg:pb-0">
