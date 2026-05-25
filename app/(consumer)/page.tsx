@@ -1,5 +1,6 @@
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
+import { ShieldCheck, Bike, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { SiteFooter } from '@/components/SiteFooter';
 import { PwaRedirector } from '@/features/auth/components/PwaRedirector';
@@ -212,28 +213,50 @@ export default function HomePage() {
   );
 }
 
-/* ── Trust signals — short row of 3 chips ──────────────────────────── */
+/* ── Trust signals — 3 chips with lucide icons (matches the rest of
+       the site's icon system: ConsumerTopNav, AdminTabs, etc.). Emoji
+       icons were swapped out because they read as cheap/AI-generated
+       on a marketing surface and clashed with the editorial aesthetic. */
 function TrustRow() {
   return (
     <section className="relative z-10 mx-auto mt-16 max-w-7xl px-5 md:mt-24 md:px-8 lg:px-12">
       <div className="grid gap-3 md:grid-cols-3 md:gap-4">
-        <TrustChip icon="🔒" label="Paiement sécurisé" sub="MTN MoMo + Orange Money" />
-        <TrustChip icon="🛵" label="Livraison 30 min" sub="Par moto dans ton quartier" />
-        <TrustChip icon="💬" label="Support WhatsApp" sub="On répond 7j/7" />
+        <TrustChip
+          icon={<ShieldCheck className="h-5 w-5" strokeWidth={2} />}
+          label="Paiement sécurisé"
+          sub="MTN MoMo + Orange Money"
+        />
+        <TrustChip
+          icon={<Bike className="h-5 w-5" strokeWidth={2} />}
+          label="Livraison 30 min"
+          sub="Par moto dans ton quartier"
+        />
+        <TrustChip
+          icon={<MessageCircle className="h-5 w-5" strokeWidth={2} />}
+          label="Support WhatsApp"
+          sub="On répond 7j/7"
+        />
       </div>
     </section>
   );
 }
 
-function TrustChip({ icon, label, sub }: { icon: string; label: string; sub: string }) {
+function TrustChip({ icon, label, sub }: { icon: React.ReactNode; label: string; sub: string }) {
   return (
-    <div className="flex items-center gap-3 rounded-2xl border border-divider bg-chop-card-white p-4 shadow-card">
-      <span aria-hidden className="text-2xl">
+    <div className="flex items-start gap-4 rounded-2xl border border-divider bg-chop-card-white p-5">
+      <span
+        aria-hidden
+        className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-chop-red-light text-chop-red"
+      >
         {icon}
       </span>
       <div className="min-w-0">
-        <p className="text-[14px] font-extrabold leading-tight text-chop-ink">{label}</p>
-        <p className="mt-0.5 text-[12px] font-medium text-chop-ink-secondary">{sub}</p>
+        <p className="text-[14px] font-extrabold leading-tight text-chop-ink md:text-[15px]">
+          {label}
+        </p>
+        <p className="mt-1 text-[12px] font-medium leading-relaxed text-chop-ink-secondary md:text-[13px]">
+          {sub}
+        </p>
       </div>
     </div>
   );
