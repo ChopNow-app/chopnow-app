@@ -99,13 +99,20 @@ jobs:
           fi
 
           # Default to no release; promote based on what's in the log.
+          # NB: Use here-strings (`<<<`) instead of `echo "$X" | grep`.
+          # With `set -o pipefail` enabled (we want it for the rest of
+          # the script), grep's early-exit on first match kills echo
+          # with SIGPIPE → pipeline exit is non-zero → bash's `if`
+          # treats the whole expression as false → BUMP stays "none".
+          # Here-strings avoid the pipe entirely, so grep's exit code
+          # cleanly drives the conditional.
           BUMP=none
           # patch: at least one `fix:` (or `fix(scope):`)
-          if echo "$COMMITS" | grep -qE '^fix(\([^)]+\))?!?:'; then BUMP=patch; fi
+          if grep -qE '^fix(\([^)]+\))?!?:' <<< "$COMMITS"; then BUMP=patch; fi
           # minor: at least one `feat:` outranks patch
-          if echo "$COMMITS" | grep -qE '^feat(\([^)]+\))?!?:'; then BUMP=minor; fi
+          if grep -qE '^feat(\([^)]+\))?!?:' <<< "$COMMITS"; then BUMP=minor; fi
           # major: BREAKING CHANGE in body OR `!:` after type token
-          if echo "$COMMITS" | grep -qE '(BREAKING CHANGE:|^(feat|fix|chore|refactor)(\([^)]+\))?!:)'; then
+          if grep -qE '(BREAKING CHANGE:|^(feat|fix|chore|refactor)(\([^)]+\))?!:)' <<< "$COMMITS"; then
             BUMP=major
           fi
 
