@@ -24,21 +24,28 @@ export function PwaRedirector() {
 
   React.useEffect(() => {
     if (typeof window === 'undefined') return;
-    // Chrome, Safari iOS 16.4+, Android — `display-mode: standalone`
-    // matches when the page is rendering inside the installed PWA shell
-    // (no browser address bar). Falls back to false on engines that
-    // don't expose this media query; web visitors see the splash.
+    // Cover all three display-mode variants Chrome / Safari / Edge /
+    // Samsung Internet report for installed PWAs: `standalone` (default),
+    // `fullscreen` (Android opt-in via manifest), `minimal-ui` (Samsung
+    // Internet's default). Mirror the inline head-script logic in
+    // app/layout.tsx so both detection paths stay in sync.
+    const mm = window.matchMedia;
     const isStandalone =
-      window.matchMedia?.('(display-mode: standalone)').matches ||
+      (mm &&
+        (mm('(display-mode: standalone)').matches ||
+          mm('(display-mode: fullscreen)').matches ||
+          mm('(display-mode: minimal-ui)').matches)) ||
       // iOS Safari before 16.4 reports standalone via navigator instead
       // of the media query — cover the older devices too.
       (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
     if (isStandalone) {
-      // Go through /launch (the branded splash) for the proper
-      // OS-splash → app-splash → catalogue handoff. Matches what the
-      // inline head script in app/layout.tsx does for the synchronous
-      // case; this is the post-hydration fallback for environments
-      // that blocked the inline script (strict CSP, etc).
+      // No visibility:hidden here — by the time this React effect
+      // fires (post-hydration), the splash has already painted at
+      // least one frame, so hiding now is too late and would also
+      // get carried into /launch (router.replace = same document).
+      // The inline head script in app/layout.tsx handles the
+      // before-paint case; this is the engines-that-blocked-inline
+      // fallback.
       router.replace('/launch?source=pwa');
     }
   }, [router]);

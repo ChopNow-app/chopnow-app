@@ -99,9 +99,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             was too late — visible content for ~1 frame. This script is
             the synchronous fix; PwaRedirector stays as a fallback for
             engines that block inline scripts. */}
+        {/* Detection covers all three display modes Chrome/Safari report
+            for installed PWAs (`standalone`, `fullscreen`, `minimal-ui`)
+            + the legacy navigator.standalone bit for iOS < 16.4. Falling
+            back to a no-op on engines that throw is intentional — web
+            visitors should still see the splash unharmed. */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{if(location.pathname!=="/")return;var s=window.matchMedia&&window.matchMedia("(display-mode: standalone)").matches;var i=window.navigator&&window.navigator.standalone===true;if(s||i)location.replace("/launch?source=pwa");}catch(e){}})();`,
+            __html: `(function(){try{if(location.pathname!=="/")return;var mm=window.matchMedia;var s=mm&&(mm("(display-mode: standalone)").matches||mm("(display-mode: fullscreen)").matches||mm("(display-mode: minimal-ui)").matches);var i=window.navigator&&window.navigator.standalone===true;if(s||i){document.documentElement.style.visibility="hidden";location.replace("/launch?source=pwa");}}catch(e){}})();`,
           }}
         />
         {/* iOS PWA splash screens. iOS Safari doesn't read manifest.json's

@@ -238,7 +238,7 @@ export function RiderOnboardingForm() {
       <FormSection num="04" title="Pour être payé">
         <Field
           label="Numéro MTN MoMo / Orange Money"
-          hint="paie quotidienne à 21h00"
+          hint="paie hebdomadaire — chaque samedi 22h00"
           error={errors.momoPhone?.message}
         >
           <Controller
