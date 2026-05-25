@@ -37,6 +37,10 @@
     "fr": "Français",
     "en": "English"
   },
+  "Metadata": {
+    "siteTitle": "TChopNow — Eat without waiting",
+    "siteDescription": "From the street to your door. Food delivery in Douala."
+  },
   "LaunchPromo": {
     "eyebrow": "Launch offer",
     "headline": "Free delivery on your first order",
