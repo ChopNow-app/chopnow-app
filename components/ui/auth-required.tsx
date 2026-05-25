@@ -1,6 +1,14 @@
 import Link from 'next/link';
+import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+
+export interface AuthRequiredFeature {
+  /** Emoji or icon shown in the bullet. */
+  icon: React.ReactNode;
+  /** Short, declarative — "Historique de tes commandes", not "Tu peux voir…". */
+  label: string;
+}
 
 export interface AuthRequiredProps {
   /**
@@ -34,6 +42,18 @@ export interface AuthRequiredProps {
    */
   secondary?: { label: string; href: string };
   /**
+   * Optional 2-4 bullets shown below the card under a "Ce que tu débloques"
+   * eyebrow. Use this on surfaces where the page would otherwise be
+   * mostly-empty viewport — fills the space with concrete value teasers
+   * (e.g. "Réordonner ton dernier repas en 2 taps" on /orders).
+   */
+  features?: AuthRequiredFeature[];
+  /**
+   * Optional reassurance footnote at the very bottom (e.g. "OTP par
+   * WhatsApp · pas de carte bancaire requise"). Pure trust-building copy.
+   */
+  reassurance?: string;
+  /**
    * Wrapping shell className override for callers with bespoke layouts
    * (e.g. the rider page already has its dark shell — pass empty here so
    * the component renders as a card, not a full-screen takeover).
@@ -46,17 +66,24 @@ export interface AuthRequiredProps {
  * "Connexion requise" cards spread across vendor / rider / admin /
  * orders / account / cart surfaces with one consistent shape.
  *
- * Visual structure (mirrors the livreur dashboard's existing pattern,
- * which was the best of the lot):
+ * Visual structure:
  *
- *   <icon (lucide LogIn)>
+ *   <eyebrow ("— ACCÈS")>
  *   <title (extrabold)>
  *   <subtitle (muted)>
- *   <CTA pill (jumbo on dark, primary on light)>
+ *   <CTA pill>
  *   <optional secondary link>
+ *   ── (when features array passed) ──
+ *   <eyebrow ("Ce que tu débloques")>
+ *   <features list — icon + label per row>
+ *   ── (when reassurance passed) ──
+ *   <reassurance footnote>
  *
- * Sits inside a full-bleed wrapper that centres on viewport. Each
- * caller picks `theme` to match its surrounding surface.
+ * Layout: the wrapper fills `calc(100dvh - 5rem)` to claim everything
+ * above the 80px bottom nav (64px nav + safe-area). With the new
+ * features+reassurance content the page no longer looks anemic — even
+ * without them, the flex-center makes the card sit visually anchored
+ * rather than stranded near the top.
  */
 export function AuthRequired({
   theme = 'light',
@@ -65,6 +92,8 @@ export function AuthRequired({
   loginHref,
   ctaLabel = 'Se connecter',
   secondary,
+  features,
+  reassurance,
   className,
 }: AuthRequiredProps) {
   const isDark = theme === 'dark';
@@ -72,54 +101,113 @@ export function AuthRequired({
   return (
     <div
       className={cn(
-        'flex min-h-[60dvh] items-center justify-center px-6 py-12',
+        // Claim the full viewport minus the 64px bottom nav + safe-area.
+        // Use flex-center so the content block sits anchored in the middle
+        // of available space rather than glued to the top.
+        'flex min-h-[calc(100dvh-5rem)] flex-col items-center justify-center px-5 py-10',
         isDark ? 'bg-chop-deep-ink text-white' : 'bg-chop-warm text-chop-ink',
         className,
       )}
     >
-      <div
-        className={cn(
-          'w-full max-w-sm rounded-3xl p-6 text-center shadow-card',
-          isDark ? 'border border-chop-dark-border bg-chop-dark-surface' : 'bg-chop-card-white',
-        )}
-      >
-        {/* Editorial section label above the title — replaces the generic
-            icon-in-circle pattern that read as a Vercel template. */}
-        <p
-          aria-hidden
+      <div className="w-full max-w-md">
+        {/* ── Primary card ───────────────────────────────────────── */}
+        <div
           className={cn(
-            'text-[11px] font-extrabold uppercase tracking-[0.22em]',
-            isDark ? 'text-chop-red' : 'text-chop-red',
+            'rounded-3xl p-6 text-center shadow-card md:p-8',
+            isDark ? 'border border-chop-dark-border bg-chop-dark-surface' : 'bg-chop-card-white',
           )}
         >
-          — Accès
-        </p>
-        <h2 className="mt-2 text-2xl font-extrabold tracking-tight">{title}</h2>
-        {subtitle ? (
           <p
-            className={cn(
-              'mx-auto mt-1.5 max-w-[280px] text-sm',
-              isDark ? 'text-white/70' : 'text-chop-ink-secondary',
-            )}
+            aria-hidden
+            className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-chop-red"
           >
-            {subtitle}
+            — Accès
           </p>
+          <h2 className="mt-2 text-2xl font-extrabold tracking-tight md:text-[26px]">{title}</h2>
+          {subtitle ? (
+            <p
+              className={cn(
+                'mx-auto mt-2 max-w-[320px] text-sm leading-relaxed',
+                isDark ? 'text-white/70' : 'text-chop-ink-secondary',
+              )}
+            >
+              {subtitle}
+            </p>
+          ) : null}
+
+          <Button asChild size={isDark ? 'jumbo' : 'default'} className="mt-5 w-full">
+            <Link href={loginHref}>{ctaLabel}</Link>
+          </Button>
+
+          {secondary ? (
+            <Link
+              href={secondary.href}
+              className={cn(
+                'mt-4 inline-block text-sm font-semibold underline-offset-2 hover:underline',
+                isDark ? 'text-white/80' : 'text-chop-ink-secondary',
+              )}
+            >
+              {secondary.label}
+            </Link>
+          ) : null}
+        </div>
+
+        {/* ── Optional value teaser ──────────────────────────────── */}
+        {features && features.length > 0 ? (
+          <div className="mt-8">
+            <p
+              aria-hidden
+              className={cn(
+                'text-center text-[11px] font-extrabold uppercase tracking-[0.22em]',
+                isDark ? 'text-white/55' : 'text-chop-ink-secondary',
+              )}
+            >
+              Ce que tu débloques
+            </p>
+            <ul className="mt-4 space-y-2.5">
+              {features.map((f, i) => (
+                <li
+                  key={i}
+                  className={cn(
+                    'flex items-start gap-3 rounded-2xl px-4 py-3',
+                    isDark
+                      ? 'border border-chop-dark-border bg-chop-dark-surface'
+                      : 'border border-divider bg-chop-card-white',
+                  )}
+                >
+                  <span
+                    aria-hidden
+                    className={cn(
+                      'inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-base',
+                      isDark ? 'bg-chop-red/15 text-chop-red' : 'bg-chop-red-light text-chop-red',
+                    )}
+                  >
+                    {f.icon}
+                  </span>
+                  <span
+                    className={cn(
+                      'mt-1 text-[14px] font-semibold leading-snug',
+                      isDark ? 'text-white' : 'text-chop-ink',
+                    )}
+                  >
+                    {f.label}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
         ) : null}
 
-        <Button asChild size={isDark ? 'jumbo' : 'default'} className="mt-5 w-full">
-          <Link href={loginHref}>{ctaLabel}</Link>
-        </Button>
-
-        {secondary ? (
-          <Link
-            href={secondary.href}
+        {/* ── Optional reassurance footnote ──────────────────────── */}
+        {reassurance ? (
+          <p
             className={cn(
-              'mt-4 inline-block text-sm font-semibold underline-offset-2 hover:underline',
-              isDark ? 'text-white/80' : 'text-chop-ink-secondary',
+              'mt-6 text-center text-[12px] leading-relaxed',
+              isDark ? 'text-white/55' : 'text-chop-ink-secondary',
             )}
           >
-            {secondary.label}
-          </Link>
+            {reassurance}
+          </p>
         ) : null}
       </div>
     </div>
