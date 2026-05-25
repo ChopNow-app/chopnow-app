@@ -4,6 +4,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
+import { AuthRequired } from '@/components/ui/auth-required';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PaymentChip } from '@/components/PaymentChip';
@@ -94,7 +95,7 @@ export function CartPage() {
   const setSelectedAddressId = setUserPickedAddressId;
 
   if (addresses.status === 'unauthenticated') {
-    return <AuthRequired />;
+    return <AuthRequiredPanel />;
   }
 
   if (cart.isEmpty) {
@@ -431,18 +432,23 @@ function AddressDisplay({ addr }: { addr: SavedAddress }) {
   );
 }
 
-function AuthRequired() {
+function AuthRequiredPanel() {
   // Mark logout-state so the next view of /login redirects back to /cart on success.
   React.useEffect(() => {
     auth.clear();
   }, []);
   return (
-    <main className="container py-16 text-center">
-      <h1 className="text-xl font-bold">Connexion requise</h1>
-      <p className="mt-2 text-sm text-muted-foreground">Connecte-toi pour passer ta commande.</p>
-      <Button asChild className="mt-6">
-        <Link href="/login?next=/cart">Se connecter</Link>
-      </Button>
-    </main>
+    <AuthRequired
+      theme="light"
+      subtitle="Ton panier reste rempli — connecte-toi pour finaliser ta commande."
+      loginHref="/login?next=/cart"
+      features={[
+        { icon: '🛒', label: 'Ton panier déjà rempli reste sauvegardé' },
+        { icon: '💳', label: 'Paiement MTN MoMo + Orange Money' },
+        { icon: '📍', label: 'Livraison à ton adresse en 30 min' },
+        { icon: '🔔', label: 'Notifications quand ton plat arrive' },
+      ]}
+      reassurance="Connexion par OTP WhatsApp · 30 secondes · pas de carte bancaire."
+    />
   );
 }

@@ -3,6 +3,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { AlertDialog } from '@/components/ui/alert-dialog';
+import { AuthRequired } from '@/components/ui/auth-required';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
 import { apiRaw, ApiClientError } from '@/lib/api/api-client';
@@ -31,7 +32,7 @@ export function OrderTrackingPage({ orderId }: { orderId: string }) {
   const state = useOrder(orderId);
 
   if (state.status === 'loading') return <Skeleton />;
-  if (state.status === 'unauthenticated') return <AuthRequired orderId={orderId} />;
+  if (state.status === 'unauthenticated') return <AuthRequiredPanel orderId={orderId} />;
   if (state.status === 'not_found') {
     return (
       <main className="container py-16 text-center">
@@ -345,17 +346,20 @@ function Skeleton() {
   );
 }
 
-function AuthRequired({ orderId }: { orderId: string }) {
+function AuthRequiredPanel({ orderId }: { orderId: string }) {
   return (
-    <main className="container py-16 text-center">
-      <h1 className="text-xl font-bold">Connexion requise</h1>
-      <p className="mt-2 text-sm text-muted-foreground">
-        Connecte-toi pour voir le suivi de ta commande.
-      </p>
-      <Button asChild className="mt-6">
-        <Link href={`/login?next=/orders/${orderId}`}>Se connecter</Link>
-      </Button>
-    </main>
+    <AuthRequired
+      theme="light"
+      subtitle="Connecte-toi pour suivre ta commande en temps réel."
+      loginHref={`/login?next=/orders/${orderId}`}
+      features={[
+        { icon: '📍', label: 'Suivi en temps réel du livreur' },
+        { icon: '✅', label: 'Confirmation à chaque étape (préparation, pickup, livraison)' },
+        { icon: '💬', label: 'Numéro du livreur pour appel direct' },
+        { icon: '⭐', label: 'Noter le restaurant après livraison' },
+      ]}
+      reassurance="Connexion par OTP WhatsApp · 30 secondes · pas de carte bancaire."
+    />
   );
 }
 

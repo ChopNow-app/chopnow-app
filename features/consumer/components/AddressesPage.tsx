@@ -3,6 +3,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { AlertDialog } from '@/components/ui/alert-dialog';
+import { AuthRequired } from '@/components/ui/auth-required';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useAddresses, type SavedAddress } from '@/features/cart/hooks/useAddresses';
@@ -26,12 +27,17 @@ export function AddressesPage() {
 
   if (state.status === 'unauthenticated') {
     return (
-      <main className="container max-w-md py-16 text-center">
-        <h1 className="text-xl font-bold">Connexion requise</h1>
-        <Button asChild className="mt-6">
-          <Link href="/login?next=/account/addresses">Se connecter</Link>
-        </Button>
-      </main>
+      <AuthRequired
+        theme="light"
+        subtitle="Connecte-toi pour sauvegarder tes adresses de livraison."
+        loginHref="/login?next=/account/addresses"
+        features={[
+          { icon: '📍', label: 'Jusqu’à 3 adresses (maison, bureau, autre)' },
+          { icon: '⚡', label: 'Sélection rapide au moment du checkout' },
+          { icon: '🚲', label: 'Le livreur arrive directement au bon endroit' },
+        ]}
+        reassurance="Connexion par OTP WhatsApp · 30 secondes · pas de carte bancaire."
+      />
     );
   }
 
