@@ -44,11 +44,17 @@ const TABS: Tab[] = [
 
 // Routes that should NOT render the bottom nav (full-screen flows or
 // non-consumer surfaces). Keep this list narrow — default is to show it.
+//
+// IMPORTANT: `/^\/vendor(\/|$)/` (with the explicit boundary) matches the
+// vendor *dashboard* (/vendor, /vendor/profile) but NOT `/vendors/[id]`,
+// which is the public consumer-facing vendor detail page. Same prefix
+// collision class as the robots.txt /vendor → /vendors bug fixed in
+// chopnow-app#226 — kept this list in sync with ConsumerTopNav's.
 const HIDE_ON: ReadonlyArray<string | RegExp> = [
   '/login',
-  /^\/admin/,
-  /^\/livreur/,
-  /^\/vendor/,
+  /^\/admin(\/|$)/,
+  /^\/livreur(\/|$)/,
+  /^\/vendor(\/|$)/,
   '/livrer',
   '/vendre',
   /^\/t\//, // public order tracking — no app shell
