@@ -146,6 +146,37 @@ Defined in `app/globals.css` (CSS variables) + `tailwind.config.ts`:
 
 Sugar Art final palette pending — these are interim values.
 
+## Releases
+
+Automated on every push to `develop`. The `Release` workflow
+(`.github/workflows/release.yml`) parses the conventional-commit
+messages since the last `v*.*.*` tag and decides the bump:
+
+| Commit prefix                                   | Bump                 |
+| ----------------------------------------------- | -------------------- |
+| `feat:` / `feat(scope):`                        | minor (v0.**X**.0)   |
+| `fix:` / `fix(scope):`                          | patch (v0.0.**X**)   |
+| `feat!:` or `BREAKING CHANGE:` in body          | major (v**X**.0.0)   |
+| `chore:` / `test:` / `docs:` / `refactor:` only | no release (skipped) |
+
+When a release fires it:
+
+1. Bumps `package.json` + `package-lock.json` version (commits with `[skip ci]`)
+2. Creates the git tag (`vX.Y.Z`) at the bump commit
+3. Opens a GitHub Release with notes grouped by Features / Fixes / Other
+4. Deploys to Vercel production (`app.tchopnow.app`) via the CLI
+5. Appends the deploy URL to the release notes
+
+To skip a release for a particular merge, write the squash commit
+without a `feat:` / `fix:` prefix (e.g. `chore(deps): bump foo`).
+
+Required GitHub Actions secrets — set once at Settings → Secrets and
+variables → Actions:
+
+- `VERCEL_TOKEN` — personal token from <https://vercel.com/account/tokens>
+- `VERCEL_ORG_ID` — `orgId` from `.vercel/project.json`
+- `VERCEL_PROJECT_ID` — `projectId` from `.vercel/project.json`
+
 ## Gitflow at a glance
 
 ```
