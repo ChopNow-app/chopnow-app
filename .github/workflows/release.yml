@@ -1,0 +1,237 @@
+# Automated release + Vercel prod deploy.
+#
+# Fires on every push to `develop` (i.e. immediately after a squash-merge
+# from a feature PR). Parses conventional-commit messages since the last
+# tag to decide the semver bump:
+#
+#   feat: ...           → minor bump (v0.X.0)
+#   fix: ...            → patch bump (v0.0.X)
+#   BREAKING CHANGE / ! → major bump (vX.0.0)
+#   chore/test/docs/... → SKIP (no tag, no deploy)
+#
+# When a release is cut, the workflow:
+#   1. Bumps package.json + package-lock.json version
+#   2. Commits the bump with [skip ci] so it doesn't re-trigger this workflow
+#   3. Tags HEAD with the new version
+#   4. Creates a GitHub Release with grouped notes (Features / Fixes / Other)
+#   5. Deploys to Vercel production via the Vercel CLI
+#
+# Loop guard: the `if:` on the job skips the workflow when the triggering
+# commit was authored by github-actions[bot] — so the version-bump commit
+# we make ourselves doesn't fire us again.
+#
+# Required secrets (Settings → Secrets and variables → Actions):
+#   - VERCEL_TOKEN       — personal/CI token from vercel.com/account/tokens
+#   - VERCEL_ORG_ID      — from .vercel/project.json (orgId field)
+#   - VERCEL_PROJECT_ID  — from .vercel/project.json (projectId field)
+
+name: Release
+
+on:
+  push:
+    branches: [develop]
+
+# Serialize releases — one at a time, never cancel a release mid-flight
+# (a half-tagged release with no GitHub release artifact is the worst
+# outcome we could produce).
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: write # need to tag, push, and create the release
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    # Skip the workflow when our own bot pushed the triggering commit
+    # (the version-bump commit we land in step "Update package.json").
+    # Without this, the workflow re-triggers on its own commit and tries
+    # to cut another release — fast loop until you intervene.
+    if: github.event.head_commit.author.name != 'github-actions[bot]'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Full history so `git describe --tags` can find the last tag
+          # and `git log $LAST..HEAD` enumerates the commits to release.
+          fetch-depth: 0
+          # Default GH token is fine for pushing the bump + the tag
+          # (permissions.contents: write above).
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # Parse conventional-commit prefixes to decide the bump.
+      #   - `feat...`  in any commit → minor
+      #   - `fix...`   in any commit → patch
+      #   - `BREAKING CHANGE:` in body, or `feat!:`/`fix!:` etc → major
+      #   - Only chore/test/docs/build/refactor → skip release
+      - name: Compute next version
+        id: bump
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Last release tag — fall back to v0.0.0 so first run works
+          # on a virgin repo. Filter to v*.*.* so non-release tags
+          # (sprint baselines, etc.) don't confuse `describe`.
+          LAST_TAG=$(git tag -l 'v[0-9]*' --sort=-v:refname | head -n1)
+          LAST_TAG=${LAST_TAG:-v0.0.0}
+          echo "last=$LAST_TAG" >> "$GITHUB_OUTPUT"
+          echo "Last release tag: $LAST_TAG"
+
+          # All commit messages since the last tag (subject only).
+          COMMITS=$(git log "$LAST_TAG..HEAD" --pretty=format:'%s%n%b' || true)
+          if [ -z "$COMMITS" ]; then
+            echo "No commits since $LAST_TAG — nothing to release."
+            echo "bump=none" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Default to no release; promote based on what's in the log.
+          BUMP=none
+          # patch: at least one `fix:` (or `fix(scope):`)
+          if echo "$COMMITS" | grep -qE '^fix(\([^)]+\))?!?:'; then BUMP=patch; fi
+          # minor: at least one `feat:` outranks patch
+          if echo "$COMMITS" | grep -qE '^feat(\([^)]+\))?!?:'; then BUMP=minor; fi
+          # major: BREAKING CHANGE in body OR `!:` after type token
+          if echo "$COMMITS" | grep -qE '(BREAKING CHANGE:|^(feat|fix|chore|refactor)(\([^)]+\))?!:)'; then
+            BUMP=major
+          fi
+
+          if [ "$BUMP" = "none" ]; then
+            echo "Only chore/docs/test/refactor since $LAST_TAG — skip release."
+            echo "bump=none" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Bump semver. Strip leading v, split on '.', increment, rejoin.
+          CURRENT=${LAST_TAG#v}
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
+          case "$BUMP" in
+            major) MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0 ;;
+            minor) MINOR=$((MINOR + 1)); PATCH=0 ;;
+            patch) PATCH=$((PATCH + 1)) ;;
+          esac
+          NEW="v${MAJOR}.${MINOR}.${PATCH}"
+          echo "new=$NEW" >> "$GITHUB_OUTPUT"
+          echo "bump=$BUMP" >> "$GITHUB_OUTPUT"
+          echo "Computed release: $LAST_TAG → $NEW ($BUMP bump)"
+
+      - name: Skip — nothing to release
+        if: steps.bump.outputs.bump == 'none'
+        run: echo "Nothing to release; exiting cleanly."
+
+      # All subsequent steps gated on the bump existing.
+      - name: Update package.json version
+        if: steps.bump.outputs.bump != 'none'
+        shell: bash
+        env:
+          NEW: ${{ steps.bump.outputs.new }}
+        run: |
+          set -euo pipefail
+          VERSION=${NEW#v}
+          npm version --no-git-tag-version --allow-same-version "$VERSION"
+
+          # Stage + commit the bump. `[skip ci]` in the message is a
+          # GitHub Actions convention that prevents the push from
+          # triggering CI again — but our loop guard (job-level `if:`)
+          # is the actual safety net.
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json
+          git commit -m "chore(release): $NEW [skip ci]"
+          git push origin HEAD:develop
+
+      # Group the changelog by commit type so the release page reads
+      # like a feature/fix breakdown rather than a flat commit list.
+      - name: Generate release notes
+        if: steps.bump.outputs.bump != 'none'
+        id: notes
+        shell: bash
+        env:
+          LAST: ${{ steps.bump.outputs.last }}
+          NEW: ${{ steps.bump.outputs.new }}
+        run: |
+          set -euo pipefail
+          NOTES=/tmp/release-notes.md
+          {
+            echo "## What's changed"
+            echo ""
+            echo "### ✨ Features"
+            git log "$LAST..HEAD^" --pretty=format:'- %s (%h)' \
+              | grep -E '^- feat' \
+              || echo "_(none)_"
+            echo ""
+            echo ""
+            echo "### 🐛 Fixes"
+            git log "$LAST..HEAD^" --pretty=format:'- %s (%h)' \
+              | grep -E '^- fix' \
+              || echo "_(none)_"
+            echo ""
+            echo ""
+            echo "### 🔧 Chores / docs / tests"
+            git log "$LAST..HEAD^" --pretty=format:'- %s (%h)' \
+              | grep -vE '^- (feat|fix|chore\(release\))' \
+              || echo "_(none)_"
+            echo ""
+            echo ""
+            echo "**Full changelog:** https://github.com/${{ github.repository }}/compare/$LAST...$NEW"
+          } > "$NOTES"
+          echo "path=$NOTES" >> "$GITHUB_OUTPUT"
+
+          echo "=== Notes preview ==="
+          cat "$NOTES"
+
+      - name: Create tag + GitHub release
+        if: steps.bump.outputs.bump != 'none'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NEW: ${{ steps.bump.outputs.new }}
+        run: |
+          set -euo pipefail
+          # Tag the bump commit we just pushed (HEAD after the rebase
+          # from `git push`).
+          git fetch origin develop
+          git checkout develop
+          git tag "$NEW" -m "Release $NEW"
+          git push origin "$NEW"
+          gh release create "$NEW" \
+            --title "$NEW" \
+            --notes-file "${{ steps.notes.outputs.path }}" \
+            --target develop
+
+      # Vercel CLI deploy. Uses prebuilt outputs so the deploy step
+      # actually ships the same artifact a local `vercel build` would.
+      # `vercel pull` pulls the env vars + project config from Vercel,
+      # then `vercel build --prod` produces the .vercel/output/ tree,
+      # then `vercel deploy --prebuilt --prod` ships it.
+      - name: Deploy to Vercel production
+        if: steps.bump.outputs.bump != 'none'
+        shell: bash
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          GH_TOKEN: ${{ github.token }}
+          NEW: ${{ steps.bump.outputs.new }}
+          NOTES_PATH: ${{ steps.notes.outputs.path }}
+        run: |
+          set -euo pipefail
+          npm install --global vercel
+          vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+          vercel build --prod --token="$VERCEL_TOKEN"
+          DEPLOY_URL=$(vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN")
+          echo "Deployed $NEW → $DEPLOY_URL"
+
+          # Append the deployed URL to the release notes so the GitHub
+          # Release card carries the actual prod link. Write to a tmp
+          # file first to keep the gh CLI invocation single-line (the
+          # YAML parser doesn't love multi-line strings inside `run:`).
+          AUGMENTED=/tmp/release-notes-augmented.md
+          cat "$NOTES_PATH" > "$AUGMENTED"
+          printf '\n**Deployed:** %s\n**Production:** https://app.tchopnow.app\n' "$DEPLOY_URL" >> "$AUGMENTED"
+          gh release edit "$NEW" --notes-file "$AUGMENTED"
