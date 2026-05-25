@@ -101,8 +101,8 @@ export default function HomePage() {
             </h1>
 
             <p className="mt-5 max-w-[44ch] text-[15px] font-medium leading-[1.55] text-chop-ink-secondary md:mt-6 md:max-w-[52ch] md:text-[17px] lg:text-[18px]">
-              De la rue à ta porte. Commande tes plats préférés aux vendeurs autour de toi — livré à
-              moto en 30 minutes.
+              De la rue à ta porte. Commande tes plats préférés aux vendeurs autour de toi — livré
+              chez toi en 30 minutes.
             </p>
 
             <div className="mt-6 flex flex-wrap items-center gap-3 md:mt-8">
@@ -193,8 +193,8 @@ export default function HomePage() {
             <RoleCard
               href="/livrer"
               eyebrow="03"
-              label="Je livre à moto"
-              sub="Gagner en livrant dans ton quartier."
+              label="Je livre"
+              sub="Moto, vélo ou à pied — gagne dans ton quartier."
               tone="default"
             />
           </ul>
@@ -229,7 +229,7 @@ function TrustRow() {
         <TrustChip
           icon={<Bike className="h-5 w-5" strokeWidth={2} />}
           label="Livraison 30 min"
-          sub="Par moto dans ton quartier"
+          sub="Moto, vélo ou à pied — dans ton quartier"
         />
         <TrustChip
           icon={<MessageCircle className="h-5 w-5" strokeWidth={2} />}
@@ -289,7 +289,7 @@ function Faq() {
   const QUESTIONS = [
     {
       q: 'Comment ça marche ?',
-      a: 'Tu choisis un vendeur autour de toi, tu commandes en 3 taps, tu paies par MoMo. Un livreur récupère ta commande et te l’apporte à moto en 30 minutes.',
+      a: 'Tu choisis un vendeur autour de toi, tu commandes en 3 taps, tu paies par MoMo. Un livreur récupère ta commande et te l’apporte en 30 minutes (moto, vélo ou à pied selon la distance).',
     },
     {
       q: 'Quelles zones livrez-vous ?',
