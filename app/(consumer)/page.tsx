@@ -230,16 +230,23 @@ export default async function HomePage() {
 
       {/* ── Role picker — promoted from "Autres espaces" footer to a proper
           3-card section. After the consumer-led hero, this is where a
-          vendor or rider finds their path. The "Je commande" card mirrors
-          the hero CTA to make the parallel structure obvious. ─────── */}
+          vendor or rider finds their path.
+          Asymmetric lg grid: the "Je commande" card gets ~1.5x width so
+          the section reads as "primary CTA + two affordances" instead of
+          three equal options. Fills wide-screen space better and signals
+          which role the marketing surface is actually optimizing for. */}
       <section className="relative z-10 mx-auto max-w-7xl px-5 pb-16 pt-16 md:px-8 md:pt-24 lg:px-12 lg:pt-32">
         <div className="border-t border-divider pt-8 md:pt-12">
           <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-chop-ink-secondary md:text-[12px]">
             {t('rolesEyebrow')}
           </p>
+          <h2 className="mt-3 max-w-[18ch] text-[34px] font-extrabold leading-[0.95] tracking-tight md:text-[44px] lg:text-[52px]">
+            {t('rolesHeadingL1')} <span className="text-chop-red">{t('rolesHeadingL2')}</span>
+          </h2>
+
           {/* Admin is intentionally NOT here — staff-only entry point, not a
               public role. Reach it directly at /admin/login. */}
-          <ul className="mt-5 grid grid-cols-1 gap-3 md:mt-7 md:grid-cols-3">
+          <ul className="mt-8 grid grid-cols-1 gap-4 md:mt-10 md:grid-cols-2 md:gap-5 lg:grid-cols-[1.5fr_1fr_1fr]">
             <RoleCard
               href="/restaurants"
               eyebrow="01"
@@ -277,49 +284,89 @@ export default async function HomePage() {
   );
 }
 
-/* ── Trust signals — 3 chips with lucide icons (matches the rest of
-       the site's icon system: ConsumerTopNav, AdminTabs, etc.). Emoji
-       icons were swapped out because they read as cheap/AI-generated
-       on a marketing surface and clashed with the editorial aesthetic. */
+/* ── Trust signals — promoted from cramped chips to a full editorial
+       section with eyebrow + headline + three big "pillar" cards.
+       Each card now has: large icon block on top, prominent title,
+       wider body, and a faint ordinal (01/02/03) that anchors the
+       visual rhythm with the role picker below. The asymmetry comes
+       from typography weight, not grid columns — still 3 equal cards
+       so the layout stays scannable. */
 async function TrustRow() {
   const t = await getTranslations('Splash');
   return (
     <section className="relative z-10 mx-auto mt-16 max-w-7xl px-5 md:mt-24 md:px-8 lg:px-12">
-      <div className="grid gap-3 md:grid-cols-3 md:gap-4">
-        <TrustChip
-          icon={<ShieldCheck className="h-5 w-5" strokeWidth={2} />}
-          label={t('trustPaymentLabel')}
-          sub={t('trustPaymentSub')}
-        />
-        <TrustChip
-          icon={<Bike className="h-5 w-5" strokeWidth={2} />}
-          label={t('trustDeliveryLabel')}
-          sub={t('trustDeliverySub')}
-        />
-        <TrustChip
-          icon={<MessageCircle className="h-5 w-5" strokeWidth={2} />}
-          label={t('trustSupportLabel')}
-          sub={t('trustSupportSub')}
-        />
+      <div className="border-t border-divider pt-8 md:pt-12">
+        <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-chop-ink-secondary md:text-[12px]">
+          {t('trustEyebrow')}
+        </p>
+        <h2 className="mt-3 max-w-[18ch] text-[34px] font-extrabold leading-[0.95] tracking-tight md:text-[44px] lg:text-[52px]">
+          {t('trustHeadingL1')} <span className="text-chop-red">{t('trustHeadingL2')}</span>
+        </h2>
+
+        <div className="mt-8 grid gap-4 md:mt-10 md:grid-cols-3 md:gap-5">
+          <TrustPillar
+            ordinal="01"
+            icon={<ShieldCheck className="h-7 w-7" strokeWidth={2} />}
+            label={t('trustPaymentLabel')}
+            sub={t('trustPaymentSub')}
+          />
+          <TrustPillar
+            ordinal="02"
+            icon={<Bike className="h-7 w-7" strokeWidth={2} />}
+            label={t('trustDeliveryLabel')}
+            sub={t('trustDeliverySub')}
+          />
+          <TrustPillar
+            ordinal="03"
+            icon={<MessageCircle className="h-7 w-7" strokeWidth={2} />}
+            label={t('trustSupportLabel')}
+            sub={t('trustSupportSub')}
+          />
+        </div>
       </div>
     </section>
   );
 }
 
-function TrustChip({ icon, label, sub }: { icon: React.ReactNode; label: string; sub: string }) {
+function TrustPillar({
+  ordinal,
+  icon,
+  label,
+  sub,
+}: {
+  ordinal: string;
+  icon: React.ReactNode;
+  label: string;
+  sub: string;
+}) {
   return (
-    <div className="flex items-start gap-4 rounded-2xl border border-divider bg-chop-card-white p-5">
+    <div className="group relative flex h-full min-h-[200px] flex-col gap-6 overflow-hidden rounded-3xl border border-divider bg-chop-card-white p-6 transition-all hover:-translate-y-0.5 hover:border-chop-ink/20 hover:shadow-elevated md:min-h-[240px] md:p-8">
+      {/* Watermark ordinal — same rhythm as RoleCard so the two sections
+          read as a coordinated pair. */}
       <span
         aria-hidden
-        className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-chop-red-light text-chop-red"
+        className="pointer-events-none absolute -right-4 -top-2 select-none text-[120px] font-extrabold leading-none tracking-tighter text-chop-ink/[0.04] md:-right-6 md:-top-4 md:text-[160px]"
       >
-        {icon}
+        {ordinal}
       </span>
-      <div className="min-w-0">
-        <p className="text-[14px] font-extrabold leading-tight text-chop-ink md:text-[15px]">
+
+      <div className="relative flex items-center justify-between gap-3">
+        <span
+          aria-hidden
+          className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-chop-red-light text-chop-red transition-colors group-hover:bg-chop-red group-hover:text-white md:h-16 md:w-16"
+        >
+          {icon}
+        </span>
+        <span className="font-mono text-[12px] font-bold tabular-nums text-chop-ink-secondary md:text-[13px]">
+          {ordinal}.
+        </span>
+      </div>
+
+      <div className="relative">
+        <p className="text-[20px] font-extrabold leading-tight tracking-tight text-chop-ink md:text-[22px] lg:text-[24px]">
           {label}
         </p>
-        <p className="mt-1 text-[12px] font-medium leading-relaxed text-chop-ink-secondary md:text-[13px]">
+        <p className="mt-2 max-w-[28ch] text-[14px] font-medium leading-relaxed text-chop-ink-secondary md:text-[15px]">
           {sub}
         </p>
       </div>
@@ -422,33 +469,49 @@ function RoleCard({
         href={href}
         className={
           isPrimary
-            ? 'group relative flex h-full flex-col justify-between gap-6 overflow-hidden rounded-2xl bg-chop-red p-5 text-white shadow-card transition-shadow hover:shadow-elevated md:p-6'
-            : 'group relative flex h-full flex-col justify-between gap-6 overflow-hidden rounded-2xl border-2 border-chop-ink/10 bg-chop-card-white p-5 text-chop-ink transition-colors hover:border-chop-ink hover:bg-chop-warm md:p-6'
+            ? 'group relative flex h-full min-h-[200px] flex-col justify-between gap-8 overflow-hidden rounded-3xl bg-chop-red p-6 text-white shadow-card transition-all hover:shadow-elevated md:min-h-[260px] md:p-8 lg:min-h-[300px] lg:p-10'
+            : 'group relative flex h-full min-h-[200px] flex-col justify-between gap-8 overflow-hidden rounded-3xl border-2 border-chop-ink/10 bg-chop-card-white p-6 text-chop-ink transition-all hover:-translate-y-0.5 hover:border-chop-ink hover:bg-chop-warm hover:shadow-elevated md:min-h-[260px] md:p-8 lg:min-h-[300px] lg:p-10'
         }
       >
+        {/* Giant ornamental eyebrow number that fills the empty top-right
+            of the card. Subtle by opacity; reinforces the 01/02/03
+            rhythm without competing with the label. */}
         <span
-          className={`font-mono text-[12px] font-bold tabular-nums ${
-            isPrimary ? 'text-white/60' : 'text-chop-ink-secondary'
+          aria-hidden
+          className={`pointer-events-none absolute -right-4 -top-2 select-none font-extrabold leading-none tracking-tighter md:-right-6 md:-top-4 ${
+            isPrimary
+              ? 'text-[140px] text-white/[0.08] md:text-[180px] lg:text-[220px]'
+              : 'text-[140px] text-chop-ink/[0.05] md:text-[180px] lg:text-[220px]'
+          }`}
+        >
+          {eyebrow}
+        </span>
+
+        <span
+          className={`relative font-mono text-[12px] font-bold tabular-nums md:text-[13px] ${
+            isPrimary ? 'text-white/70' : 'text-chop-ink-secondary'
           }`}
         >
           {eyebrow}.
         </span>
-        <div>
-          <p className="text-[18px] font-extrabold leading-tight tracking-tight md:text-[20px]">
+        <div className="relative">
+          <p className="text-[22px] font-extrabold leading-[1.05] tracking-tight md:text-[26px] lg:text-[30px]">
             {label}
           </p>
           <p
-            className={`mt-1 text-[13px] font-medium ${
-              isPrimary ? 'text-white/80' : 'text-chop-ink-secondary'
-            } md:text-[14px]`}
+            className={`mt-2 max-w-[28ch] text-[14px] font-medium leading-relaxed md:mt-3 md:text-[15px] lg:text-[16px] ${
+              isPrimary ? 'text-white/85' : 'text-chop-ink-secondary'
+            }`}
           >
             {sub}
           </p>
         </div>
         <span
           aria-hidden
-          className={`text-[18px] font-bold transition-transform group-hover:translate-x-1 ${
-            isPrimary ? 'text-white' : 'text-chop-ink'
+          className={`relative inline-flex h-10 w-10 items-center justify-center rounded-full text-[20px] font-bold transition-transform group-hover:translate-x-1 md:h-12 md:w-12 md:text-[22px] ${
+            isPrimary
+              ? 'bg-white/15 text-white group-hover:bg-white/25'
+              : 'bg-chop-ink/5 text-chop-ink group-hover:bg-chop-ink group-hover:text-white'
           }`}
         >
           →
