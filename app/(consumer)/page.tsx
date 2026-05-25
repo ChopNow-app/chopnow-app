@@ -1,4 +1,5 @@
 import dynamic from 'next/dynamic';
+import Image from 'next/image';
 import Link from 'next/link';
 import { ShieldCheck, Bike, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -115,51 +116,104 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* ── Right: red poster card — sits next to hero on lg+ ── */}
+          {/* ── Right: food photo card — sits next to hero on lg+.
+              Replaces the editorial red "Le Pacte" poster (now lives as
+              a full-width band below) with an actual dish from the
+              local cuisine: Eru + Fufu — quintessential Cameroon. The
+              poster card was identity-strong but commodity from a
+              category-positioning standpoint; the photo makes the
+              splash say "ChopNow = Douala food" at a glance. ────── */}
           <div className="lg:sticky lg:top-8">
-            <div className="relative overflow-hidden rounded-3xl bg-chop-red text-white shadow-elevated">
-              <div
-                aria-hidden
-                className="absolute inset-0"
-                style={{
-                  backgroundImage: STEAM_PATTERN_URL,
-                  backgroundRepeat: 'repeat',
-                  backgroundSize: '96px 96px',
-                }}
+            <div className="relative overflow-hidden rounded-3xl shadow-elevated">
+              {/* Eru (legume stew) + Fufu — a classic Cameroon dish.
+                  Photo by Unsplash contributor, free for commercial use.
+                  aspect-[4/5] matches the previous Le Pacte card height
+                  on lg+ so the hero's 2-col layout stays balanced. */}
+              <Image
+                src="https://images.unsplash.com/photo-1604329760661-e71dc83f8f26?w=1600&q=85"
+                alt="Eru et fufu — cuisine traditionnelle camerounaise"
+                width={1600}
+                height={2000}
+                priority
+                sizes="(min-width: 1024px) 600px, 100vw"
+                className="aspect-[4/5] h-auto w-full object-cover"
               />
-              <div
-                aria-hidden
-                className="absolute -bottom-24 -right-24 h-56 w-56 rounded-full bg-white/10 blur-3xl"
-              />
-
-              <div className="relative px-6 py-7 md:px-8 md:py-10">
-                <span className="inline-block rounded-full bg-white/20 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] backdrop-blur-sm">
-                  Le pacte
-                </span>
-                <h2 className="mt-3 text-[36px] font-extrabold leading-[0.95] tracking-tight md:text-[44px]">
-                  De la rue
-                  <br />à ta porte.
-                </h2>
-
-                <ul className="mt-7 space-y-4 md:mt-9">
-                  {STEPS.map((s) => (
-                    <li key={s.n} className="flex items-start gap-4">
-                      <span className="shrink-0 font-mono text-[13px] font-bold tabular-nums text-white/55 md:text-[14px]">
-                        {s.n}.
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-[15px] font-extrabold leading-tight tracking-tight md:text-[16px]">
-                          {s.title}
-                        </p>
-                        <p className="mt-0.5 text-[13px] font-medium text-white/70 md:text-[14px]">
-                          {s.body}
-                        </p>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
+              {/* Floating brand chip top-left. Reuses the chop-red
+                  palette so the photo + brand sit together. */}
+              <span className="absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-chop-red px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-white shadow-card backdrop-blur-sm md:left-5 md:top-5">
+                <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-white" />
+                Cuisine du Cameroun
+              </span>
+              {/* Caption at bottom with gradient mask so text is
+                  readable on any photo. Names the dish — "the app
+                  knows our food" signal that beats a generic stock
+                  photo with no caption. */}
+              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent p-5 text-white md:p-6">
+                <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/70 md:text-[11px]">
+                  — Aujourd&apos;hui sur la plateforme
+                </p>
+                <p className="mt-1 text-[20px] font-extrabold leading-tight tracking-tight md:text-[24px]">
+                  Eru &amp; Fufu
+                </p>
+                <p className="mt-0.5 text-[12px] font-medium text-white/80 md:text-[13px]">
+                  Chez Maman Mboué · Bonamoussadi
+                </p>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Le Pacte — horizontal red band, full-width.
+          Moved out of the hero's right column when the food photo took
+          its place. Keeps the brand-pact content + 3-step explainer
+          but as a separate "manifesto" beat between hero and role
+          picker, which actually feels more deliberate — readers parse
+          hero → photo → "how it works" → "who are you?" in order. */}
+      <section className="relative z-10 mx-auto mt-16 max-w-7xl px-5 md:mt-20 md:px-8 lg:px-12">
+        <div className="relative overflow-hidden rounded-3xl bg-chop-red text-white shadow-elevated">
+          <div
+            aria-hidden
+            className="absolute inset-0"
+            style={{
+              backgroundImage: STEAM_PATTERN_URL,
+              backgroundRepeat: 'repeat',
+              backgroundSize: '96px 96px',
+            }}
+          />
+          <div
+            aria-hidden
+            className="absolute -bottom-32 -right-32 h-72 w-72 rounded-full bg-white/10 blur-3xl"
+          />
+
+          <div className="relative grid gap-8 px-6 py-8 md:grid-cols-[1fr_2fr] md:items-center md:gap-10 md:px-10 md:py-12 lg:gap-14 lg:px-14 lg:py-14">
+            {/* Left: badge + heading */}
+            <div>
+              <span className="inline-block rounded-full bg-white/20 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] backdrop-blur-sm">
+                Le pacte
+              </span>
+              <h2 className="mt-3 text-[34px] font-extrabold leading-[0.95] tracking-tight md:text-[40px] lg:text-[44px]">
+                De la rue
+                <br />à ta porte.
+              </h2>
+            </div>
+
+            {/* Right: 3 steps, 3-col on md+, stacked on mobile */}
+            <ul className="grid grid-cols-1 gap-5 md:grid-cols-3 md:gap-6">
+              {STEPS.map((s) => (
+                <li key={s.n}>
+                  <p className="font-mono text-[13px] font-bold tabular-nums text-white/55 md:text-[14px]">
+                    {s.n}.
+                  </p>
+                  <p className="mt-2 text-[16px] font-extrabold leading-tight tracking-tight md:text-[17px]">
+                    {s.title}
+                  </p>
+                  <p className="mt-1 text-[13px] font-medium leading-relaxed text-white/75 md:text-[14px]">
+                    {s.body}
+                  </p>
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
       </section>
