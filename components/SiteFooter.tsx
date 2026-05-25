@@ -29,8 +29,7 @@ export function SiteFooter() {
             TChop<span className="text-chop-red">Now.</span>
           </Link>
           <p className="mt-3 max-w-[28ch] text-[13px] font-medium leading-relaxed text-chop-ink-secondary">
-            Mange sans attendre. De la rue à ta porte — livraison par moto en 30 minutes, paiement
-            MoMo.
+            Mange sans attendre. De la rue à ta porte — livraison en 30 minutes, paiement MoMo.
           </p>
           <p className="mt-4 text-[11px] font-bold uppercase tracking-[0.18em] text-chop-ink-secondary">
             Pilote · Bonamoussadi & Makepe
