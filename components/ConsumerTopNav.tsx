@@ -5,6 +5,8 @@ import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { usePathname } from 'next/navigation';
 import { Home, ShoppingBag, ClipboardList, User } from 'lucide-react';
+import { useTranslations } from 'next-intl';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { cn } from '@/lib/utils';
 
 // Lazy-load the install modal — it's a sizable client island and only
@@ -26,28 +28,29 @@ const PwaInstallModal = dynamic(() =>
 
 interface Tab {
   href: string;
-  label: string;
+  /** Translation key under the `Consumer` namespace (navHome, navRestaurants, ...) */
+  labelKey: 'navHome' | 'navRestaurants' | 'navOrders' | 'navAccount';
   icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
   match?: (path: string) => boolean;
 }
 
 const TABS: Tab[] = [
-  { href: '/', label: 'Accueil', icon: Home, match: (p) => p === '/' },
+  { href: '/', labelKey: 'navHome', icon: Home, match: (p) => p === '/' },
   {
     href: '/restaurants',
-    label: 'Restos',
+    labelKey: 'navRestaurants',
     icon: ShoppingBag,
     match: (p) => p === '/restaurants' || p.startsWith('/vendors/'),
   },
   {
     href: '/orders',
-    label: 'Commandes',
+    labelKey: 'navOrders',
     icon: ClipboardList,
     match: (p) => p.startsWith('/orders'),
   },
   {
     href: '/account',
-    label: 'Compte',
+    labelKey: 'navAccount',
     icon: User,
     match: (p) => p.startsWith('/account'),
   },
@@ -81,13 +84,14 @@ const HIDE_ON: ReadonlyArray<string | RegExp> = [
 
 export function ConsumerTopNav() {
   const pathname = usePathname() ?? '/';
+  const t = useTranslations('Consumer');
 
   const hidden = HIDE_ON.some((p) => (typeof p === 'string' ? pathname === p : p.test(pathname)));
   if (hidden) return null;
 
   return (
     <nav
-      aria-label="Navigation principale (desktop)"
+      aria-label={t('navHome')}
       className="sticky top-0 z-30 hidden border-b border-divider/60 bg-chop-warm/95 backdrop-blur supports-[backdrop-filter]:bg-chop-warm/80 lg:flex"
     >
       <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-6 px-8 py-3 lg:px-12">
@@ -121,7 +125,7 @@ export function ConsumerTopNav() {
                   )}
                 >
                   <Icon className="h-4 w-4" strokeWidth={active ? 2.4 : 2} aria-hidden />
-                  {tab.label}
+                  {t(tab.labelKey)}
                 </Link>
               </li>
             );
@@ -132,6 +136,7 @@ export function ConsumerTopNav() {
             (including the splash). The splash's own header gets
             `lg:hidden` so it doesn't double up with this one. */}
         <div className="flex items-center gap-2">
+          <LanguageSwitcher />
           <PwaInstallModal />
         </div>
       </div>

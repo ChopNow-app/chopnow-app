@@ -4,6 +4,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
+import { useLocale, useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { ListSkeleton } from '@/components/ui/skeleton';
 import { ApiClientError } from '@/lib/api/api-client';
@@ -23,54 +24,64 @@ import {
 
 type Tab = 'escalations' | 'incidents' | 'vendors' | 'riders' | 'refunds' | 'cashouts';
 
-const TABS: { id: Tab; label: string }[] = [
-  { id: 'escalations', label: 'Escalations' },
-  { id: 'incidents', label: 'Incidents livreurs' },
-  { id: 'cashouts', label: 'Demandes de virement' },
-  { id: 'vendors', label: 'Soldes vendeurs' },
-  { id: 'riders', label: 'Soldes livreurs' },
-  { id: 'refunds', label: 'Remboursements en attente' },
+type TabLabelKey =
+  | 'financeTabEscalations'
+  | 'financeTabIncidents'
+  | 'financeTabCashouts'
+  | 'financeTabVendors'
+  | 'financeTabRiders'
+  | 'financeTabRefunds';
+
+const TABS: { id: Tab; labelKey: TabLabelKey }[] = [
+  { id: 'escalations', labelKey: 'financeTabEscalations' },
+  { id: 'incidents', labelKey: 'financeTabIncidents' },
+  { id: 'cashouts', labelKey: 'financeTabCashouts' },
+  { id: 'vendors', labelKey: 'financeTabVendors' },
+  { id: 'riders', labelKey: 'financeTabRiders' },
+  { id: 'refunds', labelKey: 'financeTabRefunds' },
 ];
 
 function formatXAF(amount: number): string {
   return new Intl.NumberFormat('fr-FR').format(amount) + ' FCFA';
 }
 
-function formatDate(iso: string | null): string {
+function formatDate(iso: string | null, locale: string): string {
   if (!iso) return '—';
-  return new Date(iso).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' });
+  return new Date(iso).toLocaleString(locale === 'fr' ? 'fr-FR' : 'en-US', {
+    dateStyle: 'short',
+    timeStyle: 'short',
+  });
 }
 
 export function AdminFinanceDashboard() {
+  const t = useTranslations('Admin');
   const [tab, setTab] = React.useState<Tab>('escalations');
 
   return (
     <div className="space-y-6">
       <header className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-extrabold">Finance</h1>
-          <p className="text-xs text-muted-foreground">
-            Dashboard de paiements et soldes — ADR-0005
-          </p>
+          <h1 className="text-2xl font-extrabold">{t('financeTitle')}</h1>
+          <p className="text-xs text-muted-foreground">{t('financeSubtitle')}</p>
         </div>
         <Button asChild variant="outline" size="sm">
-          <Link href="/admin">← Console admin</Link>
+          <Link href="/admin">{t('financeBackToConsole')}</Link>
         </Button>
       </header>
 
       <nav className="flex gap-1 border-b">
-        {TABS.map((t) => (
+        {TABS.map((entry) => (
           <button
-            key={t.id}
+            key={entry.id}
             type="button"
-            onClick={() => setTab(t.id)}
+            onClick={() => setTab(entry.id)}
             className={`-mb-px border-b-2 px-4 py-2 text-sm font-semibold transition-colors ${
-              tab === t.id
+              tab === entry.id
                 ? 'border-destructive text-destructive'
                 : 'border-transparent text-muted-foreground hover:text-foreground'
             }`}
           >
-            {t.label}
+            {t(entry.labelKey)}
           </button>
         ))}
       </nav>
@@ -88,6 +99,7 @@ export function AdminFinanceDashboard() {
 // ── Cashout requests panel ──────────────────────────────────────────
 
 function CashoutRequestsPanel() {
+  const t = useTranslations('Admin');
   const [status, setStatus] = React.useState<CashoutRequestStatus | ''>('PENDING_APPROVAL');
   const [state, setState] = React.useState<
     | { status: 'loading' }
@@ -106,38 +118,41 @@ function CashoutRequestsPanel() {
           setState({ status: 'unauthenticated' });
           return;
         }
-        const msg = err instanceof Error ? err.message : 'Erreur inconnue';
+        const msg = err instanceof Error ? err.message : t('financeErrUnknown');
         setState({ status: 'error', message: msg });
       });
-  }, [status]);
+  }, [status, t]);
 
   React.useEffect(load, [load]);
 
-  if (state.status === 'unauthenticated')
-    return <AuthGate label="Connexion admin requise pour les demandes de virement." />;
+  if (state.status === 'unauthenticated') return <AuthGate label={t('financeAuthCashouts')} />;
   if (state.status === 'loading') return <LoadingSkeleton rows={4} />;
   if (state.status === 'error')
-    return <p className="text-sm text-destructive">Erreur : {state.message}</p>;
+    return (
+      <p className="text-sm text-destructive">
+        {t('financeErrPrefix', { message: state.message })}
+      </p>
+    );
 
   return (
     <section>
       <div className="mb-3 flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          {state.data.total} demande{state.data.total > 1 ? 's' : ''}
+          {t('cashoutsCount', { count: state.data.total })}
         </p>
         <select
           value={status}
           onChange={(e) => setStatus(e.target.value as CashoutRequestStatus | '')}
           className="rounded-md border px-2 py-1 text-xs"
         >
-          <option value="PENDING_APPROVAL">À approuver</option>
-          <option value="APPROVED">Approuvées</option>
-          <option value="REJECTED">Rejetées</option>
-          <option value="">Toutes</option>
+          <option value="PENDING_APPROVAL">{t('cashoutsFilterPending')}</option>
+          <option value="APPROVED">{t('cashoutsFilterApproved')}</option>
+          <option value="REJECTED">{t('cashoutsFilterRejected')}</option>
+          <option value="">{t('cashoutsFilterAll')}</option>
         </select>
       </div>
       {state.data.rows.length === 0 ? (
-        <EmptyState message="Aucune demande." />
+        <EmptyState message={t('cashoutsEmpty')} />
       ) : (
         <ul className="divide-y rounded-lg border">
           {state.data.rows.map((r) => (
@@ -156,13 +171,21 @@ function CashoutRow({
   row: CashoutRequestRow;
   onActionComplete: () => void;
 }) {
+  const t = useTranslations('Admin');
   const [busy, setBusy] = React.useState<'approve' | 'reject' | null>(null);
   const [error, setError] = React.useState<string | null>(null);
   const [showReject, setShowReject] = React.useState(false);
   const [rejectReason, setRejectReason] = React.useState('');
 
   const approve = async () => {
-    if (!confirm(`Approuver le virement de ${formatXAF(row.requestedXAF)} à ${row.vendorName} ?`))
+    if (
+      !confirm(
+        t('cashoutsApproveConfirm', {
+          amount: formatXAF(row.requestedXAF),
+          vendor: row.vendorName,
+        }),
+      )
+    )
       return;
     setBusy('approve');
     setError(null);
@@ -175,7 +198,7 @@ function CashoutRow({
           ? (err.body as { message: string }).message
           : err instanceof Error
             ? err.message
-            : 'Erreur';
+            : t('financeErrFallback');
       setError(msg);
     } finally {
       setBusy(null);
@@ -184,7 +207,7 @@ function CashoutRow({
 
   const reject = async () => {
     if (rejectReason.length < 3) {
-      setError('Raison requise (min 3 caractères).');
+      setError(t('cashoutsRejectReasonMin'));
       return;
     }
     setBusy('reject');
@@ -193,7 +216,7 @@ function CashoutRow({
       await adminFinanceApi.rejectCashoutRequest(row.requestId, rejectReason);
       onActionComplete();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Erreur';
+      const msg = err instanceof Error ? err.message : t('financeErrFallback');
       setError(msg);
     } finally {
       setBusy(null);
@@ -213,11 +236,11 @@ function CashoutRow({
             </span>
             {row.isTrusted ? (
               <span className="rounded-full bg-green-100 px-2 py-0.5 text-[10px] uppercase tracking-wider text-green-800">
-                Trusted
+                {t('cashoutsTrustedBadge')}
               </span>
             ) : (
               <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] uppercase tracking-wider text-amber-800">
-                New
+                {t('cashoutsNewBadge')}
               </span>
             )}
             <StatusBadge status={row.status} />
@@ -230,7 +253,7 @@ function CashoutRow({
         {isPending && (
           <div className="flex shrink-0 items-center gap-2">
             <Button size="sm" onClick={approve} disabled={busy !== null}>
-              {busy === 'approve' ? '…' : 'Approuver'}
+              {busy === 'approve' ? '…' : t('cashoutsApproveCta')}
             </Button>
             <Button
               size="sm"
@@ -238,7 +261,7 @@ function CashoutRow({
               onClick={() => setShowReject((v) => !v)}
               disabled={busy !== null}
             >
-              Rejeter
+              {t('cashoutsRejectCta')}
             </Button>
           </div>
         )}
@@ -249,12 +272,12 @@ function CashoutRow({
             type="text"
             value={rejectReason}
             onChange={(e) => setRejectReason(e.target.value)}
-            placeholder="Raison (KYC manquant, etc.)"
+            placeholder={t('cashoutsRejectReasonPh')}
             className="flex-1 rounded-md border px-3 py-1.5 text-xs"
             maxLength={200}
           />
           <Button size="sm" variant="destructive" onClick={reject} disabled={busy !== null}>
-            {busy === 'reject' ? '…' : 'Confirmer le rejet'}
+            {busy === 'reject' ? '…' : t('cashoutsRejectConfirmCta')}
           </Button>
         </div>
       )}
@@ -264,23 +287,30 @@ function CashoutRow({
 }
 
 function StatusBadge({ status }: { status: CashoutRequestStatus }) {
+  const t = useTranslations('Admin');
   const styles: Record<CashoutRequestStatus, string> = {
     PENDING_APPROVAL: 'bg-amber-100 text-amber-800',
     APPROVED: 'bg-green-100 text-green-800',
     REJECTED: 'bg-red-100 text-red-800',
     CANCELLED: 'bg-gray-200 text-gray-800',
   };
-  const labels: Record<CashoutRequestStatus, string> = {
-    PENDING_APPROVAL: 'En attente',
-    APPROVED: 'Approuvé',
-    REJECTED: 'Rejeté',
-    CANCELLED: 'Annulé',
+  const labels: Record<
+    CashoutRequestStatus,
+    | 'cashoutsStatusPending'
+    | 'cashoutsStatusApproved'
+    | 'cashoutsStatusRejected'
+    | 'cashoutsStatusCancelled'
+  > = {
+    PENDING_APPROVAL: 'cashoutsStatusPending',
+    APPROVED: 'cashoutsStatusApproved',
+    REJECTED: 'cashoutsStatusRejected',
+    CANCELLED: 'cashoutsStatusCancelled',
   };
   return (
     <span
       className={`rounded-full px-2 py-0.5 text-[10px] uppercase tracking-wider ${styles[status]}`}
     >
-      {labels[status]}
+      {t(labels[status])}
     </span>
   );
 }
@@ -288,6 +318,8 @@ function StatusBadge({ status }: { status: CashoutRequestStatus }) {
 // ── Vendor balances panel ───────────────────────────────────────────
 
 function VendorBalancesPanel() {
+  const t = useTranslations('Admin');
+  const locale = useLocale();
   const [state, setState] = React.useState<
     | { status: 'loading' }
     | { status: 'unauthenticated' }
@@ -306,33 +338,37 @@ function VendorBalancesPanel() {
         }
         setState({
           status: 'error',
-          message: err instanceof Error ? err.message : 'Erreur',
+          message: err instanceof Error ? err.message : t('financeErrFallback'),
         });
       });
-  }, []);
+  }, [t]);
 
-  if (state.status === 'unauthenticated') return <AuthGate label="Connexion admin requise." />;
+  if (state.status === 'unauthenticated') return <AuthGate label={t('financeAuthDefault')} />;
   if (state.status === 'loading') return <LoadingSkeleton rows={6} />;
   if (state.status === 'error')
-    return <p className="text-sm text-destructive">Erreur : {state.message}</p>;
+    return (
+      <p className="text-sm text-destructive">
+        {t('financeErrPrefix', { message: state.message })}
+      </p>
+    );
 
   return (
     <section>
       <p className="mb-2 text-xs text-muted-foreground">
-        {state.data.total} vendeur{state.data.total > 1 ? 's' : ''} avec un solde positif
+        {t('vendorsCount', { count: state.data.total })}
       </p>
       {state.data.rows.length === 0 ? (
-        <EmptyState message="Aucun solde positif." />
+        <EmptyState message={t('vendorsEmpty')} />
       ) : (
         <div className="-mx-5 overflow-x-auto px-5 md:mx-0 md:px-0">
           <table className="w-full min-w-[640px] text-sm">
             <thead>
               <tr className="border-b text-left text-xs text-muted-foreground">
-                <th className="py-2">Nom</th>
-                <th>Type</th>
-                <th>Solde</th>
-                <th>Trusted</th>
-                <th>Dernier virement</th>
+                <th className="py-2">{t('vendorsTableName')}</th>
+                <th>{t('vendorsTableType')}</th>
+                <th>{t('vendorsTableBalance')}</th>
+                <th>{t('vendorsTableTrusted')}</th>
+                <th>{t('vendorsTableLastPayout')}</th>
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -342,7 +378,9 @@ function VendorBalancesPanel() {
                   <td className="text-muted-foreground">{r.type}</td>
                   <td className="font-semibold">{formatXAF(r.balanceXAF)}</td>
                   <td>{r.isTrusted ? '✓' : '—'}</td>
-                  <td className="text-xs text-muted-foreground">{formatDate(r.lastPayoutAt)}</td>
+                  <td className="text-xs text-muted-foreground">
+                    {formatDate(r.lastPayoutAt, locale)}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -356,6 +394,8 @@ function VendorBalancesPanel() {
 // ── Rider balances panel ────────────────────────────────────────────
 
 function RiderBalancesPanel() {
+  const t = useTranslations('Admin');
+  const locale = useLocale();
   const [state, setState] = React.useState<
     | { status: 'loading' }
     | { status: 'unauthenticated' }
@@ -374,32 +414,36 @@ function RiderBalancesPanel() {
         }
         setState({
           status: 'error',
-          message: err instanceof Error ? err.message : 'Erreur',
+          message: err instanceof Error ? err.message : t('financeErrFallback'),
         });
       });
-  }, []);
+  }, [t]);
 
-  if (state.status === 'unauthenticated') return <AuthGate label="Connexion admin requise." />;
+  if (state.status === 'unauthenticated') return <AuthGate label={t('financeAuthDefault')} />;
   if (state.status === 'loading') return <LoadingSkeleton rows={6} />;
   if (state.status === 'error')
-    return <p className="text-sm text-destructive">Erreur : {state.message}</p>;
+    return (
+      <p className="text-sm text-destructive">
+        {t('financeErrPrefix', { message: state.message })}
+      </p>
+    );
 
   return (
     <section>
       <p className="mb-2 text-xs text-muted-foreground">
-        {state.data.total} livreur{state.data.total > 1 ? 's' : ''} avec un solde positif
+        {t('ridersCount', { count: state.data.total })}
       </p>
       {state.data.rows.length === 0 ? (
-        <EmptyState message="Aucun solde positif." />
+        <EmptyState message={t('ridersEmpty')} />
       ) : (
         <div className="-mx-5 overflow-x-auto px-5 md:mx-0 md:px-0">
           <table className="w-full min-w-[640px] text-sm">
             <thead>
               <tr className="border-b text-left text-xs text-muted-foreground">
-                <th className="py-2">Nom</th>
-                <th>Véhicule</th>
-                <th>Solde</th>
-                <th>Dernier virement</th>
+                <th className="py-2">{t('ridersTableName')}</th>
+                <th>{t('ridersTableVehicle')}</th>
+                <th>{t('ridersTableBalance')}</th>
+                <th>{t('ridersTableLastPayout')}</th>
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -408,7 +452,9 @@ function RiderBalancesPanel() {
                   <td className="py-2 font-medium">{r.name ?? '—'}</td>
                   <td className="text-muted-foreground">{r.vehicleType}</td>
                   <td className="font-semibold">{formatXAF(r.balanceXAF)}</td>
-                  <td className="text-xs text-muted-foreground">{formatDate(r.lastPayoutAt)}</td>
+                  <td className="text-xs text-muted-foreground">
+                    {formatDate(r.lastPayoutAt, locale)}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -422,6 +468,7 @@ function RiderBalancesPanel() {
 // ── Refund queue panel ──────────────────────────────────────────────
 
 function RefundQueuePanel() {
+  const t = useTranslations('Admin');
   const [state, setState] = React.useState<
     | { status: 'loading' }
     | { status: 'unauthenticated' }
@@ -440,32 +487,36 @@ function RefundQueuePanel() {
         }
         setState({
           status: 'error',
-          message: err instanceof Error ? err.message : 'Erreur',
+          message: err instanceof Error ? err.message : t('financeErrFallback'),
         });
       });
-  }, []);
+  }, [t]);
 
-  if (state.status === 'unauthenticated') return <AuthGate label="Connexion admin requise." />;
+  if (state.status === 'unauthenticated') return <AuthGate label={t('financeAuthDefault')} />;
   if (state.status === 'loading') return <LoadingSkeleton rows={4} />;
   if (state.status === 'error')
-    return <p className="text-sm text-destructive">Erreur : {state.message}</p>;
+    return (
+      <p className="text-sm text-destructive">
+        {t('financeErrPrefix', { message: state.message })}
+      </p>
+    );
 
   return (
     <section>
       <p className="mb-2 text-xs text-muted-foreground">
-        {state.data.total} commande{state.data.total > 1 ? 's' : ''} en attente de remboursement
+        {t('refundsCount', { count: state.data.total })}
       </p>
       {state.data.rows.length === 0 ? (
-        <EmptyState message="Aucun remboursement en attente." />
+        <EmptyState message={t('refundsEmpty')} />
       ) : (
         <div className="-mx-5 overflow-x-auto px-5 md:mx-0 md:px-0">
           <table className="w-full min-w-[640px] text-sm">
             <thead>
               <tr className="border-b text-left text-xs text-muted-foreground">
-                <th className="py-2">Commande</th>
-                <th>Vendeur</th>
-                <th>Montant</th>
-                <th>Âge</th>
+                <th className="py-2">{t('refundsTableOrder')}</th>
+                <th>{t('refundsTableVendor')}</th>
+                <th>{t('refundsTableAmount')}</th>
+                <th>{t('refundsTableAge')}</th>
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -479,7 +530,7 @@ function RefundQueuePanel() {
                       r.ageDays >= 3 ? 'font-bold text-destructive' : 'text-muted-foreground'
                     }`}
                   >
-                    {r.ageDays}j
+                    {t('ageDaysShort', { n: r.ageDays })}
                   </td>
                 </tr>
               ))}
@@ -494,11 +545,12 @@ function RefundQueuePanel() {
 // ── shared bits ─────────────────────────────────────────────────────
 
 function AuthGate({ label }: { label: string }) {
+  const t = useTranslations('Admin');
   return (
     <div className="rounded-lg border bg-muted/40 p-6 text-center">
       <p className="text-sm font-medium">{label}</p>
       <Button asChild className="mt-3" size="sm">
-        <Link href="/admin/login">Se connecter</Link>
+        <Link href="/admin/login">{t('financeAuthCta')}</Link>
       </Button>
     </div>
   );
@@ -521,6 +573,7 @@ function EmptyState({ message }: { message: string }) {
 // ── Escalations (ADR-0005 §S3 / #85) ────────────────────────────────
 
 function EscalationsPanel() {
+  const t = useTranslations('Admin');
   const [state, setState] = React.useState<
     | { status: 'loading' }
     | { status: 'unauthenticated' }
@@ -540,25 +593,29 @@ function EscalationsPanel() {
         }
         setState({
           status: 'error',
-          message: err instanceof Error ? err.message : 'Erreur',
+          message: err instanceof Error ? err.message : t('financeErrFallback'),
         });
       });
-  }, []);
+  }, [t]);
 
   React.useEffect(load, [load]);
 
-  if (state.status === 'unauthenticated') return <AuthGate label="Connexion admin requise." />;
+  if (state.status === 'unauthenticated') return <AuthGate label={t('financeAuthDefault')} />;
   if (state.status === 'loading') return <LoadingSkeleton rows={3} />;
   if (state.status === 'error')
-    return <p className="text-sm text-destructive">Erreur : {state.message}</p>;
+    return (
+      <p className="text-sm text-destructive">
+        {t('financeErrPrefix', { message: state.message })}
+      </p>
+    );
 
   return (
     <section>
       <p className="mb-2 text-xs text-muted-foreground">
-        {state.rows.length} ligne{state.rows.length > 1 ? 's' : ''} en attente d&apos;action
+        {t('escalationsCount', { count: state.rows.length })}
       </p>
       {state.rows.length === 0 ? (
-        <EmptyState message="Aucune escalation. ✨" />
+        <EmptyState message={t('escalationsEmpty')} />
       ) : (
         <ul className="space-y-2">
           {state.rows.map((row) => (
@@ -577,6 +634,7 @@ function EscalationRow({
   row: EscalationItem;
   onActionComplete: () => void;
 }) {
+  const t = useTranslations('Admin');
   const [busy, setBusy] = React.useState<'retry' | 'mark-paid' | null>(null);
   const [error, setError] = React.useState<string | null>(null);
   const [showMarkPaid, setShowMarkPaid] = React.useState(false);
@@ -587,12 +645,11 @@ function EscalationRow({
   const canMarkPaid = row.kind !== 'refund'; // Refunds are flipped via webhook, not manually marked here
 
   const retry = async () => {
-    if (
-      !confirm(
-        `Réessayer ce ${row.kind === 'vendor_payout' ? 'virement vendeur' : 'virement livreur'} ?`,
-      )
-    )
-      return;
+    const confirmMessage =
+      row.kind === 'vendor_payout'
+        ? t('escalationRetryConfirmVendor')
+        : t('escalationRetryConfirmRider');
+    if (!confirm(confirmMessage)) return;
     setBusy('retry');
     setError(null);
     try {
@@ -600,7 +657,7 @@ function EscalationRow({
       else if (row.kind === 'rider_payout') await adminFinanceApi.retryRiderPayout(row.id);
       onActionComplete();
     } catch (err) {
-      setError(extractErrorMessage(err));
+      setError(extractErrorMessage(err, t));
     } finally {
       setBusy(null);
     }
@@ -608,7 +665,7 @@ function EscalationRow({
 
   const markPaid = async () => {
     if (campayRef.trim().length < 3) {
-      setError('Référence Campay requise (3 caractères min).');
+      setError(t('escalationCampayRefMin'));
       return;
     }
     setBusy('mark-paid');
@@ -621,11 +678,18 @@ function EscalationRow({
         await adminFinanceApi.manualMarkRiderPayoutPaid(row.id, body);
       onActionComplete();
     } catch (err) {
-      setError(extractErrorMessage(err));
+      setError(extractErrorMessage(err, t));
     } finally {
       setBusy(null);
     }
   };
+
+  const kindLabel =
+    row.kind === 'vendor_payout'
+      ? t('escalationKindVendor')
+      : row.kind === 'rider_payout'
+        ? t('escalationKindRider')
+        : t('escalationKindRefund');
 
   return (
     <li className="bg-card rounded-lg border px-4 py-3">
@@ -633,14 +697,12 @@ function EscalationRow({
         <div>
           <div className="flex items-center gap-2 text-xs">
             <span className="rounded-full bg-muted px-2 py-0.5 uppercase tracking-wider">
-              {row.kind === 'vendor_payout'
-                ? 'Vendeur'
-                : row.kind === 'rider_payout'
-                  ? 'Livreur'
-                  : 'Remboursement'}
+              {kindLabel}
             </span>
             <StatusPill status={row.status} />
-            <span className="text-muted-foreground">{row.ageMinutes} min</span>
+            <span className="text-muted-foreground">
+              {t('escalationMinutes', { n: row.ageMinutes })}
+            </span>
           </div>
           <p className="mt-1 text-sm font-semibold">{formatXAF(row.netXAF)}</p>
           <p className="text-xs text-muted-foreground">
@@ -652,12 +714,12 @@ function EscalationRow({
         <div className="flex shrink-0 items-center gap-2">
           {canRetry && (
             <Button size="sm" variant="outline" onClick={retry} disabled={busy !== null}>
-              {busy === 'retry' ? '…' : 'Réessayer'}
+              {busy === 'retry' ? '…' : t('escalationRetryCta')}
             </Button>
           )}
           {canMarkPaid && (
             <Button size="sm" onClick={() => setShowMarkPaid((v) => !v)} disabled={busy !== null}>
-              Marquer payé
+              {t('escalationMarkPaidCta')}
             </Button>
           )}
         </div>
@@ -668,7 +730,7 @@ function EscalationRow({
             type="text"
             value={campayRef}
             onChange={(e) => setCampayRef(e.target.value)}
-            placeholder="Référence Campay (ex. CP-12345)"
+            placeholder={t('escalationCampayRefPh')}
             className="w-full rounded-md border px-3 py-1.5 text-xs"
             maxLength={120}
           />
@@ -676,12 +738,12 @@ function EscalationRow({
             type="text"
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            placeholder="Note (optionnel)"
+            placeholder={t('escalationNotePh')}
             className="w-full rounded-md border px-3 py-1.5 text-xs"
             maxLength={200}
           />
           <Button size="sm" variant="destructive" onClick={markPaid} disabled={busy !== null}>
-            {busy === 'mark-paid' ? '…' : 'Confirmer'}
+            {busy === 'mark-paid' ? '…' : t('escalationConfirmCta')}
           </Button>
         </div>
       )}
@@ -691,6 +753,9 @@ function EscalationRow({
 }
 
 function StatusPill({ status }: { status: EscalationItem['status'] }) {
+  // Status codes are operator-facing tokens (FAILED/IN_FLIGHT/STALE_REFUND)
+  // — kept untranslated like the legacy `vendorType` codes elsewhere in
+  // the admin surface.
   const styles: Record<string, string> = {
     FAILED: 'bg-red-100 text-red-800',
     IN_FLIGHT: 'bg-amber-100 text-amber-800',
@@ -707,17 +772,18 @@ function StatusPill({ status }: { status: EscalationItem['status'] }) {
   );
 }
 
-function extractErrorMessage(err: unknown): string {
+function extractErrorMessage(err: unknown, t: ReturnType<typeof useTranslations<'Admin'>>): string {
   if (err instanceof ApiClientError) {
     const body = err.body as { code?: string; message?: string } | undefined;
-    return body?.message ?? `Erreur ${err.status}`;
+    return body?.message ?? `${t('financeErrFallback')} ${err.status}`;
   }
-  return err instanceof Error ? err.message : 'Erreur inconnue';
+  return err instanceof Error ? err.message : t('financeErrUnknown');
 }
 
 // ── Rider incidents (S3 #213 / #220 — stuck-PICKED_UP triage) ─────
 
 function RiderIncidentsPanel() {
+  const t = useTranslations('Admin');
   const [state, setState] = React.useState<
     | { status: 'loading' }
     | { status: 'unauthenticated' }
@@ -737,26 +803,29 @@ function RiderIncidentsPanel() {
         }
         setState({
           status: 'error',
-          message: err instanceof Error ? err.message : 'Erreur',
+          message: err instanceof Error ? err.message : t('financeErrFallback'),
         });
       });
-  }, []);
+  }, [t]);
 
   React.useEffect(load, [load]);
 
-  if (state.status === 'unauthenticated') return <AuthGate label="Connexion admin requise." />;
+  if (state.status === 'unauthenticated') return <AuthGate label={t('financeAuthDefault')} />;
   if (state.status === 'loading') return <LoadingSkeleton rows={3} />;
   if (state.status === 'error')
-    return <p className="text-sm text-destructive">Erreur : {state.message}</p>;
+    return (
+      <p className="text-sm text-destructive">
+        {t('financeErrPrefix', { message: state.message })}
+      </p>
+    );
 
   return (
     <section>
       <p className="mb-2 text-xs text-muted-foreground">
-        {state.rows.length} commande{state.rows.length > 1 ? 's' : ''} bloquée
-        {state.rows.length > 1 ? 's' : ''} en PICKED_UP &gt; 2h
+        {t('incidentsCount', { count: state.rows.length })}
       </p>
       {state.rows.length === 0 ? (
-        <EmptyState message="Aucun incident livreur." />
+        <EmptyState message={t('incidentsEmpty')} />
       ) : (
         <ul className="space-y-2">
           {state.rows.map((row) => (
@@ -775,6 +844,7 @@ function RiderIncidentRow({
   row: StuckPickupItem;
   onActionComplete: () => void;
 }) {
+  const t = useTranslations('Admin');
   const [open, setOpen] = React.useState(false);
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
@@ -787,7 +857,7 @@ function RiderIncidentRow({
 
   const resolve = async () => {
     if (body.note.trim().length < 3) {
-      setError('Note requise (3 caractères min).');
+      setError(t('incidentsNoteMin'));
       return;
     }
     setBusy(true);
@@ -796,7 +866,7 @@ function RiderIncidentRow({
       await adminRiderFraudApi.resolve(row.orderId, { ...body, note: body.note.trim() });
       onActionComplete();
     } catch (err) {
-      setError(extractErrorMessage(err));
+      setError(extractErrorMessage(err, t));
     } finally {
       setBusy(false);
     }
@@ -808,14 +878,17 @@ function RiderIncidentRow({
         <div className="min-w-0">
           <div className="flex items-center gap-2 text-xs">
             <span className="rounded-full bg-amber-100 px-2 py-0.5 uppercase tracking-wider text-amber-800">
-              {row.minutesStuck} min
+              {t('incidentsMinutesStuck', { n: row.minutesStuck })}
             </span>
             <span className="font-mono text-[11px]">{row.code}</span>
           </div>
           <p className="mt-1 text-sm font-semibold">{formatXAF(row.totalXAF)}</p>
           <p className="text-xs text-muted-foreground">
-            Vendeur: <strong>{row.vendorName}</strong> · Livreur:{' '}
-            <strong>{row.riderName ?? '—'}</strong>
+            {t.rich('incidentsVendorRiderLine', {
+              vendor: row.vendorName,
+              rider: row.riderName ?? t('incidentsRiderNone'),
+              strong: (chunks) => <strong>{chunks}</strong>,
+            })}
           </p>
         </div>
         <Button
@@ -824,13 +897,13 @@ function RiderIncidentRow({
           onClick={() => setOpen((v) => !v)}
           disabled={busy}
         >
-          {open ? 'Annuler' : 'Résoudre'}
+          {open ? t('incidentsCancelCta') : t('incidentsResolveCta')}
         </Button>
       </div>
       {open && (
         <div className="mt-3 space-y-3 border-t pt-3">
           <div>
-            <label className="block text-xs font-semibold">Action livreur</label>
+            <label className="block text-xs font-semibold">{t('incidentsActionLabel')}</label>
             <div className="mt-1 flex gap-3">
               {(['SUSPEND', 'WARN'] as const).map((action) => (
                 <label key={action} className="flex items-center gap-1.5 text-xs">
@@ -840,7 +913,7 @@ function RiderIncidentRow({
                     checked={body.riderAction === action}
                     onChange={() => setBody((b) => ({ ...b, riderAction: action }))}
                   />
-                  {action === 'SUSPEND' ? 'Suspendre' : 'Avertir'}
+                  {action === 'SUSPEND' ? t('incidentsActionSuspend') : t('incidentsActionWarn')}
                 </label>
               ))}
             </div>
@@ -852,7 +925,7 @@ function RiderIncidentRow({
                 checked={body.vendorCompensation}
                 onChange={(e) => setBody((b) => ({ ...b, vendorCompensation: e.target.checked }))}
               />
-              Compenser le vendeur (food cost)
+              {t('incidentsCompensateVendor')}
             </label>
             <label className="flex items-center gap-2 text-xs">
               <input
@@ -860,19 +933,19 @@ function RiderIncidentRow({
                 checked={body.consumerRefund}
                 onChange={(e) => setBody((b) => ({ ...b, consumerRefund: e.target.checked }))}
               />
-              Rembourser le consommateur
+              {t('incidentsRefundConsumer')}
             </label>
           </div>
           <textarea
             value={body.note}
             onChange={(e) => setBody((b) => ({ ...b, note: e.target.value }))}
-            placeholder="Note (visible en audit log)"
+            placeholder={t('incidentsNotePh')}
             className="w-full rounded-md border px-3 py-1.5 text-xs"
             maxLength={200}
             rows={2}
           />
           <Button size="sm" variant="destructive" onClick={resolve} disabled={busy}>
-            {busy ? '…' : 'Confirmer la résolution'}
+            {busy ? '…' : t('incidentsConfirmCta')}
           </Button>
           {error && <p className="text-xs text-destructive">{error}</p>}
         </div>

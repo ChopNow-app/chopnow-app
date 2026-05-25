@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { Check } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 import type { OrderStatus } from '../hooks/useVendorOrders';
 
@@ -12,11 +13,15 @@ interface OrderStepperProps {
 
 type StepKey = 'accepted' | 'preparing' | 'ready' | 'rider';
 
-const STEPS: Array<{ key: StepKey; label: string }> = [
-  { key: 'accepted', label: 'Acceptée' },
-  { key: 'preparing', label: 'Préparation' },
-  { key: 'ready', label: 'Prête' },
-  { key: 'rider', label: 'Livreur' },
+/** Translation-key suffixes resolved at render time via useTranslations('Vendor'). */
+const STEP_KEYS: Array<{
+  key: StepKey;
+  labelKey: 'stepperAccepted' | 'stepperPreparing' | 'stepperReady' | 'stepperRider';
+}> = [
+  { key: 'accepted', labelKey: 'stepperAccepted' },
+  { key: 'preparing', labelKey: 'stepperPreparing' },
+  { key: 'ready', labelKey: 'stepperReady' },
+  { key: 'rider', labelKey: 'stepperRider' },
 ];
 
 /**
@@ -45,14 +50,15 @@ function indexFor(status: OrderStatus): number {
 }
 
 export function OrderStepper({ status, className }: OrderStepperProps) {
+  const t = useTranslations('Vendor');
   const current = indexFor(status);
 
   return (
     <ol
       className={cn('flex items-start justify-between gap-1', className)}
-      aria-label="Étapes de la commande"
+      aria-label={t('stepperAriaLabel')}
     >
-      {STEPS.map((step, idx) => {
+      {STEP_KEYS.map((step, idx) => {
         const reached = idx <= current;
         const isCurrent = idx === current;
         return (
@@ -86,7 +92,7 @@ export function OrderStepper({ status, className }: OrderStepperProps) {
                   idx + 1
                 )}
               </span>
-              {idx < STEPS.length - 1 ? (
+              {idx < STEP_KEYS.length - 1 ? (
                 <div
                   className={cn(
                     '-mr-1 h-0.5 flex-1 transition-colors',
@@ -104,7 +110,7 @@ export function OrderStepper({ status, className }: OrderStepperProps) {
                 reached ? 'text-chop-ink' : 'text-muted-foreground',
               )}
             >
-              {step.label}
+              {t(step.labelKey)}
             </span>
           </li>
         );

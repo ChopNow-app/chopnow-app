@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { AuthRequired } from '@/components/ui/auth-required';
 import { Button } from '@/components/ui/button';
 import { useRiderAvailability } from '../hooks/useRiderAvailability';
@@ -18,6 +19,8 @@ import { MesGainsCard } from './MesGainsCard';
  *   3. Active courses list — taps through to /livreur/courses/[orderId]
  */
 export function LivreurDashboard() {
+  const t = useTranslations('Livreur');
+  const tCommon = useTranslations('Common');
   const availability = useRiderAvailability();
   const courses = useRiderCourses();
   const heartbeat = useRiderHeartbeat(availability.isOnline);
@@ -26,9 +29,9 @@ export function LivreurDashboard() {
     return (
       <AuthRequired
         theme="dark"
-        subtitle="Connecte-toi avec ton numéro de téléphone livreur pour voir tes courses du jour."
+        subtitle={t('authSubtitle')}
         loginHref="/login?next=/livreur"
-        secondary={{ label: "Pas encore livreur ? S'inscrire", href: '/livrer' }}
+        secondary={{ label: t('authSecondary'), href: '/livrer' }}
       />
     );
   }
@@ -40,9 +43,9 @@ export function LivreurDashboard() {
       <section className="rounded-2xl border border-chop-dark-border bg-chop-dark-surface p-4 shadow-rider">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-xs uppercase tracking-widest text-white/60">Statut</p>
+            <p className="text-xs uppercase tracking-widest text-white/60">{t('statusLabel')}</p>
             <p className="mt-1 text-2xl font-extrabold">
-              {availability.isOnline ? '🟢 En ligne' : '⚪ Hors ligne'}
+              {availability.isOnline ? t('statusOnline') : t('statusOffline')}
             </p>
           </div>
           <Button
@@ -52,7 +55,7 @@ export function LivreurDashboard() {
             onClick={onToggle}
             variant={availability.isOnline ? 'outline' : 'default'}
           >
-            {availability.setting ? '…' : availability.isOnline ? 'Pause' : 'Je commence'}
+            {availability.setting ? '…' : availability.isOnline ? t('pauseCta') : t('goOnline')}
           </Button>
         </div>
         {availability.error ? (
@@ -65,14 +68,14 @@ export function LivreurDashboard() {
 
       <section>
         <header className="mb-3 flex items-center justify-between">
-          <h2 className="text-lg font-bold">Courses du moment</h2>
+          <h2 className="text-lg font-bold">{t('coursesHeading')}</h2>
           {courses.status === 'ready' ? (
             <button
               type="button"
               onClick={courses.reload}
               className="text-xs text-white/60 underline"
             >
-              Actualiser
+              {tCommon('refresh')}
             </button>
           ) : null}
         </header>
@@ -85,9 +88,7 @@ export function LivreurDashboard() {
           </p>
         ) : courses.courses.length === 0 ? (
           <p className="rounded-lg border border-white/10 p-4 text-sm text-white/60">
-            {availability.isOnline
-              ? "Aucune course pour l'instant. Le dispatcher t'enverra la prochaine commande dès qu'elle arrive."
-              : 'Tu es hors ligne — passe en ligne pour recevoir des courses.'}
+            {availability.isOnline ? t('noCoursesOnline') : t('noCoursesOffline')}
           </p>
         ) : (
           <ul className="space-y-3">
@@ -104,31 +105,29 @@ export function LivreurDashboard() {
 }
 
 function HeartbeatStatusLine({ state, isOnline }: { state: HeartbeatState; isOnline: boolean }) {
+  const t = useTranslations('Livreur');
   if (!isOnline) return null;
   switch (state.status) {
     case 'starting':
-      return <p className="mt-3 text-xs text-white/60">Activation du GPS…</p>;
+      return <p className="mt-3 text-xs text-white/60">{t('gpsStarting')}</p>;
     case 'active':
       return (
         <p className="mt-3 text-xs text-white/60">
-          GPS actif · précision ±{Math.round(state.accuracyMeters)}m
+          {t('gpsActiveTemplate', { accuracy: Math.round(state.accuracyMeters) })}
         </p>
       );
     case 'denied':
       return <p className="mt-3 text-xs text-red-300">{state.message}</p>;
     case 'unsupported':
-      return (
-        <p className="mt-3 text-xs text-red-300">
-          Ton navigateur ne supporte pas la géolocalisation.
-        </p>
-      );
+      return <p className="mt-3 text-xs text-red-300">{t('gpsUnsupported')}</p>;
     default:
       return null;
   }
 }
 
 function CourseSummaryCard({ course }: { course: RiderCourse }) {
-  const stepLabel = labelForStep(course.status);
+  const t = useTranslations('Livreur');
+  const stepLabel = labelForStep(course.status, t);
   return (
     <Link
       href={`/livreur/courses/${course.id}`}
@@ -147,7 +146,7 @@ function CourseSummaryCard({ course }: { course: RiderCourse }) {
         </span>
       </div>
       <div className="mt-3 flex items-center justify-between text-sm text-white/70">
-        <span>{course.items?.length ?? 0} plat(s)</span>
+        <span>{t('dishesCount', { count: course.items?.length ?? 0 })}</span>
         <span className="font-mono font-semibold">
           {course.totalXAF.toLocaleString('fr-FR')} FCFA
         </span>
@@ -156,14 +155,17 @@ function CourseSummaryCard({ course }: { course: RiderCourse }) {
   );
 }
 
-function labelForStep(s: RiderCourse['status']): string {
+function labelForStep(
+  s: RiderCourse['status'],
+  t: ReturnType<typeof useTranslations<'Livreur'>>,
+): string {
   switch (s) {
     case 'ACCEPTED':
     case 'IN_PREP':
     case 'READY_PICKUP':
-      return 'À récupérer';
+      return t('stepToPickup');
     case 'PICKED_UP':
-      return 'En livraison';
+      return t('stepEnRoute');
     default:
       return s;
   }

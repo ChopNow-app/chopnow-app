@@ -4,6 +4,7 @@ import * as React from 'react';
 import { useForm, type Resolver, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { useTranslations } from 'next-intl';
 
 import { Button } from '@/components/ui/button';
 import { PhoneInput } from '@/components/PhoneInput';
@@ -25,36 +26,26 @@ const PHONE = /^(?:6[5-9]\d{7}|\+?[1-9]\d{7,14})$/;
 // strip them before submitting so the backend stores a normalized form.
 const PLATE_VISIBLE = /^[A-Z0-9 -]{4,15}$/;
 
-const schema = z
-  .object({
-    name: z.string().min(2, '2 caractères minimum').max(80),
-    phone: z.string().regex(PHONE, 'Numéro invalide'),
-    vehicleType: z.enum(['MOTO', 'BICYCLE', 'CAR', 'ON_FOOT'], {
-      errorMap: () => ({ message: 'Choisis un mode de transport' }),
-    }),
-    preferredZone: z.string().max(80).optional().or(z.literal('')),
-    licensePlate: z
-      .string()
-      .regex(PLATE_VISIBLE, 'Format plaque invalide')
-      .optional()
-      .or(z.literal('')),
-    momoPhone: z.string().regex(PHONE, 'Numéro MoMo invalide'),
-  })
-  .refine(
-    (v) =>
-      v.vehicleType === 'ON_FOOT' ||
-      v.vehicleType === 'BICYCLE' ||
-      (typeof v.licensePlate === 'string' && v.licensePlate.length > 0),
-    { message: 'Plaque requise pour moto et voiture', path: ['licensePlate'] },
-  );
+// Schema built inside the component so error messages are locale-aware.
+type FormValues = {
+  name: string;
+  phone: string;
+  vehicleType: 'MOTO' | 'BICYCLE' | 'CAR' | 'ON_FOOT';
+  preferredZone?: string;
+  licensePlate?: string;
+  momoPhone: string;
+};
 
-type FormValues = z.input<typeof schema>;
-
-const VEHICLES = [
-  { value: 'MOTO' as const, label: '🏍️ Moto', sub: 'Plus rapide en ville' },
-  { value: 'BICYCLE' as const, label: '🚲 Vélo', sub: 'Bon pour les courtes distances' },
-  { value: 'CAR' as const, label: '🚗 Voiture', sub: 'Idéal pour les groupes' },
-  { value: 'ON_FOOT' as const, label: '👟 À pied', sub: 'Quartier dense uniquement' },
+type VehicleKey = 'vehicleMoto' | 'vehicleBike' | 'vehicleCar' | 'vehicleOnFoot';
+const VEHICLES: Array<{
+  value: 'MOTO' | 'BICYCLE' | 'CAR' | 'ON_FOOT';
+  labelKey: VehicleKey;
+  subKey: `${VehicleKey}Sub`;
+}> = [
+  { value: 'MOTO', labelKey: 'vehicleMoto', subKey: 'vehicleMotoSub' },
+  { value: 'BICYCLE', labelKey: 'vehicleBike', subKey: 'vehicleBikeSub' },
+  { value: 'CAR', labelKey: 'vehicleCar', subKey: 'vehicleCarSub' },
+  { value: 'ON_FOOT', labelKey: 'vehicleOnFoot', subKey: 'vehicleOnFootSub' },
 ];
 
 /**
@@ -64,6 +55,7 @@ const VEHICLES = [
  * MOTO/CAR (license plate visible), optional for BICYCLE, skipped for ON_FOOT.
  */
 export function RiderOnboardingForm() {
+  const t = useTranslations('RiderOnboarding');
   const [idCardPhoto, setIdCard] = React.useState<File | null>(null);
   const [selfiePhoto, setSelfie] = React.useState<File | null>(null);
   const [vehiclePhoto, setVehicle] = React.useState<File | null>(null);
@@ -71,6 +63,33 @@ export function RiderOnboardingForm() {
   const [serverError, setServerError] = React.useState<string | null>(null);
   const [photoError, setPhotoError] = React.useState<string | null>(null);
   const [done, setDone] = React.useState(false);
+
+  const schema = React.useMemo(
+    () =>
+      z
+        .object({
+          name: z.string().min(2, t('validationMin2')).max(80),
+          phone: z.string().regex(PHONE, t('validationPhone')),
+          vehicleType: z.enum(['MOTO', 'BICYCLE', 'CAR', 'ON_FOOT'], {
+            errorMap: () => ({ message: t('validationVehicle') }),
+          }),
+          preferredZone: z.string().max(80).optional().or(z.literal('')),
+          licensePlate: z
+            .string()
+            .regex(PLATE_VISIBLE, t('validationPlate'))
+            .optional()
+            .or(z.literal('')),
+          momoPhone: z.string().regex(PHONE, t('validationMomo')),
+        })
+        .refine(
+          (v) =>
+            v.vehicleType === 'ON_FOOT' ||
+            v.vehicleType === 'BICYCLE' ||
+            (typeof v.licensePlate === 'string' && v.licensePlate.length > 0),
+          { message: t('validationPlateRequired'), path: ['licensePlate'] },
+        ),
+    [t],
+  );
 
   const {
     register,
@@ -93,18 +112,17 @@ export function RiderOnboardingForm() {
     setServerError(null);
     setPhotoError(null);
     if (!idCardPhoto) {
-      setPhotoError("Photo de la pièce d'identité requise.");
+      setPhotoError(t('errIdRequired'));
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
     if (!selfiePhoto) {
-      setPhotoError('Selfie requis pour vérifier que la pièce est bien la tienne.');
+      setPhotoError(t('errSelfieRequired'));
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
     if (needsVehiclePhoto && !vehiclePhoto && vehicleType !== 'BICYCLE') {
-      const noun = vehicleType === 'MOTO' ? 'moto' : 'voiture';
-      setPhotoError(`Photo de ta ${noun} requise (plaque bien visible).`);
+      setPhotoError(vehicleType === 'MOTO' ? t('errMotoPhotoRequired') : t('errCarPhotoRequired'));
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
@@ -144,17 +162,21 @@ export function RiderOnboardingForm() {
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
       {photoError ? <ErrorBanner message={photoError} /> : null}
 
-      <FormSection num="01" title="Qui es-tu ?">
-        <Field label="Nom complet" error={errors.name?.message}>
-          <BrandInput placeholder="Jean Mboué" autoComplete="name" {...register('name')} />
+      <FormSection num="01" title={t('section1')}>
+        <Field label={t('nameLabel')} error={errors.name?.message}>
+          <BrandInput
+            placeholder={t('namePlaceholder')}
+            autoComplete="name"
+            {...register('name')}
+          />
         </Field>
-        <Field label="Numéro WhatsApp" error={errors.phone?.message}>
+        <Field label={t('whatsappLabel')} error={errors.phone?.message}>
           <Controller
             control={control}
             name="phone"
             render={({ field }) => (
               <PhoneInput
-                value={field.value}
+                value={field.value ?? ''}
                 onChange={field.onChange}
                 error={errors.phone?.message}
               />
@@ -163,14 +185,14 @@ export function RiderOnboardingForm() {
         </Field>
       </FormSection>
 
-      <FormSection num="02" title="Avec quoi tu livres ?">
+      <FormSection num="02" title={t('section2')}>
         <fieldset className="space-y-2">
           {VEHICLES.map((v) => (
             <RadioCard
               key={v.value}
               value={v.value}
-              label={v.label}
-              sub={v.sub}
+              label={t(v.labelKey)}
+              sub={t(v.subKey)}
               {...register('vehicleType')}
             />
           ))}
@@ -182,13 +204,9 @@ export function RiderOnboardingForm() {
         </fieldset>
 
         {needsLicensePlate ? (
-          <Field
-            label="Numéro de plaque"
-            hint="majuscules — espaces tolérés"
-            error={errors.licensePlate?.message}
-          >
+          <Field label={t('plateLabel')} hint={t('plateHint')} error={errors.licensePlate?.message}>
             <BrandInput
-              placeholder="LT 1234 X"
+              placeholder={t('platePlaceholder')}
               autoCapitalize="characters"
               {...register('licensePlate', {
                 onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -199,22 +217,17 @@ export function RiderOnboardingForm() {
           </Field>
         ) : null}
 
-        <Field label="Zone préférée" hint="quartier où tu veux travailler — optionnel">
-          <BrandInput placeholder="Makepe, Bonamoussadi…" {...register('preferredZone')} />
+        <Field label={t('zoneLabel')} hint={t('zoneHint')}>
+          <BrandInput placeholder={t('zonePlaceholder')} {...register('preferredZone')} />
         </Field>
       </FormSection>
 
-      <FormSection num="03" title="Tes pièces">
+      <FormSection num="03" title={t('section3')}>
+        <PhotoPicker label={t('idLabel')} required file={idCardPhoto} onPick={setIdCard} />
         <PhotoPicker
-          label="Recto de ta CNI / passeport"
+          label={t('selfieLabel')}
           required
-          file={idCardPhoto}
-          onPick={setIdCard}
-        />
-        <PhotoPicker
-          label="Selfie clair (visage)"
-          required
-          helperText="Doit clairement montrer ton visage. Pas de masque, pas de filtre."
+          helperText={t('selfieHelper')}
           file={selfiePhoto}
           onPick={setSelfie}
         />
@@ -222,12 +235,14 @@ export function RiderOnboardingForm() {
           <PhotoPicker
             label={
               vehicleType === 'MOTO'
-                ? 'Photo de ta moto'
+                ? t('motoPhotoLabel')
                 : vehicleType === 'CAR'
-                  ? 'Photo de ta voiture'
-                  : 'Photo de ton vélo'
+                  ? t('carPhotoLabel')
+                  : t('bikePhotoLabel')
             }
-            hint={vehicleType === 'BICYCLE' ? 'optionnel' : 'plaque visible'}
+            hint={
+              vehicleType === 'BICYCLE' ? t('vehiclePhotoHintOptional') : t('vehiclePhotoHintPlate')
+            }
             required={vehicleType !== 'BICYCLE'}
             file={vehiclePhoto}
             onPick={setVehicle}
@@ -235,18 +250,14 @@ export function RiderOnboardingForm() {
         ) : null}
       </FormSection>
 
-      <FormSection num="04" title="Pour être payé">
-        <Field
-          label="Numéro MTN MoMo / Orange Money"
-          hint="paie hebdomadaire — chaque samedi 22h00"
-          error={errors.momoPhone?.message}
-        >
+      <FormSection num="04" title={t('section4')}>
+        <Field label={t('momoLabel')} hint={t('momoHint')} error={errors.momoPhone?.message}>
           <Controller
             control={control}
             name="momoPhone"
             render={({ field }) => (
               <PhoneInput
-                value={field.value}
+                value={field.value ?? ''}
                 onChange={field.onChange}
                 error={errors.momoPhone?.message}
               />
@@ -259,16 +270,20 @@ export function RiderOnboardingForm() {
 
       <div className="pt-2">
         <Button type="submit" disabled={submitting} size="lg" className="w-full">
-          {submitting ? 'Envoi…' : 'Envoyer mon dossier'}
+          {submitting ? t('submitting') : t('submit')}
         </Button>
         <p className="mt-3 text-center text-[11px] font-medium text-chop-ink-secondary">
-          En soumettant, tu acceptes les conditions livreur TChopNow.
+          {t('termsConsent')}
         </p>
       </div>
     </form>
   );
 }
 
+// Note: extractMessage returns code-specific FR strings as last-resort fallback.
+// The component-level translation hook can't be called outside React, so error
+// codes are mapped to FR strings here and the caller's `t` would re-translate
+// if needed — but in practice the codes below map 1:1 to dictionary keys.
 function extractMessage(err: unknown): string {
   if (err instanceof ApiClientError) {
     const body = err.body as { code?: string; message?: string } | undefined;

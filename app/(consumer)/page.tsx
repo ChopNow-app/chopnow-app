@@ -2,7 +2,9 @@ import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ShieldCheck, Bike, MessageCircle } from 'lucide-react';
+import { getTranslations } from 'next-intl/server';
 import { Button } from '@/components/ui/button';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { SiteFooter } from '@/components/SiteFooter';
 import { PwaRedirector } from '@/features/auth/components/PwaRedirector';
 import { RoleRedirector } from '@/features/auth/components/RoleRedirector';
@@ -34,13 +36,16 @@ const PwaInstallModal = dynamic(() =>
 const STEAM_PATTERN_URL =
   "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96'%3E%3Cpath d='M 34.3,11.3 A 13.5,13.5 0 1 0 34.3,28.7' stroke='%23FFFFFF' stroke-width='3.5' stroke-linecap='round' fill='none' opacity='0.16'/%3E%3Cpath d='M 82.3,11.3 A 13.5,13.5 0 1 0 82.3,28.7' stroke='%23FFFFFF' stroke-width='3.5' stroke-linecap='round' fill='none' opacity='0.16'/%3E%3Cpath d='M 58.3,59.3 A 13.5,13.5 0 1 0 58.3,76.7' stroke='%23FFFFFF' stroke-width='3.5' stroke-linecap='round' fill='none' opacity='0.16'/%3E%3C/svg%3E\")";
 
-const STEPS = [
-  { n: '01', title: 'Choisis ton vendeur', body: 'Maman du quartier, maquis, restaurant.' },
-  { n: '02', title: 'Commande en 3 taps', body: "Plats, panier, adresse — c'est tout." },
-  { n: '03', title: 'Reçois en 30 min', body: 'Moto. Chaud. À ta porte.' },
-];
-
-export default function HomePage() {
+export default async function HomePage() {
+  const t = await getTranslations('Splash');
+  // STEPS keep their numeric eyebrows (01/02/03) hard-coded — they're
+  // ornamental glyphs, not translatable copy. Titles + bodies come
+  // from the messages bundle.
+  const steps = (t.raw('steps') as Array<{ title: string; body: string }>).map((s, i) => ({
+    n: String(i + 1).padStart(2, '0'),
+    title: s.title,
+    body: s.body,
+  }));
   return (
     <main className="relative min-h-dvh overflow-hidden bg-chop-warm text-chop-ink">
       {/* Role-aware redirect: logged-in users are sent to their surface
@@ -80,7 +85,10 @@ export default function HomePage() {
           <span className="text-[15px] font-extrabold uppercase tracking-[0.18em] text-chop-ink md:text-[17px]">
             TChop<span className="text-chop-red">Now.</span>
           </span>
-          <PwaInstallModal />
+          <div className="flex items-center gap-2">
+            <LanguageSwitcher />
+            <PwaInstallModal />
+          </div>
         </div>
       </header>
 
@@ -90,28 +98,29 @@ export default function HomePage() {
           {/* ── Left: editorial hero ── */}
           <div>
             <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-chop-ink-secondary md:text-[12px]">
-              Douala <span className="text-chop-red">·</span> Cameroun
+              {t('locationEyebrow').split('·')[0]}
+              <span className="text-chop-red">·</span>
+              {t('locationEyebrow').split('·')[1]}
             </p>
 
             <h1 className="mt-3 text-[64px] font-extrabold leading-[0.92] tracking-[-0.04em] md:text-[96px] lg:text-[120px] xl:text-[140px]">
-              Mange
+              {t('heroLine1')}
               <br />
-              sans
+              {t('heroLine2')}
               <br />
-              <span className="text-chop-red">attendre.</span>
+              <span className="text-chop-red">{t('heroLine3')}</span>
             </h1>
 
             <p className="mt-5 max-w-[44ch] text-[15px] font-medium leading-[1.55] text-chop-ink-secondary md:mt-6 md:max-w-[52ch] md:text-[17px] lg:text-[18px]">
-              De la rue à ta porte. Commande tes plats préférés aux vendeurs autour de toi — livré
-              chez toi en 30 minutes.
+              {t('subtitle')}
             </p>
 
             <div className="mt-6 flex flex-wrap items-center gap-3 md:mt-8">
               <Button asChild size="lg">
-                <Link href="/restaurants">Commander maintenant</Link>
+                <Link href="/restaurants">{t('ctaOrder')}</Link>
               </Button>
               <Button asChild variant="outline" size="lg">
-                <Link href="/login">Se connecter</Link>
+                <Link href="/login">{t('ctaLogin')}</Link>
               </Button>
             </div>
           </div>
@@ -131,7 +140,7 @@ export default function HomePage() {
                   on lg+ so the hero's 2-col layout stays balanced. */}
               <Image
                 src="https://images.unsplash.com/photo-1604329760661-e71dc83f8f26?w=1600&q=85"
-                alt="Eru et fufu — cuisine traditionnelle camerounaise"
+                alt={t('foodCardDish')}
                 width={1600}
                 height={2000}
                 priority
@@ -142,7 +151,7 @@ export default function HomePage() {
                   palette so the photo + brand sit together. */}
               <span className="absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-chop-red px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-white shadow-card backdrop-blur-sm md:left-5 md:top-5">
                 <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-white" />
-                Cuisine du Cameroun
+                {t('foodCardEyebrow')}
               </span>
               {/* Caption at bottom with gradient mask so text is
                   readable on any photo. Names the dish — "the app
@@ -150,13 +159,13 @@ export default function HomePage() {
                   photo with no caption. */}
               <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent p-5 text-white md:p-6">
                 <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/70 md:text-[11px]">
-                  — Aujourd&apos;hui sur la plateforme
+                  {t('foodCardCaption')}
                 </p>
                 <p className="mt-1 text-[20px] font-extrabold leading-tight tracking-tight md:text-[24px]">
-                  Eru &amp; Fufu
+                  {t('foodCardDish')}
                 </p>
                 <p className="mt-0.5 text-[12px] font-medium text-white/80 md:text-[13px]">
-                  Chez Maman Mboué · Bonamoussadi
+                  {t('foodCardVendor')}
                 </p>
               </div>
             </div>
@@ -190,17 +199,18 @@ export default function HomePage() {
             {/* Left: badge + heading */}
             <div>
               <span className="inline-block rounded-full bg-white/20 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] backdrop-blur-sm">
-                Le pacte
+                {t('pactBadge')}
               </span>
               <h2 className="mt-3 text-[34px] font-extrabold leading-[0.95] tracking-tight md:text-[40px] lg:text-[44px]">
-                De la rue
-                <br />à ta porte.
+                {t('pactHeadlineL1')}
+                <br />
+                {t('pactHeadlineL2')}
               </h2>
             </div>
 
             {/* Right: 3 steps, 3-col on md+, stacked on mobile */}
             <ul className="grid grid-cols-1 gap-5 md:grid-cols-3 md:gap-6">
-              {STEPS.map((s) => (
+              {steps.map((s) => (
                 <li key={s.n}>
                   <p className="font-mono text-[13px] font-bold tabular-nums text-white/55 md:text-[14px]">
                     {s.n}.
@@ -225,7 +235,7 @@ export default function HomePage() {
       <section className="relative z-10 mx-auto max-w-7xl px-5 pb-16 pt-16 md:px-8 md:pt-24 lg:px-12 lg:pt-32">
         <div className="border-t border-divider pt-8 md:pt-12">
           <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-chop-ink-secondary md:text-[12px]">
-            Tu es ?
+            {t('rolesEyebrow')}
           </p>
           {/* Admin is intentionally NOT here — staff-only entry point, not a
               public role. Reach it directly at /admin/login. */}
@@ -233,22 +243,22 @@ export default function HomePage() {
             <RoleCard
               href="/restaurants"
               eyebrow="01"
-              label="Je commande"
-              sub="Mange chaud, livré en 30 min."
+              label={t('roleConsumerLabel')}
+              sub={t('roleConsumerSub')}
               tone="primary"
             />
             <RoleCard
               href="/vendre"
               eyebrow="02"
-              label="Je vends mes plats"
-              sub="Devenir vendeur TChopNow."
+              label={t('roleVendorLabel')}
+              sub={t('roleVendorSub')}
               tone="default"
             />
             <RoleCard
               href="/livrer"
               eyebrow="03"
-              label="Je livre"
-              sub="Moto, vélo ou à pied — gagne dans ton quartier."
+              label={t('roleRiderLabel')}
+              sub={t('roleRiderSub')}
               tone="default"
             />
           </ul>
@@ -271,24 +281,25 @@ export default function HomePage() {
        the site's icon system: ConsumerTopNav, AdminTabs, etc.). Emoji
        icons were swapped out because they read as cheap/AI-generated
        on a marketing surface and clashed with the editorial aesthetic. */
-function TrustRow() {
+async function TrustRow() {
+  const t = await getTranslations('Splash');
   return (
     <section className="relative z-10 mx-auto mt-16 max-w-7xl px-5 md:mt-24 md:px-8 lg:px-12">
       <div className="grid gap-3 md:grid-cols-3 md:gap-4">
         <TrustChip
           icon={<ShieldCheck className="h-5 w-5" strokeWidth={2} />}
-          label="Paiement sécurisé"
-          sub="MTN MoMo + Orange Money"
+          label={t('trustPaymentLabel')}
+          sub={t('trustPaymentSub')}
         />
         <TrustChip
           icon={<Bike className="h-5 w-5" strokeWidth={2} />}
-          label="Livraison 30 min"
-          sub="Moto, vélo ou à pied — dans ton quartier"
+          label={t('trustDeliveryLabel')}
+          sub={t('trustDeliverySub')}
         />
         <TrustChip
           icon={<MessageCircle className="h-5 w-5" strokeWidth={2} />}
-          label="Support WhatsApp"
-          sub="On répond 7j/7"
+          label={t('trustSupportLabel')}
+          sub={t('trustSupportSub')}
         />
       </div>
     </section>
@@ -317,21 +328,21 @@ function TrustChip({ icon, label, sub }: { icon: React.ReactNode; label: string;
 }
 
 /* ── Service zones ──────────────────────────────────────────────────── */
-function ServiceZones() {
+async function ServiceZones() {
+  const t = await getTranslations('Splash');
   return (
     <section className="relative z-10 mx-auto mt-16 max-w-7xl px-5 md:mt-24 md:px-8 lg:px-12">
       <div className="border-t border-divider pt-8 md:pt-12">
         <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-chop-ink-secondary md:text-[12px]">
-          On livre ici
+          {t('zonesEyebrow')}
         </p>
         <h2 className="mt-3 text-[28px] font-extrabold leading-tight tracking-tight md:text-[36px]">
           Bonamoussadi <span className="text-chop-red">&</span> Makepe
         </h2>
         <p className="mt-4 max-w-[60ch] text-[15px] font-medium leading-relaxed text-chop-ink-secondary md:text-[16px]">
-          On démarre dans ces deux quartiers pendant la phase pilote. Élargissement progressif vers{' '}
-          <strong>Bonapriso</strong>, <strong>Akwa</strong>, <strong>Bonanjo</strong>,{' '}
-          <strong>Logbessou</strong> et la suite — inscris-toi pour être notifié dès que ton
-          quartier ouvre.
+          {t.rich('zonesBody', {
+            strong: (chunks) => <strong>{chunks}</strong>,
+          })}
         </p>
       </div>
     </section>
@@ -339,42 +350,26 @@ function ServiceZones() {
 }
 
 /* ── FAQ ────────────────────────────────────────────────────────────── */
-function Faq() {
-  const QUESTIONS = [
-    {
-      q: 'Comment ça marche ?',
-      a: 'Tu choisis un vendeur autour de toi, tu commandes en 3 taps, tu paies par MoMo. Un livreur récupère ta commande et te l’apporte en 30 minutes (moto, vélo ou à pied selon la distance).',
-    },
-    {
-      q: 'Quelles zones livrez-vous ?',
-      a: 'Pendant la phase pilote, on livre à Bonamoussadi et Makepe à Douala. On élargit progressivement vers d’autres quartiers de Douala.',
-    },
-    {
-      q: 'Comment je paie ?',
-      a: 'Uniquement par MTN Mobile Money ou Orange Money. Le paiement est traité par Campay (agrégateur régulé ANTIC + ART). Aucune carte bancaire requise, aucun paiement en espèces pour le moment.',
-    },
-    {
-      q: 'Combien coûte la livraison ?',
-      a: 'Les frais de livraison dépendent de la distance entre toi et le vendeur. Le montant exact s’affiche au checkout avant que tu valides — pas de surprise.',
-    },
-    {
-      q: 'Que se passe-t-il si le restaurant refuse ma commande ?',
-      a: 'Si le restaurant ne confirme pas dans les 60 secondes après ton paiement, la commande est annulée automatiquement et le montant est remboursé intégralement sur ton compte MoMo dans les 24 heures.',
-    },
-    {
-      q: 'Comment devenir vendeur ou livreur ?',
-      a: 'Vendeur : dépose ton dossier sur /vendre (validation sous 24h, commission seulement quand on te livre une commande). Livreur : /livrer (paie hebdomadaire chaque samedi 22h via MoMo, validation sous 4h, pas de caution).',
-    },
-  ];
+async function Faq() {
+  const t = await getTranslations('FAQ');
+  const tSplash = await getTranslations('Splash');
+  // 6 Q/A pairs keyed q1..q6 / a1..a6. The numeric scheme keeps the
+  // ordering stable across translations and lets a future "/admin/faq"
+  // CMS-style screen reorder them by editing this array instead of the
+  // JSX block below.
+  const QUESTIONS = [1, 2, 3, 4, 5, 6].map((n) => ({
+    q: t(`q${n}` as 'q1' | 'q2' | 'q3' | 'q4' | 'q5' | 'q6'),
+    a: t(`a${n}` as 'a1' | 'a2' | 'a3' | 'a4' | 'a5' | 'a6'),
+  }));
 
   return (
     <section className="relative z-10 mx-auto mt-16 max-w-7xl px-5 md:mt-24 md:px-8 lg:px-12">
       <div className="border-t border-divider pt-8 md:pt-12">
         <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-chop-ink-secondary md:text-[12px]">
-          On répond
+          {tSplash('faqEyebrow')}
         </p>
         <h2 className="mt-3 text-[28px] font-extrabold leading-tight tracking-tight md:text-[36px]">
-          Questions <span className="text-chop-red">fréquentes.</span>
+          {tSplash('faqHeadline1')} <span className="text-chop-red">{tSplash('faqHeadline2')}</span>
         </h2>
 
         {/* Native <details> for collapsible Q&A — zero JS, accessible by

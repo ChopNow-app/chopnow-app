@@ -3,6 +3,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { AuthRequired } from '@/components/ui/auth-required';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -17,6 +18,8 @@ import { VendorPushPermissionBanner } from './VendorPushPermissionBanner';
 const formatXAF = (n: number) => `${n.toLocaleString('fr-FR')} FCFA`;
 
 export function VendorDashboard() {
+  const t = useTranslations('Vendor');
+  const tAuth = useTranslations('AuthRequired');
   const availability = useVendorAvailability();
   const orders = useVendorOrders('immediate');
   const profile = useVendorProfile();
@@ -53,9 +56,9 @@ export function VendorDashboard() {
     return (
       <AuthRequired
         theme="light"
-        subtitle="Connecte-toi pour gérer ton espace vendeur et tes commandes."
+        subtitle={tAuth('subtitleVendor')}
         loginHref="/login?next=/vendor"
-        secondary={{ label: "Pas encore vendeur ? S'inscrire", href: '/vendre' }}
+        secondary={{ label: tAuth('secondaryVendorSignup'), href: '/vendre' }}
       />
     );
   }
@@ -84,7 +87,7 @@ export function VendorDashboard() {
         <section>
           <header className="mb-2 flex items-center justify-between">
             <h2 className="flex items-center gap-2 text-base font-extrabold">
-              Pré-commandes
+              {t('preOrdersHeading')}
               <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-chop-mboue px-1.5 text-xs font-bold text-white">
                 {preOrders.orders.length}
               </span>
@@ -103,7 +106,7 @@ export function VendorDashboard() {
       <section>
         <header className="mb-2 flex items-center justify-between">
           <h2 className="flex items-center gap-2 text-base font-extrabold">
-            À décider
+            {t('toDecideHeading')}
             {pendingDecision.length > 0 ? (
               <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-chop-red px-1.5 text-xs font-bold text-white">
                 {pendingDecision.length}
@@ -116,7 +119,7 @@ export function VendorDashboard() {
               onClick={orders.reload}
               className="text-xs font-semibold text-chop-red hover:underline"
             >
-              ↻ Actualiser
+              {t('refreshCta')}
             </button>
           ) : null}
         </header>
@@ -128,7 +131,7 @@ export function VendorDashboard() {
           </p>
         ) : pendingDecision.length === 0 ? (
           <p className="rounded-xl bg-chop-card-white p-4 text-sm text-muted-foreground shadow-card">
-            Aucune commande en attente. Tu seras notifié(e) à la prochaine.
+            {t('noPendingTitle')}
           </p>
         ) : (
           <ul className="space-y-3">
@@ -144,7 +147,7 @@ export function VendorDashboard() {
       {inFlight.length > 0 ? (
         <section>
           <h2 className="mb-2 flex items-center gap-2 text-base font-extrabold">
-            En cours
+            {t('inFlightHeading')}
             <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-chop-mboue px-1.5 text-xs font-bold text-white">
               {inFlight.length}
             </span>
@@ -164,11 +167,11 @@ export function VendorDashboard() {
         className="group flex items-center justify-between gap-3 rounded-2xl bg-chop-card-white p-4 shadow-card transition-shadow hover:shadow-elevated focus:outline-none focus-visible:ring-2 focus-visible:ring-chop-red"
       >
         <div className="min-w-0">
-          <p className="text-base font-extrabold">Mon menu</p>
+          <p className="text-base font-extrabold">{t('menuTitle')}</p>
           <p className="mt-0.5 text-xs text-muted-foreground">
             {menu.status === 'ready'
-              ? `${menu.items.length} ${menu.items.length === 1 ? 'plat' : 'plats'} · gérer disponibilité, prix, photos`
-              : 'Gérer mes plats'}
+              ? t('menuDishesPlural', { count: menu.items.length })
+              : t('menuFallback')}
           </p>
         </div>
         <ChevronRight
@@ -182,10 +185,8 @@ export function VendorDashboard() {
         className="group flex items-center justify-between gap-3 rounded-2xl bg-chop-card-white p-4 shadow-card transition-shadow hover:shadow-elevated focus:outline-none focus-visible:ring-2 focus-visible:ring-chop-red"
       >
         <div className="min-w-0">
-          <p className="text-base font-extrabold">Mes horaires</p>
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            Définir les jours et heures d&apos;ouverture
-          </p>
+          <p className="text-base font-extrabold">{t('hoursTitle')}</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">{t('hoursSub')}</p>
         </div>
         <ChevronRight
           className="h-5 w-5 text-muted-foreground transition-transform group-hover:translate-x-0.5"
@@ -198,10 +199,8 @@ export function VendorDashboard() {
         className="group flex items-center justify-between gap-3 rounded-2xl bg-chop-card-white p-4 shadow-card transition-shadow hover:shadow-elevated focus:outline-none focus-visible:ring-2 focus-visible:ring-chop-red"
       >
         <div className="min-w-0">
-          <p className="text-base font-extrabold">Mon profil</p>
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            Modifier nom, description, photos, MoMo
-          </p>
+          <p className="text-base font-extrabold">{t('profileTitle')}</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">{t('profileSub')}</p>
         </div>
         <ChevronRight
           className="h-5 w-5 text-muted-foreground transition-transform group-hover:translate-x-0.5"
@@ -213,13 +212,14 @@ export function VendorDashboard() {
 }
 
 function AvailabilitySection({ state }: { state: ReturnType<typeof useVendorAvailability> }) {
+  const t = useTranslations('Vendor');
   if (state.status === 'loading') {
     return <div className="bg-card h-24 animate-pulse rounded-lg border" />;
   }
   if (state.status === 'error') {
     return (
       <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm">
-        Statut indisponible — {state.message}
+        {t('statusUnavailable', { message: state.message })}
       </div>
     );
   }
@@ -229,14 +229,14 @@ function AvailabilitySection({ state }: { state: ReturnType<typeof useVendorAvai
     <section className="bg-card rounded-lg border p-4">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <p className="text-xs uppercase tracking-widest text-muted-foreground">Statut</p>
+          <p className="text-xs uppercase tracking-widest text-muted-foreground">
+            {t('statusLabel')}
+          </p>
           <p className="mt-1 text-xl font-bold">
-            {state.data.isOpenNow ? '🟢 Ouvert' : '⚪ Fermé'}
+            {state.data.isOpenNow ? t('statusOpen') : t('statusClosed')}
           </p>
           <p className="text-xs text-muted-foreground">
-            {state.data.isOpen
-              ? 'Toggle activé — les clients voient ton profil dans le catalogue.'
-              : 'Toggle désactivé — invisible dans le catalogue.'}
+            {state.data.isOpen ? t('statusOpenHint') : t('statusClosedHint')}
           </p>
         </div>
         <Button
@@ -245,7 +245,7 @@ function AvailabilitySection({ state }: { state: ReturnType<typeof useVendorAvai
           onClick={() => state.setOpen(!state.data.isOpen)}
           variant={state.data.isOpen ? 'outline' : 'default'}
         >
-          {state.saving ? '…' : state.data.isOpen ? 'Fermer' : 'Ouvrir'}
+          {state.saving ? '…' : state.data.isOpen ? t('closeCta') : t('openCta')}
         </Button>
       </div>
       {state.error ? <p className="mt-2 text-sm text-destructive">{state.error}</p> : null}
@@ -254,11 +254,10 @@ function AvailabilitySection({ state }: { state: ReturnType<typeof useVendorAvai
 }
 
 function OrderInboxCard({ order }: { order: VendorOrder }) {
+  const t = useTranslations('Vendor');
   // Decision now lives on /vendor/commande/[id] (full-screen with countdown).
   // The dashboard card is purely a preview that routes the vendor into the
-  // decision flow — one Link, one tap. Reduces tap-target ambiguity in a
-  // busy kitchen ("did I just accept or refuse?") and gives the countdown
-  // its own surface where it dominates the viewport.
+  // decision flow — one Link, one tap.
   const itemCount = order.items.reduce((sum, line) => sum + line.quantity, 0);
   return (
     <Link
@@ -271,12 +270,12 @@ function OrderInboxCard({ order }: { order: VendorOrder }) {
             {order.code}
           </p>
           <span className="shrink-0 rounded-full bg-chop-red-light px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-chop-red">
-            À décider
+            {t('toDecideBadge')}
           </span>
         </div>
         <p className="mt-1 text-lg font-extrabold tabular-nums">{formatXAF(order.totalXAF)}</p>
         <p className="mt-0.5 truncate text-xs text-muted-foreground">
-          {itemCount} plat{itemCount > 1 ? 's' : ''} · {labelForPayment(order.paymentMethod)} · 📍{' '}
+          {t('itemsPlural', { count: itemCount })} · {labelForPayment(order.paymentMethod)} · 📍{' '}
           {order.deliveryQuartier}
         </p>
       </div>
@@ -291,9 +290,9 @@ function OrderInboxCard({ order }: { order: VendorOrder }) {
 }
 
 function ActiveOrderCard({ order }: { order: VendorOrder }) {
+  const t = useTranslations('Vendor');
   // The pickup-code panel + the checklist now both live on /vendor/preparation.
-  // The dashboard card is a preview that routes there in one tap. Keeps the
-  // dashboard scannable when there are several in-flight orders at once.
+  // The dashboard card is a preview that routes there in one tap.
   const preparedCount = order.items.filter((i) => i.preparedAt !== null).length;
   return (
     <Link
@@ -313,14 +312,14 @@ function ActiveOrderCard({ order }: { order: VendorOrder }) {
                 : 'bg-chop-red-light text-chop-red',
             )}
           >
-            {labelForActiveStatus(order.status)}
+            {labelForActiveStatus(order.status, t)}
           </span>
         </div>
         <p className="mt-1 text-lg font-extrabold tabular-nums">{formatXAF(order.totalXAF)}</p>
         <p className="mt-0.5 truncate text-xs text-muted-foreground">
-          {order.items.length} plat{order.items.length > 1 ? 's' : ''}
+          {t('itemsPlural', { count: order.items.length })}
           {order.status === 'IN_PREP' || order.status === 'ACCEPTED'
-            ? ` · ${preparedCount}/${order.items.length} prêts`
+            ? ` · ${t('preparedRatio', { prepared: preparedCount, total: order.items.length })}`
             : ''}
         </p>
       </div>
@@ -335,19 +334,23 @@ function ActiveOrderCard({ order }: { order: VendorOrder }) {
 }
 
 function labelForPayment(m: VendorOrder['paymentMethod']): string {
+  // MTN MoMo / Orange Money — brand names, locale-independent.
   return m === 'MTN_MOMO' ? 'MTN MoMo' : 'Orange Money';
 }
 
-function labelForActiveStatus(s: VendorOrder['status']): string {
+function labelForActiveStatus(
+  s: VendorOrder['status'],
+  t: ReturnType<typeof useTranslations<'Vendor'>>,
+): string {
   switch (s) {
     case 'ACCEPTED':
-      return 'Acceptée';
+      return t('labelAccepted');
     case 'IN_PREP':
-      return 'En préparation';
+      return t('labelInPrep');
     case 'READY_PICKUP':
-      return 'Prête';
+      return t('labelReady');
     case 'PICKED_UP':
-      return 'Livraison en cours';
+      return t('labelPickedUp');
     default:
       return s;
   }
@@ -369,6 +372,7 @@ function SkeletonList() {
 //                  triggered at scheduledFor - 60min by the promotion cron)
 //   - ACCEPTED / IN_PREP / READY_PICKUP → /vendor/preparation/[id]
 function PreOrderCard({ order }: { order: VendorOrder }) {
+  const t = useTranslations('Vendor');
   const route =
     order.status === 'CONFIRMED' || order.status === 'PENDING'
       ? `/vendor/commande/${order.id}`
@@ -385,12 +389,12 @@ function PreOrderCard({ order }: { order: VendorOrder }) {
             {order.code}
           </p>
           <span className="shrink-0 rounded-full bg-chop-mboue-light px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-chop-mboue">
-            {formatRelative(order.scheduledFor)}
+            {formatRelative(order.scheduledFor, t('todayPrefix'))}
           </span>
         </div>
         <p className="mt-1 text-lg font-extrabold tabular-nums">{formatXAF(order.totalXAF)}</p>
         <p className="mt-0.5 truncate text-xs text-muted-foreground">
-          {itemCount} plat{itemCount > 1 ? 's' : ''} · {labelForPayment(order.paymentMethod)} · 📍{' '}
+          {t('itemsPlural', { count: itemCount })} · {labelForPayment(order.paymentMethod)} · 📍{' '}
           {order.deliveryQuartier}
         </p>
       </div>
@@ -404,8 +408,10 @@ function PreOrderCard({ order }: { order: VendorOrder }) {
   );
 }
 
-// "demain 12:30", "aujourd'hui 19:00", "dans 4h" — whichever is most readable.
-function formatRelative(iso: string | null): string {
+// "demain 12:30", "aujourd'hui 19:00" — whichever is most readable. The
+// "today" prefix comes from the locale so EN reads "Today HH:MM" and FR
+// reads "Auj. HH:MM".
+function formatRelative(iso: string | null, todayPrefix: string): string {
   if (!iso) return '';
   const target = new Date(iso);
   const now = new Date();
@@ -415,7 +421,7 @@ function formatRelative(iso: string | null): string {
   const sameDay = targetLocal.toISOString().slice(0, 10) === nowLocal.toISOString().slice(0, 10);
   const hh = targetLocal.getUTCHours().toString().padStart(2, '0');
   const mm = targetLocal.getUTCMinutes().toString().padStart(2, '0');
-  return sameDay ? `Auj. ${hh}:${mm}` : `${hh}:${mm}`;
+  return sameDay ? `${todayPrefix} ${hh}:${mm}` : `${hh}:${mm}`;
 }
 
 // Two-tone synth chime via Web Audio. Survives autoplay restrictions because
@@ -453,6 +459,7 @@ function playChime(): void {
 // call-site. Admin must approve before money moves; vendor sees the
 // request status via the WhatsApp notification on approve/reject.
 function CashoutRequestSection() {
+  const t = useTranslations('Vendor');
   const cashout = useVendorCashout();
   const [confirming, setConfirming] = React.useState(false);
 
@@ -464,13 +471,14 @@ function CashoutRequestSection() {
   if (cashout.status === 'success' && cashout.result) {
     return (
       <section className="rounded-lg border border-chop-mboue/30 bg-chop-mboue/10 p-4">
-        <p className="text-sm font-semibold text-chop-mboue">✅ Demande envoyée à l’admin</p>
+        <p className="text-sm font-semibold text-chop-mboue">{t('cashoutSuccess')}</p>
         <p className="mt-1 text-xs text-muted-foreground">
-          Solde demandé : <strong>{formatXAF(cashout.result.requestedXAF)}</strong>
-          {cashout.result.isTrusted ? ' · Compte vérifié — décision rapide attendue' : ''}
+          {t('cashoutAmount')}
+          <strong>{formatXAF(cashout.result.requestedXAF)}</strong>
+          {cashout.result.isTrusted ? t('cashoutTrusted') : ''}
         </p>
         <Button type="button" variant="outline" size="sm" className="mt-3" onClick={cashout.reset}>
-          OK
+          {t('cashoutOk')}
         </Button>
       </section>
     );
@@ -480,15 +488,13 @@ function CashoutRequestSection() {
     <section className="bg-card rounded-lg border p-4">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h2 className="text-base font-extrabold">Virement</h2>
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            Demande un virement de ton solde MoMo à tout moment
-          </p>
+          <h2 className="text-base font-extrabold">{t('cashoutHeading')}</h2>
+          <p className="mt-0.5 text-xs text-muted-foreground">{t('cashoutSub')}</p>
         </div>
         {confirming ? (
           <div className="flex gap-2">
             <Button type="button" size="sm" variant="outline" onClick={() => setConfirming(false)}>
-              Annuler
+              {t('cashoutCancel')}
             </Button>
             <Button
               type="button"
@@ -496,7 +502,7 @@ function CashoutRequestSection() {
               onClick={onConfirm}
               disabled={cashout.status === 'submitting'}
             >
-              {cashout.status === 'submitting' ? '…' : 'Confirmer'}
+              {cashout.status === 'submitting' ? t('cashoutSubmitting') : t('cashoutConfirm')}
             </Button>
           </div>
         ) : (
@@ -506,7 +512,7 @@ function CashoutRequestSection() {
             onClick={() => setConfirming(true)}
             disabled={cashout.status === 'submitting'}
           >
-            Demander un virement
+            {t('cashoutCta')}
           </Button>
         )}
       </div>

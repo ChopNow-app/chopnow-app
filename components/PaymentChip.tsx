@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 
 // Branded payment-method chip per DESIGN.md §4.
@@ -12,8 +13,9 @@ type ChipKind = 'MTN_MOMO' | 'ORANGE_MONEY';
 const STYLES: Record<
   ChipKind,
   {
-    label: string;
-    sublabel: string;
+    /** i18n keys under the `PaymentChip` namespace. */
+    labelKey: 'mtnLabel' | 'orangeLabel';
+    sublabelKey: 'mtnSublabel' | 'orangeSublabel';
     border: string;
     bg: string;
     selectedBg: string;
@@ -22,8 +24,8 @@ const STYLES: Record<
   }
 > = {
   MTN_MOMO: {
-    label: 'MTN Mobile Money',
-    sublabel: 'Prompt USSD envoyé sur ton téléphone',
+    labelKey: 'mtnLabel',
+    sublabelKey: 'mtnSublabel',
     border: 'border-mtn',
     bg: 'bg-mtn-light',
     selectedBg: 'bg-mtn',
@@ -31,8 +33,8 @@ const STYLES: Record<
     icon: '📱',
   },
   ORANGE_MONEY: {
-    label: 'Orange Money',
-    sublabel: 'Prompt USSD envoyé sur ton téléphone',
+    labelKey: 'orangeLabel',
+    sublabelKey: 'orangeSublabel',
     border: 'border-orange-money',
     bg: 'bg-orange-money-light',
     selectedBg: 'bg-orange-money',
@@ -48,6 +50,7 @@ interface PaymentChipProps {
 }
 
 export function PaymentChip({ kind, selected, onSelect }: PaymentChipProps) {
+  const t = useTranslations('PaymentChip');
   const s = STYLES[kind];
   return (
     <button
@@ -65,9 +68,9 @@ export function PaymentChip({ kind, selected, onSelect }: PaymentChipProps) {
         {s.icon}
       </span>
       <span className="flex-1">
-        <span className="block text-sm font-semibold">{s.label}</span>
+        <span className="block text-sm font-semibold">{t(s.labelKey)}</span>
         <span className={cn('block text-xs', selected ? 'opacity-90' : 'text-muted-foreground')}>
-          {s.sublabel}
+          {t(s.sublabelKey)}
         </span>
       </span>
       <span

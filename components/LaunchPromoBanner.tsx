@@ -9,6 +9,7 @@
 
 import * as React from 'react';
 import { X, Gift } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 const STORAGE_KEY = 'chopnow.promo.bienvenue.dismissed';
 
@@ -36,6 +37,7 @@ const STORAGE_KEY = 'chopnow.promo.bienvenue.dismissed';
  * visitors.
  */
 export function LaunchPromoBanner() {
+  const t = useTranslations('LaunchPromo');
   const [dismissed, setDismissed] = React.useState(true);
 
   React.useEffect(() => {
@@ -62,13 +64,13 @@ export function LaunchPromoBanner() {
         />
         <p className="flex-1 text-center text-[12px] font-semibold leading-snug md:text-[13px]">
           <span className="font-extrabold uppercase tracking-wider text-chop-red">
-            Offre de lancement
+            {t('eyebrow')}
           </span>
           <span aria-hidden> · </span>
-          Livraison gratuite pour ta première commande
+          {t('headline')}
           <span className="hidden md:inline">
             <span aria-hidden> · </span>
-            Code{' '}
+            {t('codePrefix')}{' '}
             <code className="rounded bg-white/15 px-1.5 py-0.5 font-mono text-[11px] font-bold tracking-wider">
               BIENVENUE
             </code>
@@ -77,7 +79,7 @@ export function LaunchPromoBanner() {
         <button
           type="button"
           onClick={dismiss}
-          aria-label="Fermer l'offre de lancement"
+          aria-label={t('dismiss')}
           className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-white/60 transition-colors hover:bg-white/10 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-chop-red"
         >
           <X className="h-4 w-4" aria-hidden />

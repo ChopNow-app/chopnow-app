@@ -3,6 +3,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { apiRaw, ApiClientError } from '@/lib/api/api-client';
 import { useRiderCourses, type RiderCourse } from '../hooks/useRiderCourses';
@@ -11,15 +12,16 @@ import { DeliveryMap } from './DeliveryMap';
 const formatXAF = (n: number) => `${n.toLocaleString('fr-FR')} FCFA`;
 
 export function CourseDetailPage({ orderId }: { orderId: string }) {
+  const t = useTranslations('Livreur');
   const courses = useRiderCourses();
   const router = useRouter();
 
   if (courses.status === 'unauthenticated') {
     return (
       <div className="rounded-2xl border border-chop-dark-border p-6 text-center">
-        <h2 className="text-lg font-semibold">Connexion requise</h2>
+        <h2 className="text-lg font-semibold">{t('courseLoginRequired')}</h2>
         <Button asChild variant="outline" className="mt-4">
-          <Link href={`/login?next=/livreur/courses/${orderId}`}>Se connecter</Link>
+          <Link href={`/login?next=/livreur/courses/${orderId}`}>{t('courseLogin')}</Link>
         </Button>
       </div>
     );
@@ -33,9 +35,9 @@ export function CourseDetailPage({ orderId }: { orderId: string }) {
   if (!course) {
     return (
       <div className="text-center">
-        <p className="text-white/70">Course introuvable (peut-être terminée).</p>
+        <p className="text-white/70">{t('courseNotFound')}</p>
         <Button asChild variant="outline" className="mt-4">
-          <Link href="/livreur">← Retour</Link>
+          <Link href="/livreur">{t('courseBack')}</Link>
         </Button>
       </div>
     );
@@ -53,6 +55,7 @@ function CourseContent({
   onAdvance: () => void;
   router: ReturnType<typeof useRouter>;
 }) {
+  const t = useTranslations('Livreur');
   const [busy, setBusy] = React.useState<null | 'pickup' | 'deliver' | 'call'>(null);
   const [error, setError] = React.useState<string | null>(null);
   // Story 4.13 — rider types the 4-digit code they got from the vendor /
@@ -72,7 +75,7 @@ function CourseContent({
       setPickupCodeInput('');
       onAdvance();
     } catch (err) {
-      setError(extract(err) ?? 'Impossible de marquer comme récupérée');
+      setError(extract(err, t) ?? t('errMarkPickupFailed'));
     } finally {
       setBusy(null);
     }
@@ -87,7 +90,7 @@ function CourseContent({
       });
       router.replace('/livreur');
     } catch (err) {
-      setError(extract(err) ?? 'Impossible de marquer comme livrée');
+      setError(extract(err, t) ?? t('errMarkDeliveredFailed'));
       setBusy(null);
     }
   };
@@ -97,11 +100,9 @@ function CourseContent({
     setError(null);
     try {
       await apiRaw.post(`/api/v1/orders/${course.id}/call-consumer`, {});
-      window.alert(
-        "Appel en cours — décroche ton téléphone. Le client va recevoir l'appel après que tu auras décroché.",
-      );
+      window.alert(t('callAlert'));
     } catch (err) {
-      setError(extract(err) ?? "L'appel n'a pas pu démarrer");
+      setError(extract(err, t) ?? t('errCallFailed'));
     } finally {
       setBusy(null);
     }
@@ -113,14 +114,14 @@ function CourseContent({
     <div className="space-y-6">
       <header>
         <Link href="/livreur" className="text-xs text-white/60">
-          ← Tableau de bord
+          {t('courseBackDashboard')}
         </Link>
         <h1 className="mt-2 font-mono text-2xl font-extrabold">{course.code}</h1>
       </header>
 
       {/* Pickup card */}
       <section className="rounded-2xl border border-chop-dark-border bg-chop-dark-surface p-4">
-        <p className="text-xs uppercase tracking-widest text-white/50">Point de retrait</p>
+        <p className="text-xs uppercase tracking-widest text-white/50">{t('pickupHeading')}</p>
         <p className="mt-1 text-lg font-bold">{course.vendor.name}</p>
         <p className="text-sm text-white/70">📍 {course.vendor.quartier}</p>
       </section>
@@ -129,9 +130,10 @@ function CourseContent({
           Mapbox static map + Maps deep-link for orientation. */}
       <section className="space-y-3 rounded-2xl border border-chop-dark-border bg-chop-dark-surface p-4">
         <div>
-          <p className="text-xs uppercase tracking-widest text-white/50">Livraison</p>
+          <p className="text-xs uppercase tracking-widest text-white/50">{t('deliveryHeading')}</p>
           <p className="mt-1 text-lg font-bold">
-            {course.deliveryLandmark ?? `Quartier ${course.deliveryQuartier}`}
+            {course.deliveryLandmark ??
+              t('deliveryFallback', { quartier: course.deliveryQuartier })}
           </p>
           {course.deliveryDescription ? (
             <p className="mt-1 text-sm text-white/70">{course.deliveryDescription}</p>
@@ -146,7 +148,7 @@ function CourseContent({
 
       {/* Order content */}
       <section className="rounded-2xl border border-chop-dark-border p-3">
-        <p className="text-xs uppercase tracking-widest text-white/50">À récupérer</p>
+        <p className="text-xs uppercase tracking-widest text-white/50">{t('toCollectHeading')}</p>
         <ul className="mt-2 space-y-1 text-sm">
           {course.items.map((line) => (
             <li key={line.id} className="flex justify-between">
@@ -173,7 +175,7 @@ function CourseContent({
               htmlFor="pickupCode"
               className="block text-xs uppercase tracking-widest text-white/60"
             >
-              Code de retrait (donné par le vendeur)
+              {t('pickupCodeLabel')}
             </label>
             <input
               id="pickupCode"
@@ -193,7 +195,7 @@ function CourseContent({
               onClick={pickup}
               className="w-full"
             >
-              {busy === 'pickup' ? '…' : "📦 J'ai récupéré la commande"}
+              {busy === 'pickup' ? t('pickupCtaBusy') : t('pickupCtaIdle')}
             </Button>
           </div>
         ) : (
@@ -202,7 +204,7 @@ function CourseContent({
               htmlFor="deliveryCode"
               className="block text-xs uppercase tracking-widest text-white/60"
             >
-              Code de livraison (donné par le client)
+              {t('deliveryCodeFieldLabel')}
             </label>
             <input
               id="deliveryCode"
@@ -222,7 +224,7 @@ function CourseContent({
               onClick={deliver}
               className="w-full"
             >
-              {busy === 'deliver' ? '…' : '🎉 Livré !'}
+              {busy === 'deliver' ? t('deliveryCtaBusy') : t('deliveryCtaIdle')}
             </Button>
           </div>
         )}
@@ -233,22 +235,20 @@ function CourseContent({
           onClick={callConsumer}
           className="w-full"
         >
-          {busy === 'call' ? 'Appel en cours…' : '📞 Appeler le client'}
+          {busy === 'call' ? t('callBusy') : t('callIdle')}
         </Button>
       </div>
     </div>
   );
 }
 
-function extract(err: unknown): string | null {
+function extract(err: unknown, t: ReturnType<typeof useTranslations<'Livreur'>>): string | null {
   if (err instanceof ApiClientError) {
     const body = err.body as { code?: string; message?: string } | undefined;
-    // Story 4.13 — surface specific code-mismatch errors as actionable French.
-    if (body?.code === 'wrong_pickup_code')
-      return 'Code de retrait incorrect. Demande-le au vendeur.';
-    if (body?.code === 'wrong_delivery_code')
-      return 'Code de livraison incorrect. Demande-le au client.';
-    return body?.message ?? `Erreur ${err.status}`;
+    // Story 4.13 — surface specific code-mismatch errors as actionable copy.
+    if (body?.code === 'wrong_pickup_code') return t('errWrongPickupCode');
+    if (body?.code === 'wrong_delivery_code') return t('errWrongDeliveryCode');
+    return body?.message ?? `Error ${err.status}`;
   }
   return (err as Error)?.message ?? null;
 }

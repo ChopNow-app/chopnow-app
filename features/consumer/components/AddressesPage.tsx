@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { AlertDialog } from '@/components/ui/alert-dialog';
 import { AuthRequired } from '@/components/ui/auth-required';
 import { Button } from '@/components/ui/button';
@@ -16,6 +17,9 @@ import { AddressEditor } from './AddressEditor';
  * surfaced as `address_limit_reached`).
  */
 export function AddressesPage() {
+  const t = useTranslations('Addresses');
+  const tCommon = useTranslations('Common');
+  const tAuth = useTranslations('AuthRequired');
   const { reload, ...state } = useAddresses();
   const [editing, setEditing] = React.useState<SavedAddress | null>(null);
   const [creating, setCreating] = React.useState(false);
@@ -29,14 +33,14 @@ export function AddressesPage() {
     return (
       <AuthRequired
         theme="light"
-        subtitle="Connecte-toi pour sauvegarder tes adresses de livraison."
+        subtitle={tAuth('subtitleAddresses')}
         loginHref="/login?next=/account/addresses"
         features={[
-          { icon: '📍', label: 'Jusqu’à 3 adresses (maison, bureau, autre)' },
-          { icon: '⚡', label: 'Sélection rapide au moment du checkout' },
-          { icon: '🚲', label: 'Le livreur arrive directement au bon endroit' },
+          { icon: '📍', label: tAuth('addressesFeature1') },
+          { icon: '⚡', label: tAuth('addressesFeature2') },
+          { icon: '🚲', label: tAuth('addressesFeature3') },
         ]}
-        reassurance="Connexion par OTP WhatsApp · 30 secondes · pas de carte bancaire."
+        reassurance={tAuth('reassurance')}
       />
     );
   }
@@ -50,11 +54,14 @@ export function AddressesPage() {
     try {
       await apiRaw.delete(`/api/v1/users/me/addresses/${pendingDelete.id}`);
       reload();
-      toast({ variant: 'success', title: 'Adresse supprimée' });
+      toast({ variant: 'success', title: t('deleteSuccess') });
       setPendingDelete(null);
     } catch (err) {
-      const msg = err instanceof ApiClientError ? `Erreur ${err.status}` : (err as Error).message;
-      toast({ variant: 'error', title: 'Suppression échouée', description: msg });
+      const msg =
+        err instanceof ApiClientError
+          ? tCommon('errorPrefix', { status: err.status })
+          : (err as Error).message;
+      toast({ variant: 'error', title: t('deleteFailed'), description: msg });
     } finally {
       setDeleting(false);
     }
@@ -64,10 +71,12 @@ export function AddressesPage() {
     <main className="min-h-dvh bg-chop-warm pb-16 text-chop-ink">
       <header className="container py-4">
         <Link href="/restaurants" className="text-sm text-muted-foreground">
-          ← Restaurants
+          {t('backRestaurants')}
         </Link>
-        <h1 className="mt-2 text-2xl font-extrabold">Mes adresses</h1>
-        <p className="text-sm text-muted-foreground">{addresses.length} / 3 enregistrée(s).</p>
+        <h1 className="mt-2 text-2xl font-extrabold">{t('title')}</h1>
+        <p className="text-sm text-muted-foreground">
+          {t('countLine', { count: addresses.length })}
+        </p>
       </header>
 
       <section className="container space-y-3 py-2">
@@ -84,9 +93,9 @@ export function AddressesPage() {
         ) : addresses.length === 0 && !creating ? (
           <EmptyState
             icon="📍"
-            title="Aucune adresse enregistrée"
-            body="Ajoute une adresse pour passer ta première commande — on s'en souviendra pour les prochaines fois."
-            cta={{ label: 'Ajouter une adresse', onClick: () => setCreating(true) }}
+            title={t('emptyTitle')}
+            body={t('emptyBody')}
+            cta={{ label: t('addCta'), onClick: () => setCreating(true) }}
           />
         ) : (
           <ul className="space-y-3">
@@ -128,7 +137,7 @@ export function AddressesPage() {
             onClick={() => setCreating(true)}
             className="w-full"
           >
-            {canAdd ? '+ Ajouter une adresse' : 'Limite atteinte (3 max)'}
+            {canAdd ? t('addCtaPlus') : t('limitReached')}
           </Button>
         )}
       </section>
@@ -136,13 +145,15 @@ export function AddressesPage() {
       <AlertDialog
         open={pendingDelete !== null}
         onOpenChange={(o) => !o && setPendingDelete(null)}
-        title="Supprimer cette adresse ?"
+        title={t('deleteConfirmTitle')}
         description={
           pendingDelete
-            ? `« ${pendingDelete.label ?? pendingDelete.quartier ?? 'Adresse'} » sera retirée de tes adresses enregistrées. Action irréversible.`
+            ? t('deleteConfirmBody', {
+                label: pendingDelete.label ?? pendingDelete.quartier ?? t('addressLabel'),
+              })
             : undefined
         }
-        confirmLabel="Supprimer"
+        confirmLabel={tCommon('delete')}
         onConfirm={confirmDelete}
         busy={deleting}
       />
@@ -159,15 +170,16 @@ function AddressCard({
   onEdit: () => void;
   onDelete: () => void;
 }) {
+  const t = useTranslations('Addresses');
   return (
     <div className="rounded-lg border bg-background p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="truncate font-semibold">
-            {addr.label ?? 'Adresse'}
+            {addr.label ?? t('addressLabel')}
             {addr.isDefault ? (
               <span className="ml-2 rounded-full bg-chop-red/20 px-2 py-0.5 text-xs">
-                par défaut
+                {t('defaultBadge')}
               </span>
             ) : null}
           </p>
@@ -184,10 +196,10 @@ function AddressCard({
       </div>
       <div className="mt-3 flex gap-2">
         <Button type="button" size="sm" variant="outline" onClick={onEdit}>
-          Modifier
+          {t('edit')}
         </Button>
         <Button type="button" size="sm" variant="outline" onClick={onDelete}>
-          Supprimer
+          {t('delete')}
         </Button>
       </div>
     </div>

@@ -1,15 +1,19 @@
 import Link from 'next/link';
+import { getTranslations } from 'next-intl/server';
 import { VendorOnboardingForm } from '@/features/vendor-onboarding/components/VendorOnboardingForm';
 
-export const metadata = {
-  title: 'Devenir vendeur — TChopNow',
-  description:
-    'Inscris ta cuisine sur TChopNow. Validation sous 24h. Gratuit. Commission seulement sur les commandes livrées.',
-};
+export async function generateMetadata() {
+  const t = await getTranslations('Vendre');
+  return {
+    title: t('metaTitle'),
+    description: t('metaDescription'),
+  };
+}
 
 // Story 2.0 — vendor onboarding landing. Rebuilt in the Hot Plate Editorial
 // aesthetic to match the rest of the app (splash + /restaurants + /).
-export default function VendrePage() {
+export default async function VendrePage() {
+  const t = await getTranslations('Vendre');
   return (
     <main className="relative min-h-dvh overflow-hidden bg-chop-warm text-chop-ink">
       {/* paper grain — same 3% noise overlay as the splash */}
@@ -32,7 +36,7 @@ export default function VendrePage() {
             href="/"
             className="text-[12px] font-semibold text-chop-ink-secondary transition-colors hover:text-chop-red"
           >
-            ← Retour
+            {t('back')}
           </Link>
         </div>
       </header>
@@ -40,16 +44,15 @@ export default function VendrePage() {
       {/* Hero */}
       <section className="relative z-10 mx-auto max-w-3xl px-5 pt-8 md:px-8 md:pt-12">
         <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-chop-ink-secondary">
-          Inscription <span className="text-chop-red">·</span> Vendeur
+          {t('eyebrow')} <span className="text-chop-red">·</span> {t('eyebrowSub')}
         </p>
         <h1 className="mt-3 text-[40px] font-extrabold leading-[0.95] tracking-[-0.03em] md:text-[56px]">
-          Mets ta cuisine
+          {t('heroLine1')}
           <br />
-          <span className="text-chop-red">sur TChopNow.</span>
+          <span className="text-chop-red">{t('heroLine2')}</span>
         </h1>
         <p className="mt-5 max-w-[44ch] text-[15px] font-medium leading-[1.55] text-chop-ink-secondary md:text-[17px]">
-          Gratuit. Validation sous 24h. Commission seulement quand on te livre une commande — pas de
-          mensualité, pas de frais d&apos;inscription.
+          {t('heroBody')}
         </p>
       </section>
 
@@ -62,12 +65,12 @@ export default function VendrePage() {
           can come back to this URL anytime, click here, and check where
           their dossier sits without re-filing the whole form. */}
       <section className="relative z-10 mx-auto max-w-3xl px-5 pb-16 pt-8 text-center text-[13px] font-medium text-chop-ink-secondary md:px-8">
-        Déjà inscrit ?{' '}
+        {t('alreadyRegistered')}{' '}
         <Link
           href="/statut"
           className="font-semibold text-chop-red underline-offset-2 hover:underline"
         >
-          Vérifier mon statut
+          {t('checkStatus')}
         </Link>
       </section>
     </main>

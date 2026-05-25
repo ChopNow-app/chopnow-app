@@ -5,18 +5,12 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { auth } from '@/lib/auth';
 
-const schema = z.object({
-  code: z
-    .string()
-    .length(6, 'Code à 6 chiffres')
-    .regex(/^\d{6}$/, 'Six chiffres uniquement'),
-});
-
-type FormValues = z.infer<typeof schema>;
+type FormValues = { code: string };
 
 export interface OtpVerifyFormProps {
   phone: string;
@@ -30,6 +24,17 @@ export interface OtpVerifyFormProps {
  * so Android-mid-range users can paste from the WhatsApp message in one tap.
  */
 export function OtpVerifyForm({ phone, onVerified, onResend }: OtpVerifyFormProps) {
+  const t = useTranslations('Auth');
+  const schema = React.useMemo(
+    () =>
+      z.object({
+        code: z
+          .string()
+          .length(6, t('otpSchemaLength'))
+          .regex(/^\d{6}$/, t('otpSchemaDigits')),
+      }),
+    [t],
+  );
   const {
     register,
     handleSubmit,
@@ -58,8 +63,8 @@ export function OtpVerifyForm({ phone, onVerified, onResend }: OtpVerifyFormProp
       // via ApiClientError; show a generic French message — both states are
       // recoverable by re-requesting the OTP.
       const msg = (err as Error).message?.includes('otp_too_many_attempts')
-        ? 'Trop de tentatives — demande un nouveau code.'
-        : 'Code invalide ou expiré. Demande un nouveau code.';
+        ? t('otpTooManyAttempts')
+        : t('otpInvalidExpired');
       setError('code', { message: msg });
     }
   };
@@ -82,10 +87,13 @@ export function OtpVerifyForm({ phone, onVerified, onResend }: OtpVerifyFormProp
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <div className="space-y-2">
         <label htmlFor={codeFieldId} className="text-sm font-semibold text-chop-ink">
-          Code de vérification
+          {t('otpFieldLabel')}
         </label>
         <p id={codeHintId} className="text-sm text-muted-foreground">
-          Un code de 6 chiffres a été envoyé sur WhatsApp au <strong>{phone}</strong>.
+          {t.rich('otpHelpWhatsApp', {
+            phone,
+            strong: (chunks) => <strong>{chunks}</strong>,
+          })}
         </p>
         <Input
           {...codeRegisterRest}
@@ -114,7 +122,7 @@ export function OtpVerifyForm({ phone, onVerified, onResend }: OtpVerifyFormProp
       </div>
 
       <Button type="submit" disabled={isSubmitting} className="w-full">
-        {isSubmitting ? 'Vérification…' : 'Valider'}
+        {isSubmitting ? t('verifying') : t('validate')}
       </Button>
 
       <Button
@@ -124,7 +132,7 @@ export function OtpVerifyForm({ phone, onVerified, onResend }: OtpVerifyFormProp
         onClick={handleResend}
         className="w-full"
       >
-        {resending ? 'Envoi en cours…' : 'Renvoyer le code'}
+        {resending ? t('resending') : t('resendCode')}
       </Button>
     </form>
   );

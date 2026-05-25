@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { useTranslations } from 'next-intl';
 
 import { AlertDialog } from '@/components/ui/alert-dialog';
 import { AuthRequired } from '@/components/ui/auth-required';
@@ -30,10 +31,7 @@ type State =
   | { status: 'ready'; profile: UserProfile }
   | { status: 'error'; message: string };
 
-const nameSchema = z.object({
-  displayName: z.string().min(2, '2 caractères minimum').max(80),
-});
-type NameFormValues = z.infer<typeof nameSchema>;
+type NameFormValues = { displayName: string };
 
 /**
  * Story 1.8 (MVP slice) — consumer self-service profile page.
@@ -44,6 +42,9 @@ type NameFormValues = z.infer<typeof nameSchema>;
  * have their own dashboards already), MoMo history.
  */
 export function AccountPage() {
+  const t = useTranslations('Account');
+  const tCommon = useTranslations('Common');
+  const tAuth = useTranslations('AuthRequired');
   const [state, setState] = React.useState<State>({ status: 'loading' });
   const [editingName, setEditingName] = React.useState(false);
   const [confirmingLogout, setConfirmingLogout] = React.useState(false);
@@ -74,7 +75,7 @@ export function AccountPage() {
     setLoggingOut(true);
     try {
       await auth.logout();
-      toast({ title: 'Déconnecté·e', description: 'À bientôt !' });
+      toast({ title: t('logoutDone'), description: t('logoutGoodbye') });
       router.replace('/login');
     } finally {
       setLoggingOut(false);
@@ -92,15 +93,15 @@ export function AccountPage() {
     return (
       <AuthRequired
         theme="light"
-        subtitle="Connecte-toi pour gérer ton profil, tes adresses et tes préférences."
+        subtitle={tAuth('subtitleProfile')}
         loginHref="/login?next=/account"
         features={[
-          { icon: '👤', label: 'Ton profil et tes infos personnelles' },
-          { icon: '📍', label: 'Plusieurs adresses sauvegardées' },
-          { icon: '💳', label: 'Numéros MoMo pour payer en 1 tap' },
-          { icon: '🔔', label: 'Préférences de notifications' },
+          { icon: '👤', label: tAuth('accountFeature1') },
+          { icon: '📍', label: tAuth('accountFeature2') },
+          { icon: '💳', label: tAuth('accountFeature3') },
+          { icon: '🔔', label: tAuth('accountFeature4') },
         ]}
-        reassurance="Connexion par OTP WhatsApp · 30 secondes · pas de carte bancaire."
+        reassurance={tAuth('reassurance')}
       />
     );
   }
@@ -117,17 +118,15 @@ export function AccountPage() {
   return (
     <main className="min-h-dvh bg-chop-warm pb-16 text-chop-ink">
       <header className="container py-6">
-        <p className="text-xs uppercase tracking-widest text-muted-foreground">Mon compte</p>
-        <h1 className="mt-1 text-2xl font-extrabold">{profile.displayName ?? 'Compte TChopNow'}</h1>
+        <p className="text-xs uppercase tracking-widest text-muted-foreground">{t('eyebrow')}</p>
+        <h1 className="mt-1 text-2xl font-extrabold">{profile.displayName ?? t('fallbackName')}</h1>
       </header>
 
       <section className="container space-y-4">
         <div className="bg-card rounded-lg border p-4 text-sm">
-          <p className="font-semibold">Numéro WhatsApp</p>
+          <p className="font-semibold">{t('whatsappNumberLabel')}</p>
           <p className="mt-0.5 font-mono text-muted-foreground">{profile.phone}</p>
-          <p className="mt-2 text-xs text-muted-foreground">
-            Pour changer de numéro, contacte le support — sécurité oblige.
-          </p>
+          <p className="mt-2 text-xs text-muted-foreground">{t('whatsappChangeNote')}</p>
         </div>
 
         <div className="bg-card rounded-lg border p-4 text-sm">
@@ -144,9 +143,9 @@ export function AccountPage() {
             <>
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="font-semibold">Nom affiché</p>
+                  <p className="font-semibold">{t('displayNameLabel')}</p>
                   <p className="mt-0.5 text-muted-foreground">
-                    {profile.displayName ?? 'Non renseigné'}
+                    {profile.displayName ?? t('displayNameEmpty')}
                   </p>
                 </div>
                 <Button
@@ -155,7 +154,7 @@ export function AccountPage() {
                   size="sm"
                   onClick={() => setEditingName(true)}
                 >
-                  Modifier
+                  {t('edit')}
                 </Button>
               </div>
             </>
@@ -166,10 +165,8 @@ export function AccountPage() {
           href="/account/addresses"
           className="bg-card block rounded-lg border p-4 text-sm hover:bg-background"
         >
-          <p className="font-semibold">Mes adresses</p>
-          <p className="mt-0.5 text-muted-foreground">
-            Gère tes adresses de livraison enregistrées →
-          </p>
+          <p className="font-semibold">{t('addressesHeading')}</p>
+          <p className="mt-0.5 text-muted-foreground">{t('addressesNavBody')}</p>
         </Link>
 
         <Button
@@ -178,17 +175,17 @@ export function AccountPage() {
           className="w-full text-destructive"
           onClick={() => setConfirmingLogout(true)}
         >
-          Se déconnecter
+          {t('logout')}
         </Button>
       </section>
 
       <AlertDialog
         open={confirmingLogout}
         onOpenChange={setConfirmingLogout}
-        title="Te déconnecter ?"
-        description="Tu devras renvoyer un code OTP via WhatsApp pour te reconnecter."
-        confirmLabel="Se déconnecter"
-        cancelLabel="Annuler"
+        title={t('logoutConfirm')}
+        description={t('logoutConfirmBody')}
+        confirmLabel={t('logout')}
+        cancelLabel={tCommon('cancel')}
         onConfirm={doLogout}
         busy={loggingOut}
       />
@@ -205,14 +202,23 @@ function NameEditor({
   onSaved: (profile: UserProfile) => void;
   onCancel: () => void;
 }) {
+  const t = useTranslations('Account');
+  const tCommon = useTranslations('Common');
   const [saving, setSaving] = React.useState(false);
   const [serverError, setServerError] = React.useState<string | null>(null);
+  const schema = React.useMemo(
+    () =>
+      z.object({
+        displayName: z.string().min(2, t('displayNameMinError')).max(80),
+      }),
+    [t],
+  );
   const {
     register,
     handleSubmit,
     formState: { errors },
   } = useForm<NameFormValues>({
-    resolver: zodResolver(nameSchema),
+    resolver: zodResolver(schema),
     defaultValues: { displayName: current },
   });
 
@@ -238,12 +244,12 @@ function NameEditor({
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-2">
       <label htmlFor="displayName" className="block text-sm font-semibold">
-        Nom affiché
+        {t('displayNameLabel')}
       </label>
       <Input
         id="displayName"
         autoComplete="name"
-        placeholder="Maman Mboué"
+        placeholder={t('displayNamePlaceholder')}
         {...register('displayName')}
       />
       {errors.displayName ? (
@@ -252,10 +258,10 @@ function NameEditor({
       {serverError ? <p className="text-xs text-destructive">{serverError}</p> : null}
       <div className="flex gap-2 pt-1">
         <Button type="submit" disabled={saving} size="sm" className="flex-1">
-          {saving ? 'Enregistrement…' : 'Enregistrer'}
+          {saving ? t('saving') : t('save')}
         </Button>
         <Button type="button" variant="outline" size="sm" onClick={onCancel} disabled={saving}>
-          Annuler
+          {tCommon('cancel')}
         </Button>
       </div>
     </form>

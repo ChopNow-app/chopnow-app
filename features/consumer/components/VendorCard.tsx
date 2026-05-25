@@ -4,6 +4,7 @@ import * as React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Clock, MapPin } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 import type { VendorCard as VendorCardType } from '../types';
 
@@ -65,6 +66,7 @@ export function VendorCard({ vendor }: VendorCardProps) {
 }
 
 function Hero({ vendor }: { vendor: VendorCardType }) {
+  const t = useTranslations('VendorCard');
   const placeholder = pickPlaceholder(vendor);
 
   return (
@@ -104,12 +106,12 @@ function Hero({ vendor }: { vendor: VendorCardType }) {
         {vendor.isOpenNow ? (
           <>
             <span aria-hidden className="h-1.5 w-1.5 animate-pulse rounded-full bg-chop-mboue" />
-            <span>Ouvert</span>
+            <span>{t('open')}</span>
           </>
         ) : (
           <>
             <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-chop-neutral" />
-            <span>Fermé</span>
+            <span>{t('closed')}</span>
           </>
         )}
       </div>

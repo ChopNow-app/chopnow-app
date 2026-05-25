@@ -4,6 +4,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
+import { useTranslations } from 'next-intl';
 import { AuthRequired } from '@/components/ui/auth-required';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -63,14 +64,15 @@ const formatLocalHHMM = (d: Date): string => {
 
 // Pilot is MoMo-only (MTN MoMo + Orange Money). The cash-on-delivery branch
 // + the PILOT_COD_ONLY flag were removed 2026-05-18 (chopnow-api issue #177).
-const PAYMENT_OPTIONS: Array<{ id: PaymentMethod; label: string; sublabel: string }> = [
-  { id: 'MTN_MOMO', label: 'MTN MoMo', sublabel: 'Prompt USSD envoyé sur votre téléphone' },
-  { id: 'ORANGE_MONEY', label: 'Orange Money', sublabel: 'Prompt USSD envoyé sur votre téléphone' },
+const PAYMENT_OPTIONS: ReadonlyArray<{ id: PaymentMethod }> = [
+  { id: 'MTN_MOMO' },
+  { id: 'ORANGE_MONEY' },
 ];
 
 const DEFAULT_PAYMENT_METHOD: PaymentMethod = 'MTN_MOMO';
 
 export function CartPage() {
+  const t = useTranslations('Cart');
   const cart = useCart();
   const router = useRouter();
   const addresses = useAddresses();
@@ -120,12 +122,10 @@ export function CartPage() {
   if (cart.isEmpty) {
     return (
       <main className="container py-16 text-center">
-        <h1 className="text-xl font-bold">Panier vide</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Choisis un vendeur pour commencer ta commande.
-        </p>
+        <h1 className="text-xl font-bold">{t('empty')}</h1>
+        <p className="mt-2 text-sm text-muted-foreground">{t('emptyBody')}</p>
         <Button asChild className="mt-6">
-          <Link href="/restaurants">Voir les restaurants</Link>
+          <Link href="/restaurants">{t('browseVendors')}</Link>
         </Button>
       </main>
     );
@@ -195,7 +195,7 @@ export function CartPage() {
           noteForVendor: noteForVendor.trim() || undefined,
           deliveryLat: selectedAddress.lat,
           deliveryLng: selectedAddress.lng,
-          deliveryQuartier: selectedAddress.quartier ?? 'Inconnu',
+          deliveryQuartier: selectedAddress.quartier ?? t('quartierUnknown'),
           deliveryLandmark: undefined,
           deliveryDescription: selectedAddress.description ?? undefined,
           deliveryPhone:
@@ -226,19 +226,19 @@ export function CartPage() {
       track('order_placed', { paymentMethod, amountXAF: order.totalXAF });
       toast({
         variant: 'success',
-        title: 'Commande envoyée',
-        description: `Code ${order.code} — paiement MoMo en cours…`,
+        title: t('toastSentTitle'),
+        description: t('toastSentBody', { code: order.code }),
       });
       router.replace(`/orders/${order.id}`);
     } catch (err) {
-      const msg = (err as Error).message ?? 'Erreur lors de la création de la commande';
+      const msg = (err as Error).message ?? t('submitErrorFallback');
       // Funnel event — DROPOUT signal. The errorCode comes from the
       // structured backend error (extractCode in features/cart/api.ts);
       // raw err.message can contain PII fragments so we use the code.
       const errorCode = (err as { code?: string }).code ?? 'unknown';
       track('order_failed', { paymentMethod, errorCode });
       setSubmitError(msg);
-      toast({ variant: 'error', title: 'Commande non envoyée', description: msg });
+      toast({ variant: 'error', title: t('toastErrorTitle'), description: msg });
     } finally {
       setSubmitting(false);
     }
@@ -251,15 +251,17 @@ export function CartPage() {
           href={cart.vendorId ? `/vendors/${cart.vendorId}` : '/restaurants'}
           className="text-sm text-muted-foreground"
         >
-          ← Continuer mes achats
+          {t('continueShopping')}
         </Link>
       </header>
 
       <section className="container space-y-6 py-2">
-        <h1 className="text-2xl font-extrabold">Panier</h1>
+        <h1 className="text-2xl font-extrabold">{t('title')}</h1>
         {cart.vendorName ? (
           <p className="text-sm text-muted-foreground">
-            {/^chez\b/i.test(cart.vendorName) ? cart.vendorName : `Chez ${cart.vendorName}`}
+            {/^chez\b/i.test(cart.vendorName)
+              ? cart.vendorName
+              : `${t('vendorPrefix')}${cart.vendorName}`}
           </p>
         ) : null}
 
@@ -271,7 +273,9 @@ export function CartPage() {
             >
               <div className="min-w-0 flex-1">
                 <p className="truncate font-semibold">{line.name}</p>
-                <p className="text-sm text-muted-foreground">{formatXAF(line.priceXAF)} / unité</p>
+                <p className="text-sm text-muted-foreground">
+                  {formatXAF(line.priceXAF)} {t('unitSuffix')}
+                </p>
               </div>
               <div className="flex items-center gap-2">
                 <Button
@@ -279,7 +283,7 @@ export function CartPage() {
                   variant="outline"
                   size="sm"
                   onClick={() => cart.setQuantity(line.itemId, line.quantity - 1)}
-                  aria-label={`Réduire ${line.name}`}
+                  aria-label={t('decreaseAria', { name: line.name })}
                 >
                   −
                 </Button>
@@ -289,7 +293,7 @@ export function CartPage() {
                   variant="outline"
                   size="sm"
                   onClick={() => cart.setQuantity(line.itemId, line.quantity + 1)}
-                  aria-label={`Augmenter ${line.name}`}
+                  aria-label={t('increaseAria', { name: line.name })}
                 >
                   +
                 </Button>
@@ -300,17 +304,13 @@ export function CartPage() {
 
         <div className="rounded-lg border bg-background p-3 text-sm">
           <div className="flex justify-between">
-            <span>Sous-total</span>
+            <span>{t('subtotal')}</span>
             <span className="font-semibold">{formatXAF(cart.subtotalXAF)}</span>
           </div>
           {belowMinimum ? (
-            <p className="mt-2 text-destructive">
-              Commande minimum {formatXAF(MIN_ORDER_XAF)} — ajoute un plat pour continuer.
-            </p>
+            <p className="mt-2 text-destructive">{t('belowMinimum', { min: MIN_ORDER_XAF })}</p>
           ) : (
-            <p className="mt-2 text-xs text-muted-foreground">
-              Les frais de livraison sont calculés par le serveur à la commande.
-            </p>
+            <p className="mt-2 text-xs text-muted-foreground">{t('deliveryFeeNote')}</p>
           )}
         </div>
 
@@ -334,8 +334,8 @@ export function CartPage() {
           onClear={onClearCoupon}
         />
 
-        <section role="radiogroup" aria-label="Mode de paiement">
-          <h2 className="mb-2 text-sm font-semibold">Mode de paiement</h2>
+        <section role="radiogroup" aria-label={t('paymentMethod')}>
+          <h2 className="mb-2 text-sm font-semibold">{t('paymentMethod')}</h2>
           <div className="space-y-2">
             {PAYMENT_OPTIONS.map((opt) => (
               <PaymentChip
@@ -350,7 +350,7 @@ export function CartPage() {
 
         <div>
           <label htmlFor="payerPhone" className="mb-1 block text-sm font-semibold">
-            Numéro MoMo pour le paiement
+            {t('payerPhoneLabel')}
           </label>
           <Input
             id="payerPhone"
@@ -363,19 +363,18 @@ export function CartPage() {
             onChange={(e) => setPayerPhone(e.target.value.replace(/\s+/g, ''))}
           />
           <p className="mt-1 text-xs text-muted-foreground">
-            {paymentMethod === 'MTN_MOMO'
-              ? 'Format MTN (commence par 65–68 ou 670–674).'
-              : 'Format Orange (commence par 69X).'}
+            {paymentMethod === 'MTN_MOMO' ? t('payerPhoneHelpMtn') : t('payerPhoneHelpOrange')}
           </p>
         </div>
 
         <div>
           <label htmlFor="note" className="mb-1 block text-sm font-semibold">
-            Note pour le vendeur <span className="text-xs text-muted-foreground">(optionnel)</span>
+            {t('noteLabel')}{' '}
+            <span className="text-xs text-muted-foreground">{t('noteOptional')}</span>
           </label>
           <Input
             id="note"
-            placeholder="Sans piment, portion pour 2…"
+            placeholder={t('notePlaceholder')}
             maxLength={120}
             value={noteForVendor}
             onChange={(e) => setNoteForVendor(e.target.value)}
@@ -396,10 +395,10 @@ export function CartPage() {
         <div className="mx-auto flex max-w-md items-center justify-between gap-3">
           <div className="min-w-0">
             <p className="truncate text-xs text-muted-foreground">
-              {cart.lines.length} article{cart.lines.length > 1 ? 's' : ''} ·{' '}
+              {t('stickyArticle', { count: cart.lines.length })} ·{' '}
               {paymentMethod === 'MTN_MOMO' ? 'MTN' : 'Orange'}
               {scheduledFor && acceptsPreOrders
-                ? ` · pré-commande ${formatLocalHHMM(scheduledFor)}`
+                ? ` · ${t('preOrderEcho', { time: formatLocalHHMM(scheduledFor) })}`
                 : ''}
             </p>
             <p className="text-base font-extrabold">{formatXAF(cart.subtotalXAF)}</p>
@@ -412,10 +411,10 @@ export function CartPage() {
             className="max-w-[60%] flex-1"
           >
             {submitting
-              ? 'Envoi…'
+              ? t('submitSending')
               : scheduledFor && acceptsPreOrders
-                ? 'Pré-commander & payer'
-                : 'Commander & payer'}
+                ? t('submitCtaPreOrder')
+                : t('submitCta')}
           </Button>
         </div>
       </div>
@@ -432,21 +431,24 @@ function AddressPicker({
   selectedAddressId: string | null;
   onSelect: (id: string) => void;
 }) {
+  const t = useTranslations('Cart');
   if (state.status === 'loading') {
     return <Skeleton className="h-20 rounded-lg" />;
   }
   if (state.status === 'error') {
-    return <p className="text-sm text-destructive">Adresses : {state.message}</p>;
+    return (
+      <p className="text-sm text-destructive">{t('addressesError', { message: state.message })}</p>
+    );
   }
   if (state.status === 'unauthenticated') return null; // handled at the page level
 
   if (state.addresses.length === 0) {
     return (
       <div className="rounded-lg border bg-background p-3 text-sm">
-        <p className="font-semibold">Aucune adresse enregistrée</p>
-        <p className="mt-1 text-muted-foreground">Ajoute une adresse pour passer la commande.</p>
+        <p className="font-semibold">{t('noAddresses')}</p>
+        <p className="mt-1 text-muted-foreground">{t('noAddressesBody')}</p>
         <Button asChild variant="outline" size="sm" className="mt-3">
-          <Link href="/account/addresses">+ Ajouter une adresse</Link>
+          <Link href="/account/addresses">{t('addAddress')}</Link>
         </Button>
       </div>
     );
@@ -454,7 +456,7 @@ function AddressPicker({
 
   return (
     <section>
-      <h2 className="mb-2 text-sm font-semibold">Adresse de livraison</h2>
+      <h2 className="mb-2 text-sm font-semibold">{t('deliveryAddress')}</h2>
       <ul className="space-y-2">
         {state.addresses.map((addr) => (
           <li key={addr.id}>
@@ -481,12 +483,13 @@ function AddressPicker({
 }
 
 function AddressDisplay({ addr }: { addr: SavedAddress }) {
+  const t = useTranslations('Cart');
   return (
     <span className="min-w-0">
       <p className="font-semibold">
-        {addr.label ?? 'Adresse'}
+        {addr.label ?? t('addressLabel')}
         {addr.isDefault ? (
-          <span className="ml-2 text-xs text-muted-foreground">(par défaut)</span>
+          <span className="ml-2 text-xs text-muted-foreground">{t('defaultBadge')}</span>
         ) : null}
       </p>
       {addr.description ? (
@@ -532,6 +535,7 @@ function CouponPanel({
   onApply: () => void;
   onClear: () => void;
 }) {
+  const t = useTranslations('Cart');
   const [expanded, setExpanded] = React.useState(false);
 
   if (applied) {
@@ -546,12 +550,12 @@ function CouponPanel({
         </span>
         <div className="min-w-0 flex-1">
           <p className="truncate font-semibold text-chop-ink">
-            Code <span className="font-mono">{applied.code}</span> appliqué
+            {t.rich('couponApplied', {
+              code: applied.code,
+            })}
           </p>
           <p className="truncate text-xs text-muted-foreground">
-            {applied.type === 'FREE_DELIVERY'
-              ? 'Livraison gratuite sur cette commande'
-              : applied.description}
+            {applied.type === 'FREE_DELIVERY' ? t('couponFreeDelivery') : applied.description}
           </p>
         </div>
         <Button
@@ -559,9 +563,9 @@ function CouponPanel({
           variant="ghost"
           size="sm"
           onClick={onClear}
-          aria-label="Retirer le code promo"
+          aria-label={t('couponRemove')}
         >
-          Retirer
+          {t('couponRemove')}
         </Button>
       </div>
     );
@@ -574,7 +578,7 @@ function CouponPanel({
         onClick={() => setExpanded(true)}
         className="flex w-full items-center justify-between rounded-lg border bg-background px-3 py-2.5 text-left text-sm font-semibold text-chop-ink transition-colors hover:bg-chop-warm"
       >
-        <span>J&apos;ai un code promo</span>
+        <span>{t('couponToggleOpen')}</span>
         <span aria-hidden className="text-muted-foreground">
           +
         </span>
@@ -585,7 +589,7 @@ function CouponPanel({
   return (
     <div className="rounded-lg border bg-background p-3">
       <label htmlFor="couponCode" className="mb-1 block text-sm font-semibold">
-        Code promo
+        {t('couponLabel')}
       </label>
       <div className="flex gap-2">
         <Input
@@ -594,7 +598,7 @@ function CouponPanel({
           inputMode="text"
           autoCapitalize="characters"
           autoComplete="off"
-          placeholder="BIENVENUE"
+          placeholder={t('couponPlaceholder')}
           value={input}
           maxLength={32}
           onChange={(e) => onInputChange(e.target.value.toUpperCase().replace(/\s+/g, ''))}
@@ -611,15 +615,16 @@ function CouponPanel({
           onClick={onApply}
           disabled={validating || input.trim().length === 0}
         >
-          {validating ? '…' : 'Appliquer'}
+          {validating ? '…' : t('couponApply')}
         </Button>
       </div>
       {error ? (
         <p className="mt-2 text-xs text-destructive">{error}</p>
       ) : (
         <p className="mt-2 text-xs text-muted-foreground">
-          Saisis ton code promo, ex : <span className="font-mono">BIENVENUE</span> pour ta première
-          commande.
+          {t.rich('couponHelp', {
+            code: (chunks) => <span className="font-mono">{chunks}</span>,
+          })}
         </p>
       )}
     </div>
@@ -627,6 +632,7 @@ function CouponPanel({
 }
 
 function AuthRequiredPanel() {
+  const t = useTranslations('AuthRequired');
   // Mark logout-state so the next view of /login redirects back to /cart on success.
   React.useEffect(() => {
     auth.clear();
@@ -634,15 +640,15 @@ function AuthRequiredPanel() {
   return (
     <AuthRequired
       theme="light"
-      subtitle="Ton panier reste rempli — connecte-toi pour finaliser ta commande."
+      subtitle={t('subtitleCart')}
       loginHref="/login?next=/cart"
       features={[
-        { icon: '🛒', label: 'Ton panier déjà rempli reste sauvegardé' },
-        { icon: '💳', label: 'Paiement MTN MoMo + Orange Money' },
-        { icon: '📍', label: 'Livraison à ton adresse en 30 min' },
-        { icon: '🔔', label: 'Notifications quand ton plat arrive' },
+        { icon: '🛒', label: t('featureCart') },
+        { icon: '💳', label: t('featurePayment') },
+        { icon: '📍', label: t('featureDelivery') },
+        { icon: '🔔', label: t('featureNotifications') },
       ]}
-      reassurance="Connexion par OTP WhatsApp · 30 secondes · pas de carte bancaire."
+      reassurance={t('reassurance')}
     />
   );
 }

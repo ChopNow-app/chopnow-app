@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { MessageCircle, Mail } from 'lucide-react';
+import { getTranslations } from 'next-intl/server';
 
 // Site-wide footer for the marketing splash + the (legal) routes.
 // Intentionally NOT shown on app surfaces (/restaurants, /cart, /orders,
@@ -16,7 +17,8 @@ import { MessageCircle, Mail } from 'lucide-react';
 const LINK_CLS =
   'text-[13px] font-medium text-chop-ink-secondary transition-colors hover:text-chop-ink hover:underline underline-offset-4';
 
-export function SiteFooter() {
+export async function SiteFooter() {
+  const t = await getTranslations('Footer');
   return (
     <footer className="relative z-10 mt-16 border-t border-divider bg-chop-warm md:mt-24">
       <div className="mx-auto grid max-w-7xl gap-10 px-5 py-12 md:grid-cols-2 md:px-8 md:py-14 lg:grid-cols-4 lg:gap-8 lg:px-12">
@@ -29,37 +31,37 @@ export function SiteFooter() {
             TChop<span className="text-chop-red">Now.</span>
           </Link>
           <p className="mt-3 max-w-[28ch] text-[13px] font-medium leading-relaxed text-chop-ink-secondary">
-            Mange sans attendre. De la rue à ta porte — livraison en 30 minutes, paiement MoMo.
+            {t('brandTagline')}
           </p>
           <p className="mt-4 text-[11px] font-bold uppercase tracking-[0.18em] text-chop-ink-secondary">
-            Pilote · Bonamoussadi & Makepe
+            {t('pilotZone')}
           </p>
         </div>
 
         {/* ── Acteurs links ──────────────────────────────────────── */}
         <div>
           <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-chop-ink">
-            Rejoindre
+            {t('joinHeading')}
           </p>
           <ul className="mt-4 space-y-3">
             <li>
               <Link href="/restaurants" className={LINK_CLS}>
-                Commander
+                {t('linkOrder')}
               </Link>
             </li>
             <li>
               <Link href="/vendre" className={LINK_CLS}>
-                Devenir vendeur
+                {t('linkBecomeVendor')}
               </Link>
             </li>
             <li>
               <Link href="/livrer" className={LINK_CLS}>
-                Devenir livreur
+                {t('linkBecomeRider')}
               </Link>
             </li>
             <li>
               <Link href="/statut" className={LINK_CLS}>
-                Vérifier ton inscription
+                {t('linkCheckStatus')}
               </Link>
             </li>
           </ul>
@@ -68,22 +70,22 @@ export function SiteFooter() {
         {/* ── Légal ─────────────────────────────────────────────── */}
         <div>
           <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-chop-ink">
-            Légal
+            {t('legalHeading')}
           </p>
           <ul className="mt-4 space-y-3">
             <li>
               <Link href="/mentions-legales" className={LINK_CLS}>
-                Mentions légales
+                {t('linkLegal')}
               </Link>
             </li>
             <li>
               <Link href="/cgu" className={LINK_CLS}>
-                Conditions d&apos;utilisation
+                {t('linkTerms')}
               </Link>
             </li>
             <li>
               <Link href="/confidentialite" className={LINK_CLS}>
-                Politique de confidentialité
+                {t('linkPrivacy')}
               </Link>
             </li>
           </ul>
@@ -92,7 +94,7 @@ export function SiteFooter() {
         {/* ── Contact + social ──────────────────────────────────── */}
         <div>
           <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-chop-ink">
-            Contact
+            {t('contactHeading')}
           </p>
           <ul className="mt-4 space-y-3">
             <li>
@@ -122,8 +124,8 @@ export function SiteFooter() {
       {/* ── Bottom bar ───────────────────────────────────────────── */}
       <div className="border-t border-divider">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-2 px-5 py-5 text-[11px] font-medium text-chop-ink-secondary md:flex-row md:px-8 md:py-6 lg:px-12">
-          <p>© 2026 TChopNow — Conçu à Douala, Cameroun.</p>
-          <p>Entité légale en cours d&apos;enregistrement (RCCM).</p>
+          <p>{t('copyright')}</p>
+          <p>{t('legalEntity')}</p>
         </div>
       </div>
     </footer>

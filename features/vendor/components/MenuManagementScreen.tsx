@@ -3,6 +3,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { ChevronLeft, Plus, AlertTriangle, Pencil, Trash2 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useMenuItems, type MenuItem, type StockLevel } from '../hooks/useMenuItems';
@@ -14,13 +15,16 @@ const formatXAF = (n: number) => `${n.toLocaleString('fr-FR')} FCFA`;
 
 type Tab = 'all' | 'food' | 'drink';
 
-const TABS: Array<{ key: Tab; label: string }> = [
-  { key: 'all', label: 'Tout' },
-  { key: 'food', label: 'Plats' },
-  { key: 'drink', label: 'Boissons' },
+type TabLabelKey = 'menuScreenTabAll' | 'menuScreenTabFood' | 'menuScreenTabDrink';
+
+const TABS: Array<{ key: Tab; labelKey: TabLabelKey }> = [
+  { key: 'all', labelKey: 'menuScreenTabAll' },
+  { key: 'food', labelKey: 'menuScreenTabFood' },
+  { key: 'drink', labelKey: 'menuScreenTabDrink' },
 ];
 
 export function MenuManagementScreen() {
+  const t = useTranslations('Vendor');
   const menu = useMenuItems();
   const profile = useVendorProfile();
   const cats = useMenuCategories();
@@ -43,10 +47,10 @@ export function MenuManagementScreen() {
     return (
       <Shell>
         <EmptyState
-          title="Connexion requise"
-          message="Connecte-toi pour gérer ton menu."
+          title={t('menuScreenAuthTitle')}
+          message={t('menuScreenAuthBody')}
           ctaHref="/login?next=/vendor/menu"
-          ctaLabel="Se connecter"
+          ctaLabel={t('menuScreenAuthCta')}
         />
       </Shell>
     );
@@ -91,12 +95,12 @@ export function MenuManagementScreen() {
       );
 
   const handleCreateCategory = async () => {
-    const name = window.prompt('Nom de la catégorie ?');
+    const name = window.prompt(t('menuScreenCategoryPromptName'));
     if (!name || name.trim().length < 2) return;
     try {
       await cats.createCategory(name.trim());
     } catch (err) {
-      window.alert(extract(err) ?? 'Création échouée');
+      window.alert(extract(err) ?? t('menuScreenCreateFailed'));
     }
   };
 
@@ -119,8 +123,8 @@ export function MenuManagementScreen() {
       {filtered.length === 0 ? (
         <p className="mt-6 rounded-2xl bg-chop-card-white p-5 text-center text-sm text-muted-foreground shadow-card">
           {menu.items.length === 0
-            ? 'Aucun plat. Tape « + Ajouter un plat » pour commencer.'
-            : 'Rien dans cette catégorie pour le moment.'}
+            ? t('menuScreenEmptyNoItems')
+            : t('menuScreenEmptyNoneInCategory')}
         </p>
       ) : (
         <ul className="mt-4 space-y-2">
@@ -137,11 +141,11 @@ export function MenuManagementScreen() {
                 onCycleStockLevel={menu.setStockLevel}
                 onEdit={() => setEditing({ kind: 'edit', item })}
                 onDelete={async () => {
-                  if (!window.confirm(`Supprimer « ${item.name} » ?`)) return;
+                  if (!window.confirm(t('menuScreenDeleteConfirm', { name: item.name }))) return;
                   try {
                     await menu.deleteItem(item.id);
                   } catch (err) {
-                    window.alert(extract(err) ?? 'Suppression échouée');
+                    window.alert(extract(err) ?? t('menuScreenDeleteFailed'));
                   }
                 }}
               />
@@ -157,7 +161,7 @@ export function MenuManagementScreen() {
         className="mt-6 w-full gap-2 bg-chop-ink text-base shadow-card hover:bg-chop-ink/90"
       >
         <Plus className="h-5 w-5" aria-hidden />
-        Ajouter un plat
+        {t('menuScreenCtaAddDish')}
       </Button>
 
       {editing ? (
@@ -178,21 +182,22 @@ export function MenuManagementScreen() {
 }
 
 function Header({ itemCount }: { itemCount: number | null }) {
+  const t = useTranslations('Vendor');
   return (
     <div className="flex items-center gap-3">
       <Link
         href="/vendor"
         className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-chop-card-white text-chop-ink shadow-card transition-colors hover:bg-chop-surface-gray"
-        aria-label="Retour au dashboard"
+        aria-label={t('ariaBack')}
       >
         <ChevronLeft className="h-5 w-5" aria-hidden />
       </Link>
       <div className="flex-1">
-        <h1 className="text-xl font-extrabold tracking-tight">Mon menu</h1>
+        <h1 className="text-xl font-extrabold tracking-tight">{t('menuScreenHeaderTitle')}</h1>
       </div>
       {itemCount !== null ? (
         <span className="text-xs font-semibold text-muted-foreground">
-          {itemCount} {itemCount === 1 ? 'plat' : 'plats'}
+          {t('menuScreenItemCount', { count: itemCount })}
         </span>
       ) : null}
     </div>
@@ -208,21 +213,22 @@ function CategoryTabs({
   onChange: (t: Tab) => void;
   items: MenuItem[];
 }) {
+  const t = useTranslations('Vendor');
   const counts = {
     all: items.length,
     food: items.filter((i) => i.kind === 'FOOD').length,
     drink: items.filter((i) => i.kind === 'DRINK').length,
   };
   return (
-    <nav className="mt-5 flex gap-2" aria-label="Filtrer par catégorie">
-      {TABS.map((t) => {
-        const active = t.key === current;
-        const count = counts[t.key];
+    <nav className="mt-5 flex gap-2" aria-label={t('menuScreenAriaFilterCategory')}>
+      {TABS.map((tab) => {
+        const active = tab.key === current;
+        const count = counts[tab.key];
         return (
           <button
-            key={t.key}
+            key={tab.key}
             type="button"
-            onClick={() => onChange(t.key)}
+            onClick={() => onChange(tab.key)}
             className={cn(
               'flex flex-1 items-center justify-center gap-1.5 rounded-full border-2 px-3 py-2 text-sm font-bold transition-colors',
               active
@@ -231,7 +237,7 @@ function CategoryTabs({
             )}
             aria-pressed={active}
           >
-            {t.label}
+            {t(tab.labelKey)}
             <span
               className={cn(
                 'inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-bold tabular-nums',
@@ -267,6 +273,7 @@ function CategoryStrip({
   onSelect: (id: string | null) => void;
   onCreate: () => void;
 }) {
+  const t = useTranslations('Vendor');
   // Count items in each category for the badge — helps the vendor see at
   // a glance which sections are sparse.
   const counts = React.useMemo(() => {
@@ -281,10 +288,10 @@ function CategoryStrip({
   return (
     <nav
       className="mt-5 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-      aria-label="Filtrer par catégorie"
+      aria-label={t('menuScreenAriaFilterCategory')}
     >
       <CategoryPill active={selectedId === null} onClick={() => onSelect(null)}>
-        Tout
+        {t('menuScreenTabAll')}
         <span
           className={cn(
             'inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-bold tabular-nums',
@@ -317,7 +324,7 @@ function CategoryStrip({
         className="flex shrink-0 items-center gap-1 rounded-full border-2 border-dashed border-divider bg-chop-card-white px-3 py-2 text-xs font-bold text-chop-red transition-colors hover:border-chop-red hover:bg-chop-red-light"
       >
         <Plus className="h-3 w-3" aria-hidden />
-        Nouvelle
+        {t('menuScreenCategoryPillNew')}
       </button>
     </nav>
   );
@@ -374,6 +381,7 @@ function MenuItemCard({
   onEdit: () => void;
   onDelete: () => Promise<void>;
 }) {
+  const t = useTranslations('Vendor');
   const sellable = item.stockLevel !== 'OUT_OF_STOCK';
 
   return (
@@ -402,7 +410,7 @@ function MenuItemCard({
           <button
             type="button"
             onClick={onEdit}
-            aria-label="Modifier"
+            aria-label={t('menuScreenAriaEdit')}
             className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-divider bg-background text-muted-foreground transition-colors hover:border-chop-red/40 hover:text-chop-red"
           >
             <Pencil className="h-3.5 w-3.5" />
@@ -410,7 +418,7 @@ function MenuItemCard({
           <button
             type="button"
             onClick={onDelete}
-            aria-label="Supprimer"
+            aria-label={t('menuScreenAriaDelete')}
             className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-divider bg-background text-muted-foreground transition-colors hover:border-destructive/40 hover:text-destructive"
           >
             <Trash2 className="h-3.5 w-3.5" />
@@ -449,6 +457,7 @@ function StockBadge({
   level: StockLevel;
   onCycle: (next: StockLevel) => Promise<void>;
 }) {
+  const t = useTranslations('Vendor');
   // Tap-to-cycle through IN_STOCK → LOW_STOCK → IN_STOCK (toggling between
   // the two ON states). Going OUT_OF_STOCK is done via the iOS switch.
   // This separation prevents a thumb tap from accidentally turning off a
@@ -461,7 +470,7 @@ function StockBadge({
   if (level === 'OUT_OF_STOCK') {
     return (
       <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-chop-danger-light px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-chop-danger">
-        ⛔ Rupture
+        {t('menuScreenStockBadgeOut')}
       </span>
     );
   }
@@ -473,7 +482,7 @@ function StockBadge({
         className="mt-1 inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-700 hover:bg-amber-200"
       >
         <AlertTriangle className="h-3 w-3" aria-hidden />
-        Stock faible
+        {t('menuScreenStockBadgeLow')}
       </button>
     );
   }
@@ -483,7 +492,7 @@ function StockBadge({
       onClick={cycle}
       className="mt-1 inline-flex items-center gap-1 rounded-full bg-chop-mboue-light px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-chop-mboue hover:bg-chop-mboue/15"
     >
-      ✓ En stock
+      {t('menuScreenStockBadgeIn')}
     </button>
   );
 }

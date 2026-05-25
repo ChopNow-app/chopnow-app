@@ -9,6 +9,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { MapPin, ChevronDown, Bell } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 import type { GeolocationState } from '../hooks/useGeolocation';
 
@@ -44,24 +45,25 @@ export function HomeHeader({
   onLocationClick,
   hasUnreadNotifications,
 }: HomeHeaderProps) {
-  const greetingWord = useTimeOfDayGreeting();
+  const t = useTranslations('Consumer');
+  const greetingWord = useTimeOfDayGreeting(t);
 
   // Pill copy follows the effective catalogue-coords source, not the raw
   // geo status, so we never lie ("Position GPS · Douala" while actually
   // querying with DOUALA_FALLBACK because the user is in Paris).
   const locationLabel =
     coordsSource === 'gps'
-      ? 'Position GPS · Douala'
+      ? t('locationGps')
       : coordsSource === 'out-of-zone'
-        ? 'Hors zone · Douala (centre)'
+        ? t('locationOutOfZone')
         : coordsSource === 'unavailable'
-          ? 'Douala (centre)'
+          ? t('locationDouala')
           : geo.status === 'requesting'
-            ? 'Localisation…'
+            ? t('locationRequesting')
             : // legacy callers without coordsSource fall through to the geo state
               geo.status === 'ready'
-              ? 'Position GPS · Douala'
-              : 'Douala (centre)';
+              ? t('locationGps')
+              : t('locationDouala');
   const locationDotClass =
     coordsSource === 'gps'
       ? 'bg-emerald-500'
@@ -95,10 +97,10 @@ export function HomeHeader({
           coordsSource === 'out-of-zone' ? (
             <p className="mt-1.5 text-[11px] font-medium leading-snug text-chop-ink-secondary">
               {geo.status === 'requesting'
-                ? 'On utilise ta position uniquement pour le rayon de livraison.'
+                ? t('locationRationaleRequesting')
                 : coordsSource === 'out-of-zone'
-                  ? 'Tu es hors de la zone TChopNow — on affiche les vendeurs du centre de Douala.'
-                  : 'Sans position, on affiche les vendeurs du centre de Douala.'}
+                  ? t('locationRationaleOutOfZone')
+                  : t('locationRationaleUnavailable')}
             </p>
           ) : null}
 
@@ -114,7 +116,7 @@ export function HomeHeader({
               </>
             ) : (
               <>
-                Bienvenue
+                {t('greetingAnon')}
                 <span className="text-chop-red">.</span>
               </>
             )}
@@ -127,7 +129,7 @@ export function HomeHeader({
             so the bell silently did nothing on the live site. */}
         <Link
           href="/notifications"
-          aria-label="Notifications"
+          aria-label={t('notifications')}
           className="relative mt-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-chop-surface-gray text-chop-ink transition-colors hover:bg-chop-card-white"
         >
           <Bell className="h-5 w-5" strokeWidth={2.2} />
@@ -143,13 +145,23 @@ export function HomeHeader({
   );
 }
 
-function useTimeOfDayGreeting() {
+function useTimeOfDayGreeting(t: ReturnType<typeof useTranslations<'Consumer'>>) {
   // Compute on the client to avoid SSR hydration mismatch when the server
-  // and client clocks straddle a boundary hour.
-  const [word, setWord] = React.useState<string>('Bonsoir');
+  // and client clocks straddle a boundary hour. Locale-aware greeting
+  // words come from the messages bundle, keyed by the same morning /
+  // afternoon / evening bucket that maps to the local hour.
+  const [word, setWord] = React.useState<string>(t('greetingEvening'));
   React.useEffect(() => {
     const h = new Date().getHours();
-    setWord(h < 5 ? 'Bonsoir' : h < 12 ? 'Bonjour' : h < 18 ? 'Bon après-midi' : 'Bonsoir');
-  }, []);
+    setWord(
+      h < 5
+        ? t('greetingEvening')
+        : h < 12
+          ? t('greetingMorning')
+          : h < 18
+            ? t('greetingAfternoon')
+            : t('greetingEvening'),
+    );
+  }, [t]);
   return word;
 }

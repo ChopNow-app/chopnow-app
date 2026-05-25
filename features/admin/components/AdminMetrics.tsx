@@ -2,10 +2,12 @@
 
 import * as React from 'react';
 import Link from 'next/link';
+import { useLocale, useTranslations } from 'next-intl';
 import { getPilotMetrics, type DispatchFunnel, type PilotMetrics } from '../api';
 import { ApiClientError } from '@/lib/api/api-client';
 
 function formatPercent(p: number): string {
+  // 1 decimal — same shape in FR and EN; the % symbol is universal.
   return `${p.toFixed(1)}%`;
 }
 
@@ -20,8 +22,8 @@ function formatDuration(ms: number | null): string {
   return `${hours}h ${minutes % 60} min`;
 }
 
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('fr-FR', {
+function formatDate(iso: string, locale: string): string {
+  return new Date(iso).toLocaleDateString(locale === 'fr' ? 'fr-FR' : 'en-US', {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
@@ -35,6 +37,9 @@ interface State {
 }
 
 export function AdminMetrics() {
+  const t = useTranslations('Admin');
+  const tCommon = useTranslations('Common');
+  const locale = useLocale();
   const [state, setState] = React.useState<State>({ status: 'loading' });
 
   React.useEffect(() => {
@@ -48,31 +53,29 @@ export function AdminMetrics() {
         if (err instanceof ApiClientError && (err.status === 401 || err.status === 403)) {
           setState({ status: 'unauthenticated' });
         } else {
-          const msg = err instanceof Error ? err.message : 'Erreur inconnue';
+          const msg = err instanceof Error ? err.message : tCommon('networkError');
           setState({ status: 'error', message: msg });
         }
       });
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [tCommon]);
 
   if (state.status === 'loading') {
-    return <p className="text-sm text-muted-foreground">Chargement des métriques…</p>;
+    return <p className="text-sm text-muted-foreground">{t('metricsLoading')}</p>;
   }
 
   if (state.status === 'unauthenticated') {
     return (
       <div className="rounded-lg border bg-background p-4">
-        <h2 className="text-lg font-bold">Connexion admin requise</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Connecte-toi avec un compte ADMIN ou SUPER_ADMIN pour voir les métriques pilote.
-        </p>
+        <h2 className="text-lg font-bold">{t('authRequiredTitle')}</h2>
+        <p className="mt-1 text-sm text-muted-foreground">{t('metricsAuthBody')}</p>
         <Link
           href="/admin/login"
           className="mt-3 inline-block rounded-md bg-chop-red px-4 py-2 text-sm font-semibold text-white"
         >
-          Se connecter
+          {t('metricsLoginCta')}
         </Link>
       </div>
     );
@@ -81,7 +84,7 @@ export function AdminMetrics() {
   if (state.status === 'error' || !state.metrics) {
     return (
       <p className="text-sm text-destructive">
-        Erreur de chargement: {state.message ?? 'données indisponibles'}
+        {t('metricsErrorPrefix', { message: state.message ?? t('metricsDataUnavailable') })}
       </p>
     );
   }
@@ -91,48 +94,55 @@ export function AdminMetrics() {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="text-2xl font-extrabold">Métriques pilote</h1>
+        <h1 className="text-2xl font-extrabold">{t('metricsHeading')}</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Fenêtre : {formatDate(m.window.from)} → {formatDate(m.window.to)}
+          {t('metricsWindow', {
+            from: formatDate(m.window.from, locale),
+            to: formatDate(m.window.to, locale),
+          })}
         </p>
       </header>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <KpiCard
-          title="Taux de réachat (7 jours)"
+          title={t('kpiReorder7d')}
           value={formatPercent(m.reorderRate.percent)}
-          sub={`${m.reorderRate.reorderers} / ${m.reorderRate.uniqueCustomers} clients ont commandé ≥ 2 fois`}
+          sub={t('kpiReorderSub', {
+            reorderers: m.reorderRate.reorderers,
+            customers: m.reorderRate.uniqueCustomers,
+          })}
           tone={m.reorderRate.percent >= 25 ? 'good' : 'neutral'}
         />
         <KpiCard
-          title="Taux de complétion"
+          title={t('kpiCompletion')}
           value={formatPercent(m.completionRate.percent)}
-          sub={`${m.completionRate.delivered} / ${m.completionRate.total} commandes livrées`}
+          sub={t('kpiCompletionSub', {
+            delivered: m.completionRate.delivered,
+            total: m.completionRate.total,
+          })}
           tone={m.completionRate.percent >= 90 ? 'good' : 'warn'}
         />
         <KpiCard
-          title="Temps moyen de livraison"
+          title={t('kpiAvgDelivery')}
           value={formatDuration(m.avgDeliveryTimeMs)}
-          sub="Du retrait chez le vendeur à la livraison"
+          sub={t('kpiAvgDeliverySub')}
         />
         <KpiCard
-          title="Temps moyen d'acceptation vendeur"
+          title={t('kpiAvgAccept')}
           value={formatDuration(m.avgVendorAcceptTimeMs)}
-          sub="De la commande à l'acceptation du vendeur"
+          sub={t('kpiAvgAcceptSub')}
         />
       </div>
 
       <DispatchFunnelSection funnel={m.dispatchFunnel} />
 
-      <p className="text-xs text-muted-foreground">
-        Décision Semaine 3 : réachat ≥ 25% + complétion ≥ 90% → enregistrer RCCM + activer Campay
-        live. Sinon, itérer ou pivoter.
-      </p>
+      <p className="text-xs text-muted-foreground">{t('metricsDecisionNote')}</p>
     </div>
   );
 }
 
 function DispatchFunnelSection({ funnel }: { funnel: DispatchFunnel }) {
+  const t = useTranslations('Admin');
   const firstAttemptPct =
     funnel.ordersAssigned === 0
       ? null
@@ -148,28 +158,34 @@ function DispatchFunnelSection({ funnel }: { funnel: DispatchFunnel }) {
   return (
     <section className="space-y-3">
       <header>
-        <h2 className="text-lg font-bold">Funnel dispatch</h2>
+        <h2 className="text-lg font-bold">{t('funnelHeading')}</h2>
         <p className="text-xs text-muted-foreground">
-          Santé de l&apos;attribution rider. Détails dans{' '}
-          <code className="rounded bg-muted px-1 py-0.5 text-[10px]">docs/DISPATCH.md</code>.
+          {t.rich('funnelSub', {
+            code: (chunks) => (
+              <code className="rounded bg-muted px-1 py-0.5 text-[10px]">{chunks}</code>
+            ),
+          })}
         </p>
       </header>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <KpiCard
-          title="Commandes attribuées"
+          title={t('funnelKpiAssigned')}
           value={String(funnel.ordersAssigned)}
-          sub="≥ 1 rider assigné dans la fenêtre"
+          sub={t('funnelKpiAssignedSub')}
         />
         <KpiCard
-          title="Au 1ʳᵉ tentative"
+          title={t('funnelKpiFirstAttempt')}
           value={firstAttemptPct === null ? '—' : formatPercent(firstAttemptPct)}
-          sub={`${funnel.assignedOnFirstAttempt} / ${funnel.ordersAssigned} commandes`}
+          sub={t('funnelKpiFirstAttemptSub', {
+            first: funnel.assignedOnFirstAttempt,
+            assigned: funnel.ordersAssigned,
+          })}
           tone={firstAttemptPct === null ? 'neutral' : firstAttemptPct >= 85 ? 'good' : 'warn'}
         />
         <KpiCard
-          title="Tentatives moyennes"
+          title={t('funnelKpiAvgAttempts')}
           value={funnel.avgAttemptsToAssign === null ? '—' : funnel.avgAttemptsToAssign.toFixed(2)}
-          sub="Avant d'obtenir un rider"
+          sub={t('funnelKpiAvgAttemptsSub')}
           tone={
             funnel.avgAttemptsToAssign === null
               ? 'neutral'
@@ -181,9 +197,9 @@ function DispatchFunnelSection({ funnel }: { funnel: DispatchFunnel }) {
           }
         />
         <KpiCard
-          title="Expirées sans rider"
+          title={t('funnelKpiExpired')}
           value={String(funnel.expiredNoRider)}
-          sub="10 tentatives sans candidat"
+          sub={t('funnelKpiExpiredSub')}
           tone={funnel.expiredNoRider === 0 ? 'good' : 'warn'}
         />
       </div>
@@ -191,16 +207,16 @@ function DispatchFunnelSection({ funnel }: { funnel: DispatchFunnel }) {
       <div className="rounded-lg border bg-background p-4">
         <div className="flex items-center justify-between">
           <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Top riders — offres reçues
+            {t('funnelTopRiders')}
           </p>
           {starvedRider && (
             <span className="rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-destructive">
-              Starved rider
+              {t('funnelStarved')}
             </span>
           )}
         </div>
         {funnel.topRiders.length === 0 ? (
-          <p className="mt-2 text-sm text-muted-foreground">Aucune attribution dans la fenêtre.</p>
+          <p className="mt-2 text-sm text-muted-foreground">{t('funnelEmptyOffers')}</p>
         ) : (
           <ul className="mt-3 space-y-2">
             {funnel.topRiders.map((r) => {
@@ -219,12 +235,7 @@ function DispatchFunnelSection({ funnel }: { funnel: DispatchFunnel }) {
             })}
           </ul>
         )}
-        {starvedRider && (
-          <p className="mt-3 text-xs text-destructive">
-            Un rider porte &gt; 70% des offres. Demande aux autres riders de se repositionner, ou
-            mets temporairement le leader hors-ligne.
-          </p>
-        )}
+        {starvedRider && <p className="mt-3 text-xs text-destructive">{t('funnelStarvedNote')}</p>}
       </div>
     </section>
   );

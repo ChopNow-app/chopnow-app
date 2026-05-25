@@ -5,7 +5,9 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ChevronLeft } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { OtpRequestForm } from '@/features/auth/components/OtpRequestForm';
 import { OtpVerifyForm } from '@/features/auth/components/OtpVerifyForm';
 import { apiRaw } from '@/lib/api/api-client';
@@ -44,6 +46,7 @@ function LoginScreen() {
   const router = useRouter();
   const params = useSearchParams();
   const explicitNext = sanitizeNext(params.get('next'));
+  const t = useTranslations('Auth');
 
   const [phone, setPhone] = React.useState<string | null>(null);
 
@@ -89,7 +92,7 @@ function LoginScreen() {
           <button
             type="button"
             onClick={goBack}
-            aria-label="Retour"
+            aria-label={t('back')}
             className="-ml-1 flex h-10 w-10 items-center justify-center rounded-full text-chop-ink transition-colors hover:bg-chop-surface-gray"
           >
             <ChevronLeft className="h-5 w-5" strokeWidth={2.4} aria-hidden />
@@ -103,7 +106,7 @@ function LoginScreen() {
               TChop<span className="text-chop-red">Now.</span>
             </span>
           </Link>
-          <span className="h-10 w-10" aria-hidden />
+          <LanguageSwitcher />
         </div>
       </header>
 
@@ -115,22 +118,26 @@ function LoginScreen() {
         <h1 className="text-4xl font-extrabold leading-[1.05] tracking-tight md:text-5xl">
           {phone ? (
             <>
-              Code de
+              {t('otpStepTitleL1')}
               <br />
-              <span className="text-chop-red">vérification.</span>
+              <span className="text-chop-red">{t('otpStepTitleL2')}</span>
             </>
           ) : (
             <>
-              Bienvenue
+              {t('phoneStepTitleL1')}
               <br />
-              <span className="text-chop-red">chez nous.</span>
+              <span className="text-chop-red">{t('phoneStepTitleL2')}</span>
             </>
           )}
         </h1>
         <p className="mt-4 text-base text-chop-ink-secondary">
           {phone
-            ? `Code envoyé sur WhatsApp au +237 ${phone.slice(-9, -6)} ${phone.slice(-6, -3)} ${phone.slice(-3)}.`
-            : "Ton numéro de téléphone — on t'envoie un code par WhatsApp en quelques secondes."}
+            ? t('otpStepSubtitle', {
+                part1: phone.slice(-9, -6),
+                part2: phone.slice(-6, -3),
+                part3: phone.slice(-3),
+              })
+            : t('phoneStepSubtitle')}
         </p>
 
         <div className="mt-8">
@@ -142,7 +149,7 @@ function LoginScreen() {
                 onClick={() => setPhone(null)}
                 className="text-sm font-semibold text-chop-ink-secondary underline-offset-2 hover:underline"
               >
-                ← Changer de numéro
+                {t('changeNumber')}
               </button>
             </div>
           ) : (
@@ -157,9 +164,9 @@ function LoginScreen() {
       ) : (
         <section className="mx-auto mt-10 w-full max-w-md flex-1 px-5 md:max-w-xl md:px-0">
           <ul className="grid grid-cols-3 gap-3">
-            <TrustPill index="01">Connexion en quelques secondes</TrustPill>
-            <TrustPill index="02">Code par WhatsApp</TrustPill>
-            <TrustPill index="03">Pas de mot de passe à retenir</TrustPill>
+            <TrustPill index="01">{t('trust1')}</TrustPill>
+            <TrustPill index="02">{t('trust2')}</TrustPill>
+            <TrustPill index="03">{t('trust3')}</TrustPill>
           </ul>
         </section>
       )}
@@ -169,24 +176,25 @@ function LoginScreen() {
         <footer className="mx-auto w-full max-w-md px-5 pb-[max(env(safe-area-inset-bottom),24px)] pt-8 md:max-w-xl md:px-0">
           <div className="rounded-3xl bg-chop-card-white p-5 shadow-card">
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-chop-ink-secondary">
-              Pas encore inscrit&nbsp;?
+              {t('registerEyebrow')}
             </p>
             <p className="mt-1 text-sm text-chop-ink-secondary">
-              Pour <strong className="text-chop-ink">vendre tes plats</strong> ou{' '}
-              <strong className="text-chop-ink">livrer à moto</strong>, dépose ton dossier&nbsp;:
+              {t.rich('registerBody', {
+                strong: (chunks) => <strong className="text-chop-ink">{chunks}</strong>,
+              })}
             </p>
             <div className="mt-3 flex flex-col gap-2 sm:flex-row">
               <Link
                 href="/vendre"
                 className="inline-flex flex-1 items-center justify-center rounded-full bg-chop-ink px-4 py-3 text-sm font-bold text-white transition-colors hover:bg-chop-red"
               >
-                Devenir vendeur
+                {t('registerVendor')}
               </Link>
               <Link
                 href="/livrer"
                 className="inline-flex flex-1 items-center justify-center rounded-full bg-chop-ink px-4 py-3 text-sm font-bold text-white transition-colors hover:bg-chop-red"
               >
-                Devenir livreur
+                {t('registerRider')}
               </Link>
             </div>
           </div>
@@ -216,11 +224,14 @@ function TrustPill({ index, children }: { index: string; children: React.ReactNo
 export default function LoginPage() {
   return (
     <main className="min-h-dvh bg-chop-warm text-chop-ink">
-      <React.Suspense
-        fallback={<div className="container max-w-md py-10 text-sm">Chargement…</div>}
-      >
+      <React.Suspense fallback={<LoginFallback />}>
         <LoginScreen />
       </React.Suspense>
     </main>
   );
+}
+
+function LoginFallback() {
+  const t = useTranslations('Auth');
+  return <div className="container max-w-md py-10 text-sm">{t('loadingFallback')}</div>;
 }
