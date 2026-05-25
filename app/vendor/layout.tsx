@@ -1,6 +1,5 @@
-import { ClipboardList, UtensilsCrossed, Clock, User } from 'lucide-react';
-import { ActorTabNav, type ActorTab } from '@/components/ActorTabNav';
 import { RoleGate } from '@/components/auth/RoleGate';
+import { VendorTabs } from '@/components/VendorTabs';
 
 // Auth-gated subtree: proxy.ts bounces anonymous traffic at the edge so
 // crawlers only ever see the /login redirect. Marking robots.index=false
@@ -10,43 +9,6 @@ export const metadata = {
   title: 'TChopNow — Vendeur',
   robots: { index: false, follow: false },
 };
-
-// Vendor tabs — 4 entry points for the operator dashboard. Order chosen
-// by "frequency of use during a typical shift": incoming Commandes first
-// (the kitchen's whole reason for the app), then Menu management, then
-// Horaires (open/close), then Profil (rare edits).
-const VENDOR_TABS: ActorTab[] = [
-  {
-    href: '/vendor',
-    label: 'Commandes',
-    icon: <ClipboardList className="h-4 w-4" strokeWidth={2} />,
-    match: (p) => p === '/vendor',
-  },
-  {
-    href: '/vendor/menu',
-    label: 'Menu',
-    icon: <UtensilsCrossed className="h-4 w-4" strokeWidth={2} />,
-    match: (p) => p.startsWith('/vendor/menu'),
-  },
-  {
-    href: '/vendor/hours',
-    label: 'Horaires',
-    icon: <Clock className="h-4 w-4" strokeWidth={2} />,
-    match: (p) => p.startsWith('/vendor/hours'),
-  },
-  {
-    href: '/vendor/profile',
-    label: 'Profil',
-    icon: <User className="h-4 w-4" strokeWidth={2} />,
-    match: (p) => p.startsWith('/vendor/profile'),
-  },
-];
-
-// Hide the tabs on full-screen takeover routes — /vendor/commande/[id]
-// (60s accept countdown) and /vendor/preparation/[id] (active cook view)
-// both intentionally fill the viewport with one focused task. The tabs
-// would dilute the urgency, so suppress.
-const HIDE_TABS_ON = [/^\/vendor\/commande\//, /^\/vendor\/preparation\//];
 
 // Per DESIGN.md §1: vendor surface is "fonctionnel, dense, efficace —
 // Linear/Notion vibes". Tighter spacing than consumer/livreur; designed
@@ -65,7 +27,7 @@ export default function VendorLayout({ children }: { children: React.ReactNode }
             <span className="shrink-0 text-xs font-extrabold uppercase tracking-widest text-chop-red">
               TChopNow · Vendeur
             </span>
-            <ActorTabNav tabs={VENDOR_TABS} hideOn={HIDE_TABS_ON} ariaLabel="Sections vendeur" />
+            <VendorTabs />
           </div>
         </header>
         <div className="container max-w-5xl py-4">{children}</div>
