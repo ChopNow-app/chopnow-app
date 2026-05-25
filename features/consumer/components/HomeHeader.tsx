@@ -102,15 +102,21 @@ export function HomeHeader({
             </p>
           ) : null}
 
+          {/* Anon visitors get a generic welcome — "Bonjour." with no name
+              read as a stranded greeting. Authenticated users still get
+              the time-of-day greeting + their first name, which is the
+              "this app knows me" signal we want for repeat visits. */}
           <h1 className="mt-3 text-[34px] font-extrabold leading-[1.05] tracking-tight text-chop-ink">
-            {greetingWord}
             {firstName ? (
               <>
-                ,<br />
+                {greetingWord},<br />
                 <span className="text-chop-red">{firstName}.</span>
               </>
             ) : (
-              <span className="text-chop-red">.</span>
+              <>
+                Bienvenue
+                <span className="text-chop-red">.</span>
+              </>
             )}
           </h1>
         </div>

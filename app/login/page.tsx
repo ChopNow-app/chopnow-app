@@ -121,9 +121,9 @@ function LoginScreen() {
             </>
           ) : (
             <>
-              Bon
+              Bienvenue
               <br />
-              <span className="text-chop-red">retour.</span>
+              <span className="text-chop-red">chez nous.</span>
             </>
           )}
         </h1>
