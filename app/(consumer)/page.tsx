@@ -309,7 +309,7 @@ function Faq() {
     },
     {
       q: 'Comment devenir vendeur ou livreur ?',
-      a: 'Vendeur : dépose ton dossier sur /vendre (validation sous 24h, commission seulement quand on te livre une commande). Livreur : /livrer (paie quotidienne via MoMo, validation sous 4h, pas de caution).',
+      a: 'Vendeur : dépose ton dossier sur /vendre (validation sous 24h, commission seulement quand on te livre une commande). Livreur : /livrer (paie hebdomadaire chaque samedi 22h via MoMo, validation sous 4h, pas de caution).',
     },
   ];
 

@@ -4,7 +4,7 @@ import { RiderOnboardingForm } from '@/features/rider-onboarding/components/Ride
 export const metadata = {
   title: 'Devenir livreur — TChopNow',
   description:
-    'Livre pour TChopNow à Douala. Validation sous 4h. Paie quotidienne via MoMo. Tu choisis tes heures.',
+    'Livre pour TChopNow à Douala. Validation sous 4h. Paie hebdomadaire chaque samedi 22h via MoMo. Tu choisis tes heures.',
 };
 
 // Story 1.4 — rider onboarding landing. Same Hot Plate aesthetic as /vendre.
@@ -44,8 +44,8 @@ export default function LivrerPage() {
           <span className="text-chop-red">TChopNow.</span>
         </h1>
         <p className="mt-5 max-w-[44ch] text-[15px] font-medium leading-[1.55] text-chop-ink-secondary md:text-[17px]">
-          Paie quotidienne via MoMo. Tu choisis tes heures. Validation sous 4h. Pas de frais
-          d&apos;inscription, pas de caution.
+          Paie hebdomadaire chaque samedi 22h via MoMo. Tu choisis tes heures. Validation sous 4h.
+          Pas de frais d&apos;inscription, pas de caution.
         </p>
       </section>
 
@@ -78,7 +78,7 @@ export default function LivrerPage() {
             <ul className="mt-5 grid grid-cols-2 gap-3 text-[12px] font-semibold text-white md:grid-cols-3">
               <li className="flex items-start gap-2 rounded-xl bg-white/10 px-3 py-2 backdrop-blur-sm">
                 <span aria-hidden>💰</span>
-                <span>Paie quotidienne 21h MoMo</span>
+                <span>Paie samedi 22h via MoMo</span>
               </li>
               <li className="flex items-start gap-2 rounded-xl bg-white/10 px-3 py-2 backdrop-blur-sm">
                 <span aria-hidden>📱</span>
