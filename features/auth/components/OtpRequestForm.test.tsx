@@ -32,9 +32,12 @@ describe('OtpRequestForm — captcha-disabled (inert default)', () => {
     await user.type(screen.getByRole('textbox'), '670000000');
     await user.click(screen.getByRole('button', { name: /recevoir le code/i }));
 
+    // PhoneInput now emits E.164 ('+237<digits>') instead of the legacy
+    // bare 9-digit local format. Backend accepts both; we just align the
+    // assertion with what PhoneInput actually emits today.
     await waitFor(() => {
-      expect(auth.requestOtp).toHaveBeenCalledWith('670000000', null);
-      expect(onRequested).toHaveBeenCalledWith('670000000');
+      expect(auth.requestOtp).toHaveBeenCalledWith('+237670000000', null);
+      expect(onRequested).toHaveBeenCalledWith('+237670000000');
     });
   });
 

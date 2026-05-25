@@ -2,15 +2,38 @@ import * as React from 'react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
-import { PhoneInput, isValidCameroonPhone } from './PhoneInput';
+import { PhoneInput, isValidCameroonPhone, isValidE164 } from './PhoneInput';
 
 describe('PhoneInput', () => {
-  it('shows the +237 prefix', () => {
+  it('renders the dial-code dropdown with Cameroon as default', () => {
     render(<PhoneInput />);
-    expect(screen.getByText('+237')).toBeInTheDocument();
+    const select = screen.getByLabelText('Indicatif pays') as HTMLSelectElement;
+    expect(select).toBeInTheDocument();
+    expect(select.value).toBe('237');
   });
 
-  it('strips non-digits on input', async () => {
+  it('emits E.164 with selected dial code when user types digits', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    function Wrapper() {
+      const [v, setV] = React.useState('');
+      return (
+        <PhoneInput
+          value={v}
+          onChange={(next) => {
+            setV(next);
+            onChange(next);
+          }}
+        />
+      );
+    }
+    render(<Wrapper />);
+    await user.type(screen.getByPlaceholderText('6XX XXX XXX'), '670123456');
+    // Last emit should be the full E.164 — dial 237 + the digits typed.
+    expect(onChange).toHaveBeenLastCalledWith('+237670123456');
+  });
+
+  it('strips non-digits from the local-number input', async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
     function Wrapper() {
@@ -27,7 +50,37 @@ describe('PhoneInput', () => {
     }
     render(<Wrapper />);
     await user.type(screen.getByPlaceholderText('6XX XXX XXX'), '67a0b1c2d3-456');
-    expect(onChange).toHaveBeenLastCalledWith('670123456');
+    // 67012... etc with non-digits stripped, prefixed by +237.
+    expect(onChange).toHaveBeenLastCalledWith('+237670123456');
+  });
+
+  it('switches the dial code when the dropdown changes', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    function Wrapper() {
+      const [v, setV] = React.useState('+237670000000');
+      return (
+        <PhoneInput
+          value={v}
+          onChange={(next) => {
+            setV(next);
+            onChange(next);
+          }}
+        />
+      );
+    }
+    render(<Wrapper />);
+    // User picks France (+33). Existing digits are kept and re-emitted
+    // under the new dial code.
+    await user.selectOptions(screen.getByLabelText('Indicatif pays'), '33');
+    expect(onChange).toHaveBeenLastCalledWith('+33670000000');
+  });
+
+  it('parses an E.164 value back to dial code + local digits', () => {
+    render(<PhoneInput value="+33695412820" />);
+    const select = screen.getByLabelText('Indicatif pays') as HTMLSelectElement;
+    expect(select.value).toBe('33');
+    expect((screen.getByPlaceholderText(/6 12 34/) as HTMLInputElement).value).toBe('695412820');
   });
 
   it('renders error text when provided', () => {
@@ -36,11 +89,28 @@ describe('PhoneInput', () => {
   });
 });
 
-describe('isValidCameroonPhone', () => {
+describe('isValidE164', () => {
   it.each([
-    ['670000000', true],
+    ['+237670000000', true],
+    ['+33695412820', true],
+    ['+14155552671', true],
+    ['670000000', false], // missing leading '+'
+    ['+0123456789', false], // starts with 0
+    ['+1', false], // too short
+    ['+1234567890123456', false], // 16 digits — too long
+    ['', false],
+  ])('returns %s for %s', (input, expected) => {
+    expect(isValidE164(input)).toBe(expected);
+  });
+});
+
+describe('isValidCameroonPhone (backwards-compat)', () => {
+  it.each([
+    ['670000000', true], // legacy bare 9-digit
     ['650000000', true],
     ['690999999', true],
+    ['+237670000000', true], // E.164 Cameroon
+    ['+33695412820', false], // E.164 but not Cameroon
     ['630000000', false], // doesn't start with 65-69
     ['67000000', false], // 8 digits
     ['', false],
