@@ -30,6 +30,14 @@ name: Release
 on:
   push:
     branches: [develop]
+  # Also dispatchable from the Actions UI. Required for the workflow
+  # to register on GitHub when the file lives only on `develop` (a
+  # non-default branch — `main` is the repo default and is unused).
+  # Without workflow_dispatch the workflow stays invisible until it's
+  # merged to the default branch, blocking the push trigger.
+  # Also useful as a "re-run from the current develop HEAD" escape
+  # hatch if a release ever needs to be re-cut without a fresh merge.
+  workflow_dispatch:
 
 # Serialize releases — one at a time, never cancel a release mid-flight
 # (a half-tagged release with no GitHub release artifact is the worst
