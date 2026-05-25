@@ -55,11 +55,18 @@ const TABS: Tab[] = [
 
 // Same hide list as ConsumerBottomNav — keep the two in sync so we don't
 // end up with a header on /admin (where we don't want a consumer nav at all).
+//
+// IMPORTANT: trailing-slash discipline on `/vendor/` and `/livreur/` is
+// load-bearing. `^/vendor` (no trailing slash) would also match
+// `/vendors/[id]` — the public consumer-facing vendor detail page —
+// and silently hide the nav on those routes. Same byte-wise prefix
+// collision class as the robots.txt /vendor → /vendors bug fixed in
+// chopnow-app#226.
 const HIDE_ON: ReadonlyArray<string | RegExp> = [
   '/login',
-  /^\/admin/,
-  /^\/livreur/,
-  /^\/vendor/,
+  /^\/admin(\/|$)/,
+  /^\/livreur(\/|$)/,
+  /^\/vendor(\/|$)/,
   '/livrer',
   '/vendre',
   /^\/t\//, // public order tracking — no app shell
