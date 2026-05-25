@@ -322,7 +322,9 @@
     "couponRemove": "Retirer le code promo",
     "toastSentTitle": "Commande envoyée",
     "toastSentBody": "Code {code} — paiement MoMo en cours…",
-    "toastErrorTitle": "Commande non envoyée"
+    "toastErrorTitle": "Commande non envoyée",
+    "submitErrorFallback": "Erreur lors de la création de la commande",
+    "quartierUnknown": "Inconnu"
   },
   "PreOrder": {
     "title": "Quand voulez-vous être livré ?",

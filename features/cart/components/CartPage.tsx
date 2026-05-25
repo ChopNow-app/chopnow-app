@@ -73,7 +73,6 @@ const DEFAULT_PAYMENT_METHOD: PaymentMethod = 'MTN_MOMO';
 
 export function CartPage() {
   const t = useTranslations('Cart');
-  const tCommon = useTranslations('Common');
   const cart = useCart();
   const router = useRouter();
   const addresses = useAddresses();
@@ -196,7 +195,7 @@ export function CartPage() {
           noteForVendor: noteForVendor.trim() || undefined,
           deliveryLat: selectedAddress.lat,
           deliveryLng: selectedAddress.lng,
-          deliveryQuartier: selectedAddress.quartier ?? 'Inconnu',
+          deliveryQuartier: selectedAddress.quartier ?? t('quartierUnknown'),
           deliveryLandmark: undefined,
           deliveryDescription: selectedAddress.description ?? undefined,
           deliveryPhone:
@@ -232,7 +231,7 @@ export function CartPage() {
       });
       router.replace(`/orders/${order.id}`);
     } catch (err) {
-      const msg = (err as Error).message ?? 'Erreur lors de la création de la commande';
+      const msg = (err as Error).message ?? t('submitErrorFallback');
       // Funnel event — DROPOUT signal. The errorCode comes from the
       // structured backend error (extractCode in features/cart/api.ts);
       // raw err.message can contain PII fragments so we use the code.
