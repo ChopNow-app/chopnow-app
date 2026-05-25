@@ -62,6 +62,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/vendre`, lastModified: now, changeFrequency: 'monthly', priority: 0.6 },
     { url: `${SITE_URL}/livrer`, lastModified: now, changeFrequency: 'monthly', priority: 0.6 },
     { url: `${SITE_URL}/statut`, lastModified: now, changeFrequency: 'monthly', priority: 0.3 },
+    // Legal pages — low changefreq, low priority but indexable so Google
+    // can show them in "Trust & Safety" rich panels.
+    {
+      url: `${SITE_URL}/mentions-legales`,
+      lastModified: now,
+      changeFrequency: 'yearly',
+      priority: 0.2,
+    },
+    { url: `${SITE_URL}/cgu`, lastModified: now, changeFrequency: 'yearly', priority: 0.2 },
+    {
+      url: `${SITE_URL}/confidentialite`,
+      lastModified: now,
+      changeFrequency: 'yearly',
+      priority: 0.2,
+    },
   ];
 
   const vendorIds = await fetchVendorIds();
