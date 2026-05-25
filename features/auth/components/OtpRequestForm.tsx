@@ -36,11 +36,18 @@ const Turnstile = dynamic(
  * are the single source of truth.
  */
 
+// Accept E.164 international (matches PhoneInput's emit format) OR the
+// legacy bare 9-digit Cameroon local format. Same shape as the backend
+// regex in chopnow-api/src/modules/auth/dto/request-otp.dto.ts — keeps
+// front + back validation aligned so diaspora users with +33/+1/+44/etc.
+// WhatsApp numbers can sign in without owning a local SIM.
 const schema = z.object({
   phone: z
     .string()
-    .min(9, 'Numéro à 9 chiffres requis')
-    .regex(/^6[5-9]\d{7}$/, 'Numéro camerounais invalide (commence par 65–69)'),
+    .regex(
+      /^(?:6[5-9]\d{7}|\+[1-9]\d{6,14})$/,
+      'Numéro invalide — choisis ton pays puis saisis ton numéro',
+    ),
 });
 
 type FormValues = z.infer<typeof schema>;
