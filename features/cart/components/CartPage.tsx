@@ -16,7 +16,13 @@ import { useCart } from '../store';
 import { useAddresses, type SavedAddress } from '../hooks/useAddresses';
 import { toast } from '@/hooks/use-toast';
 import { track } from '@/lib/analytics';
-import { initiateMomo, placeOrder, type PaymentMethod } from '../api';
+import {
+  initiateMomo,
+  placeOrder,
+  validateCoupon,
+  type PaymentMethod,
+  type ValidatedCoupon,
+} from '../api';
 import { PreOrderPicker } from './PreOrderPicker';
 
 /**
@@ -79,6 +85,19 @@ export function CartPage() {
   // Pre-orders (#187): null = immediate (today's flow). Set = scheduled time.
   // Only available when the vendor has acceptsPreOrders=true.
   const [scheduledFor, setScheduledFor] = React.useState<Date | null>(null);
+
+  // Promo coupon (#167) — user-typed code, validated against the backend
+  // before submit. The frontend doesn't know the delivery fee (server-
+  // computed at order time), so we send `deliveryFeeXAF: 0` to /validate
+  // and rely on the textual "Livraison gratuite" wording rather than a
+  // specific XAF reduction. Backend re-validates atomically inside the
+  // order-creation transaction; the worst case is a /validate "ok" then
+  // a POST /orders "coupon_already_redeemed" if a concurrent submit
+  // raced us — handled by the existing submit-error toast.
+  const [couponInput, setCouponInput] = React.useState('');
+  const [couponValidating, setCouponValidating] = React.useState(false);
+  const [couponError, setCouponError] = React.useState<string | null>(null);
+  const [appliedCoupon, setAppliedCoupon] = React.useState<ValidatedCoupon | null>(null);
   const vendorView = useVendorPublic(cart.vendorId);
   const acceptsPreOrders =
     vendorView.status === 'ready' && vendorView.data.vendor.acceptsPreOrders === true;
@@ -125,6 +144,36 @@ export function CartPage() {
     selectedAddress !== null &&
     /^(?:6[5-9]\d{7}|\+?[1-9]\d{7,14})$/.test(payerPhone);
 
+  const onApplyCoupon = async () => {
+    const code = couponInput.trim();
+    if (!code) return;
+    setCouponError(null);
+    setCouponValidating(true);
+    try {
+      // deliveryFeeXAF is 0 here because the cart doesn't yet have the
+      // server-computed delivery fee. The backend's FREE_DELIVERY
+      // discount path returns 0 in that case, so we don't show a
+      // numeric reduction — only the textual "Livraison gratuite".
+      const result = await validateCoupon(code, cart.subtotalXAF, 0);
+      setAppliedCoupon(result);
+      setCouponInput(result.code);
+      track('coupon_applied', { code: result.code, type: result.type });
+    } catch (err) {
+      const e = err as Error & { code?: string };
+      setCouponError(e.message);
+      setAppliedCoupon(null);
+      track('coupon_rejected', { code, errorCode: e.code ?? 'unknown' });
+    } finally {
+      setCouponValidating(false);
+    }
+  };
+
+  const onClearCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponInput('');
+    setCouponError(null);
+  };
+
   const onSubmit = async () => {
     if (!selectedAddress || !cart.vendorId) return;
     setSubmitError(null);
@@ -157,6 +206,12 @@ export function CartPage() {
           // Pre-orders (#187): only sent when the user picked "Plus tard"
           // AND the vendor accepts pre-orders. Backend re-validates both.
           scheduledFor: scheduledFor && acceptsPreOrders ? scheduledFor.toISOString() : undefined,
+          // Promo coupon (#167) — only sent when the consumer applied
+          // a valid code AT THIS CART. Backend re-validates atomically
+          // inside the order-creation transaction; if invalidated by
+          // a race (concurrent submit, expiry), the order errors out
+          // with the structured `code` field.
+          couponCode: appliedCoupon?.code,
         },
         crypto.randomUUID(),
       );
@@ -268,6 +323,16 @@ export function CartPage() {
         {acceptsPreOrders ? (
           <PreOrderPicker value={scheduledFor} onChange={setScheduledFor} />
         ) : null}
+
+        <CouponPanel
+          input={couponInput}
+          onInputChange={setCouponInput}
+          applied={appliedCoupon}
+          validating={couponValidating}
+          error={couponError}
+          onApply={onApplyCoupon}
+          onClear={onClearCoupon}
+        />
 
         <section role="radiogroup" aria-label="Mode de paiement">
           <h2 className="mb-2 text-sm font-semibold">Mode de paiement</h2>
@@ -429,6 +494,135 @@ function AddressDisplay({ addr }: { addr: SavedAddress }) {
       ) : null}
       {addr.quartier ? <p className="text-xs text-muted-foreground">📍 {addr.quartier}</p> : null}
     </span>
+  );
+}
+
+/**
+ * Promo coupon entry block (#167).
+ *
+ * Collapsed by default — a single "J'ai un code promo" toggle reveals
+ * the input. Once a code is validated, the section flips to a green
+ * applied-state chip with an X to remove. The backend is the source
+ * of truth: every redemption is validated atomically inside the
+ * order-creation transaction.
+ *
+ * UX choices:
+ *   - The applied state shows TEXT instead of a XAF discount because
+ *     the delivery fee is server-computed (the cart doesn't know it
+ *     until the order POSTs). "Livraison gratuite" reads cleaner than
+ *     "-0 FCFA" anyway.
+ *   - Apply button is disabled while the input is empty or while a
+ *     request is in flight, so a double-tap can't double-fire the
+ *     validate call.
+ */
+function CouponPanel({
+  input,
+  onInputChange,
+  applied,
+  validating,
+  error,
+  onApply,
+  onClear,
+}: {
+  input: string;
+  onInputChange: (v: string) => void;
+  applied: ValidatedCoupon | null;
+  validating: boolean;
+  error: string | null;
+  onApply: () => void;
+  onClear: () => void;
+}) {
+  const [expanded, setExpanded] = React.useState(false);
+
+  if (applied) {
+    return (
+      <div
+        className="border-mboue/40 bg-mboue-light/40 flex items-center gap-3 rounded-lg border p-3 text-sm"
+        role="status"
+        aria-live="polite"
+      >
+        <span aria-hidden className="text-lg">
+          ✓
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="truncate font-semibold text-chop-ink">
+            Code <span className="font-mono">{applied.code}</span> appliqué
+          </p>
+          <p className="truncate text-xs text-muted-foreground">
+            {applied.type === 'FREE_DELIVERY'
+              ? 'Livraison gratuite sur cette commande'
+              : applied.description}
+          </p>
+        </div>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={onClear}
+          aria-label="Retirer le code promo"
+        >
+          Retirer
+        </Button>
+      </div>
+    );
+  }
+
+  if (!expanded) {
+    return (
+      <button
+        type="button"
+        onClick={() => setExpanded(true)}
+        className="flex w-full items-center justify-between rounded-lg border bg-background px-3 py-2.5 text-left text-sm font-semibold text-chop-ink transition-colors hover:bg-chop-warm"
+      >
+        <span>J&apos;ai un code promo</span>
+        <span aria-hidden className="text-muted-foreground">
+          +
+        </span>
+      </button>
+    );
+  }
+
+  return (
+    <div className="rounded-lg border bg-background p-3">
+      <label htmlFor="couponCode" className="mb-1 block text-sm font-semibold">
+        Code promo
+      </label>
+      <div className="flex gap-2">
+        <Input
+          id="couponCode"
+          name="couponCode"
+          inputMode="text"
+          autoCapitalize="characters"
+          autoComplete="off"
+          placeholder="BIENVENUE"
+          value={input}
+          maxLength={32}
+          onChange={(e) => onInputChange(e.target.value.toUpperCase().replace(/\s+/g, ''))}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              onApply();
+            }
+          }}
+        />
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onApply}
+          disabled={validating || input.trim().length === 0}
+        >
+          {validating ? '…' : 'Appliquer'}
+        </Button>
+      </div>
+      {error ? (
+        <p className="mt-2 text-xs text-destructive">{error}</p>
+      ) : (
+        <p className="mt-2 text-xs text-muted-foreground">
+          Saisis ton code promo, ex : <span className="font-mono">BIENVENUE</span> pour ta première
+          commande.
+        </p>
+      )}
+    </div>
   );
 }
 

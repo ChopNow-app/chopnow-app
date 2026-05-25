@@ -48,7 +48,13 @@ export type FunnelEvent =
   | 'cart_item_added'
   | 'checkout_started'
   | 'order_placed'
-  | 'order_failed';
+  | 'order_failed'
+  // #167 — promo coupon funnel. `coupon_applied` fires when the /validate
+  // endpoint accepts the typed code; `coupon_rejected` when it errors out.
+  // Pairs with `order_placed` properties.couponCode to measure end-to-end
+  // BIENVENUE conversion.
+  | 'coupon_applied'
+  | 'coupon_rejected';
 
 /**
  * Allowed event properties. Vercel's contract: keys ≤ 64 chars,
@@ -73,6 +79,13 @@ interface EventProps {
   // (e.g. 'pre_orders_not_accepted_by_this_vendor'). NOT the raw
   // error message (could contain PII fragments).
   errorCode?: string;
+  // #167 — promo coupon. Uppercased code (e.g. "BIENVENUE"). Stored
+  // verbatim because it's intentionally non-PII (typed by every user
+  // who redeems the offer).
+  code?: string;
+  // #167 — coupon kind (FREE_DELIVERY | FIXED_AMOUNT_OFF). Lets the
+  // dashboard split conversion by promo type once we ship more than one.
+  type?: string;
 }
 
 /**
