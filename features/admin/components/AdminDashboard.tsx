@@ -3,8 +3,10 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useLocale, useTranslations } from 'next-intl';
 import { AuthRequired } from '@/components/ui/auth-required';
 import { Button } from '@/components/ui/button';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { ApiClientError } from '@/lib/api/api-client';
 import { adminApi, adminEmail, adminLogout, adminRole } from '../api';
 import {
@@ -14,10 +16,19 @@ import {
   type PendingVendor,
 } from '../hooks/useValidationQueues';
 
-const formatDate = (iso: string) => new Date(iso).toLocaleString('fr-FR');
+// Date formatter takes the active locale so 25/05/2026 vs 5/25/2026 follow
+// the user's choice. fr-FR / en-US are the only two we support today.
+function useDateFormatter() {
+  const locale = useLocale();
+  return React.useCallback(
+    (iso: string) => new Date(iso).toLocaleString(locale === 'fr' ? 'fr-FR' : 'en-US'),
+    [locale],
+  );
+}
 
 export function AdminDashboard() {
   const router = useRouter();
+  const t = useTranslations('Admin');
   const vendors = usePendingVendors();
   const riders = usePendingRiders();
   const email = adminEmail();
@@ -27,8 +38,8 @@ export function AdminDashboard() {
     return (
       <AuthRequired
         theme="light"
-        title="Connexion admin requise"
-        subtitle="Accès réservé aux comptes ADMIN ou SUPER_ADMIN."
+        title={t('authRequiredTitle')}
+        subtitle={t('authRequiredSubtitle')}
         loginHref="/admin/login"
       />
     );
@@ -37,10 +48,8 @@ export function AdminDashboard() {
   if (vendors.status === 'forbidden' || riders.status === 'forbidden') {
     return (
       <div className="container max-w-md py-12 text-center">
-        <h2 className="text-xl font-bold">Permissions insuffisantes</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Ce compte n&apos;a pas accès aux files de validation.
-        </p>
+        <h2 className="text-xl font-bold">{t('forbiddenTitle')}</h2>
+        <p className="mt-2 text-sm text-muted-foreground">{t('forbiddenBody')}</p>
       </div>
     );
   }
@@ -54,7 +63,7 @@ export function AdminDashboard() {
     <div className="space-y-8">
       <header className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-extrabold">Console Admin</h1>
+          <h1 className="text-2xl font-extrabold">{t('console')}</h1>
           {email ? (
             <p className="text-xs text-muted-foreground">
               {email} · {role ?? '—'}
@@ -62,20 +71,21 @@ export function AdminDashboard() {
           ) : null}
         </div>
         <div className="flex items-center gap-2">
+          <LanguageSwitcher />
           <Link
             href="/admin/finance"
             className="rounded-md border px-3 py-1.5 text-xs font-semibold hover:bg-accent"
           >
-            Finance
+            {t('linkFinance')}
           </Link>
           <Link
             href="/admin/metrics"
             className="rounded-md border px-3 py-1.5 text-xs font-semibold hover:bg-accent"
           >
-            Métriques pilote
+            {t('linkMetrics')}
           </Link>
           <Button type="button" variant="outline" size="sm" onClick={onLogout}>
-            Déconnexion
+            {t('logout')}
           </Button>
         </div>
       </header>
@@ -83,7 +93,7 @@ export function AdminDashboard() {
       <section>
         <header className="mb-3 flex items-center justify-between">
           <h2 className="text-lg font-bold">
-            Vendeurs en attente
+            {t('vendorQueueHeading')}
             {vendors.status === 'ready' ? ` (${vendors.rows.length})` : null}
           </h2>
           {vendors.status === 'ready' ? (
@@ -92,21 +102,21 @@ export function AdminDashboard() {
               onClick={vendors.reload}
               className="text-xs text-muted-foreground underline"
             >
-              Actualiser
+              {t('refresh')}
             </button>
           ) : null}
         </header>
         <QueueBody
           state={vendors}
           renderRow={(v) => <VendorRow key={v.id} vendor={v} onChanged={vendors.reload} />}
-          emptyMessage="Aucun dossier vendeur en attente."
+          emptyMessage={t('emptyVendorQueue')}
         />
       </section>
 
       <section>
         <header className="mb-3 flex items-center justify-between">
           <h2 className="text-lg font-bold">
-            Livreurs en attente
+            {t('riderQueueHeading')}
             {riders.status === 'ready' ? ` (${riders.rows.length})` : null}
           </h2>
           {riders.status === 'ready' ? (
@@ -115,14 +125,14 @@ export function AdminDashboard() {
               onClick={riders.reload}
               className="text-xs text-muted-foreground underline"
             >
-              Actualiser
+              {t('refresh')}
             </button>
           ) : null}
         </header>
         <QueueBody
           state={riders}
           renderRow={(r) => <RiderRow key={r.id} rider={r} onChanged={riders.reload} />}
-          emptyMessage="Aucun dossier livreur en attente."
+          emptyMessage={t('emptyRiderQueue')}
         />
       </section>
     </div>
@@ -166,6 +176,8 @@ function QueueBody<T>({
 }
 
 function VendorRow({ vendor, onChanged }: { vendor: PendingVendor; onChanged: () => void }) {
+  const t = useTranslations('Admin');
+  const formatDate = useDateFormatter();
   return (
     <li className="bg-card rounded-lg border p-4">
       <header className="flex items-start justify-between gap-3">
@@ -176,10 +188,11 @@ function VendorRow({ vendor, onChanged }: { vendor: PendingVendor; onChanged: ()
             {vendor.pointOfReference ? ` · ${vendor.pointOfReference}` : ''}
           </p>
           <p className="text-xs text-muted-foreground">
-            📱 {vendor.whatsappPhone} · Capacité {vendor.declaredCapacity ?? '?'} / jour
+            📱 {vendor.whatsappPhone} ·{' '}
+            {t('vendorRowCapacity', { capacity: vendor.declaredCapacity ?? '?' })}
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
-            Soumis le {formatDate(vendor.submittedAt)}
+            {t('vendorRowSubmitted', { date: formatDate(vendor.submittedAt) })}
           </p>
         </div>
         {vendor.profilePhotoUrl ? (
@@ -199,18 +212,20 @@ function VendorRow({ vendor, onChanged }: { vendor: PendingVendor; onChanged: ()
       (vendor.rccmNumber || vendor.niuNumber || vendor.enseignePhotoUrl) ? (
         <div className="mt-3 rounded-md border border-chop-red/30 bg-chop-red-light/40 p-3">
           <p className="mb-1.5 text-[11px] font-bold uppercase tracking-widest text-chop-red">
-            🏛️ Documents légaux
+            {t('legalDocsHeading')}
           </p>
           <p className="text-xs text-chop-ink">
             {vendor.rccmNumber ? (
               <>
-                RCCM : <span className="font-mono font-semibold">{vendor.rccmNumber}</span>
+                {t('rccmLabel')} :{' '}
+                <span className="font-mono font-semibold">{vendor.rccmNumber}</span>
               </>
             ) : null}
             {vendor.rccmNumber && vendor.niuNumber ? ' · ' : null}
             {vendor.niuNumber ? (
               <>
-                NIU : <span className="font-mono font-semibold">{vendor.niuNumber}</span>
+                {t('niuLabel')} :{' '}
+                <span className="font-mono font-semibold">{vendor.niuNumber}</span>
               </>
             ) : null}
           </p>
@@ -221,7 +236,7 @@ function VendorRow({ vendor, onChanged }: { vendor: PendingVendor; onChanged: ()
               rel="noreferrer"
               className="mt-1.5 inline-block text-xs font-semibold text-chop-red underline"
             >
-              Voir la photo d&apos;enseigne →
+              {t('seeEnseigne')}
             </a>
           ) : null}
         </div>
@@ -243,6 +258,7 @@ function VendorRow({ vendor, onChanged }: { vendor: PendingVendor; onChanged: ()
 // at submission; this lets admin override per vendor without code changes
 // (opt in a willing SEMI_FORMAL, opt out an INFORMAL whose kitchen doesn't fit).
 function PreOrdersToggle({ vendor, onChanged }: { vendor: PendingVendor; onChanged: () => void }) {
+  const t = useTranslations('Admin');
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const toggle = async () => {
@@ -252,7 +268,7 @@ function PreOrdersToggle({ vendor, onChanged }: { vendor: PendingVendor; onChang
       await adminApi.setVendorPreOrders(vendor.id, !vendor.acceptsPreOrders);
       onChanged();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur');
+      setError(err instanceof Error ? err.message : t('errorFallback'));
     } finally {
       setBusy(false);
     }
@@ -260,10 +276,8 @@ function PreOrdersToggle({ vendor, onChanged }: { vendor: PendingVendor; onChang
   return (
     <div className="mt-3 flex items-center justify-between gap-3 rounded-md border border-divider bg-chop-warm/40 p-2">
       <div className="min-w-0">
-        <p className="text-xs font-semibold">Pré-commandes</p>
-        <p className="text-[11px] text-muted-foreground">
-          Le client peut programmer cette commande à l&apos;avance (≤24h).
-        </p>
+        <p className="text-xs font-semibold">{t('preOrdersTitle')}</p>
+        <p className="text-[11px] text-muted-foreground">{t('preOrdersSub')}</p>
         {error ? <p className="mt-0.5 text-[11px] text-destructive">{error}</p> : null}
       </div>
       <button
@@ -277,28 +291,30 @@ function PreOrdersToggle({ vendor, onChanged }: { vendor: PendingVendor; onChang
         }`}
         aria-pressed={vendor.acceptsPreOrders}
       >
-        {busy ? '…' : vendor.acceptsPreOrders ? 'Activé' : 'Désactivé'}
+        {busy ? '…' : vendor.acceptsPreOrders ? t('toggleEnabled') : t('toggleDisabled')}
       </button>
     </div>
   );
 }
 
 function RiderRow({ rider, onChanged }: { rider: PendingRider; onChanged: () => void }) {
+  const t = useTranslations('Admin');
+  const formatDate = useDateFormatter();
   return (
     <li className="bg-card rounded-lg border p-4">
       <header className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="truncate font-semibold">{rider.user.displayName ?? 'Sans nom'}</p>
+          <p className="truncate font-semibold">{rider.user.displayName ?? t('riderNoName')}</p>
           <p className="text-xs text-muted-foreground">
             {rider.vehicleType}
             {rider.licensePlate ? ` · ${rider.licensePlate}` : ''}
             {rider.preferredZone ? ` · 📍 ${rider.preferredZone}` : ''}
           </p>
           <p className="text-xs text-muted-foreground">
-            📱 {rider.user.phone} · MoMo {rider.momoPhone}
+            📱 {rider.user.phone} · {t('riderMomoPrefix', { phone: rider.momoPhone })}
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
-            Soumis le {formatDate(rider.submittedAt)}
+            {t('vendorRowSubmitted', { date: formatDate(rider.submittedAt) })}
           </p>
         </div>
       </header>
@@ -310,7 +326,7 @@ function RiderRow({ rider, onChanged }: { rider: PendingRider; onChanged: () => 
             target="_blank"
             rel="noreferrer"
           >
-            CNI
+            {t('linkCni')}
           </a>
         ) : null}
         {rider.selfiePhotoUrl ? (
@@ -320,7 +336,7 @@ function RiderRow({ rider, onChanged }: { rider: PendingRider; onChanged: () => 
             target="_blank"
             rel="noreferrer"
           >
-            Selfie
+            {t('linkSelfie')}
           </a>
         ) : null}
         {rider.vehiclePhotoUrl ? (
@@ -330,7 +346,7 @@ function RiderRow({ rider, onChanged }: { rider: PendingRider; onChanged: () => 
             target="_blank"
             rel="noreferrer"
           >
-            Véhicule
+            {t('linkVehicle')}
           </a>
         ) : null}
       </div>
@@ -355,6 +371,8 @@ function DecisionActions({
   onSuspend: (reason: string) => Promise<unknown>;
   onChanged: () => void;
 }) {
+  const t = useTranslations('Admin');
+  const tCommon = useTranslations('Common');
   const [busy, setBusy] = React.useState<null | 'approve' | 'reject' | 'suspend'>(null);
   const [error, setError] = React.useState<string | null>(null);
 
@@ -367,7 +385,8 @@ function DecisionActions({
     } catch (err) {
       const msg =
         err instanceof ApiClientError
-          ? ((err.body as { message?: string } | undefined)?.message ?? `Erreur ${err.status}`)
+          ? ((err.body as { message?: string } | undefined)?.message ??
+            tCommon('errorPrefix', { status: err.status }))
           : (err as Error).message;
       setError(msg);
     } finally {
@@ -376,13 +395,13 @@ function DecisionActions({
   };
 
   const reject = async () => {
-    const reason = window.prompt('Motif du refus ?');
+    const reason = window.prompt(t('rejectReasonPrompt'));
     if (!reason) return;
     await wrap('reject', () => onReject(reason));
   };
 
   const suspend = async () => {
-    const reason = window.prompt('Motif de suspension ?');
+    const reason = window.prompt(t('suspendReasonPrompt'));
     if (!reason) return;
     await wrap('suspend', () => onSuspend(reason));
   };
@@ -397,10 +416,10 @@ function DecisionActions({
           disabled={busy !== null}
           onClick={() => wrap('approve', onApprove)}
         >
-          {busy === 'approve' ? '…' : '✅ Approuver'}
+          {busy === 'approve' ? '…' : t('decisionApprove')}
         </Button>
         <Button type="button" size="sm" variant="outline" disabled={busy !== null} onClick={reject}>
-          {busy === 'reject' ? '…' : '❌ Refuser'}
+          {busy === 'reject' ? '…' : t('decisionReject')}
         </Button>
         <Button
           type="button"
@@ -409,7 +428,7 @@ function DecisionActions({
           disabled={busy !== null}
           onClick={suspend}
         >
-          {busy === 'suspend' ? '…' : '⏸ Suspendre'}
+          {busy === 'suspend' ? '…' : t('decisionSuspend')}
         </Button>
       </div>
     </div>

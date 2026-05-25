@@ -1,9 +1,24 @@
+import * as React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { NextIntlClientProvider } from 'next-intl';
+import frMessages from '@/messages/fr.json';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 
 import { MonSoldeCard } from './MonSoldeCard';
 import { apiRaw } from '@/lib/api/api-client';
 import { withQueryProvider } from '@/lib/query/testing';
+
+// Combined wrapper: QueryClient (required by useRiderBalance/useVendorCashout)
+// + NextIntlClientProvider (required by useTranslations). The test imports
+// the FR bundle so assertions on French strings keep working.
+const combinedWrapper = ({ children }: { children: React.ReactNode }) => {
+  const QueryWrap = withQueryProvider();
+  return (
+    <NextIntlClientProvider locale="fr" messages={frMessages}>
+      <QueryWrap>{children}</QueryWrap>
+    </NextIntlClientProvider>
+  );
+};
 
 vi.mock('@/lib/api/api-client', () => ({
   apiRaw: { get: vi.fn() },
@@ -47,7 +62,7 @@ describe('MonSoldeCard', () => {
   it('renders balance + next scheduled payout for a RESTAURANT vendor', async () => {
     mockGet.mockResolvedValueOnce(baseBalance);
 
-    render(<MonSoldeCard />, { wrapper: withQueryProvider() });
+    render(<MonSoldeCard />, { wrapper: combinedWrapper });
 
     await waitFor(() => {
       expect(screen.getByText(ws('12 500 FCFA'))).toBeInTheDocument();
@@ -66,7 +81,7 @@ describe('MonSoldeCard', () => {
       nextScheduledPayout: { cadence: 'ON_DEMAND', estimatedAt: null },
     });
 
-    render(<MonSoldeCard />, { wrapper: withQueryProvider() });
+    render(<MonSoldeCard />, { wrapper: combinedWrapper });
     await waitFor(() => {
       expect(screen.getByText(/Vérifié/i)).toBeInTheDocument();
     });
@@ -81,7 +96,7 @@ describe('MonSoldeCard', () => {
       nextScheduledPayout: { cadence: 'ON_DEMAND', estimatedAt: null },
     });
 
-    render(<MonSoldeCard />, { wrapper: withQueryProvider() });
+    render(<MonSoldeCard />, { wrapper: combinedWrapper });
     await waitFor(() => {
       expect(screen.getByText('Sur demande')).toBeInTheDocument();
     });
@@ -96,7 +111,7 @@ describe('MonSoldeCard', () => {
       lastPayoutXAF: 8500,
     });
 
-    render(<MonSoldeCard />, { wrapper: withQueryProvider() });
+    render(<MonSoldeCard />, { wrapper: combinedWrapper });
     await waitFor(() => {
       expect(screen.getByText(ws('8 500 FCFA'))).toBeInTheDocument();
     });
@@ -118,7 +133,7 @@ describe('MonSoldeCard', () => {
       ],
     });
 
-    render(<MonSoldeCard />, { wrapper: withQueryProvider() });
+    render(<MonSoldeCard />, { wrapper: combinedWrapper });
     await waitFor(() => {
       expect(screen.getByText(/Historique \(1\)/i)).toBeInTheDocument();
     });
@@ -133,7 +148,7 @@ describe('MonSoldeCard', () => {
   it('shows an error + retry button when the fetch fails', async () => {
     mockGet.mockRejectedValueOnce(new Error('network'));
 
-    render(<MonSoldeCard />, { wrapper: withQueryProvider() });
+    render(<MonSoldeCard />, { wrapper: combinedWrapper });
     await waitFor(() => {
       expect(screen.getByRole('button', { name: /Réessayer/i })).toBeInTheDocument();
     });

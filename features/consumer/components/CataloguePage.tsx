@@ -3,6 +3,7 @@
 import dynamic from 'next/dynamic';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import * as React from 'react';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { useCurrentUser } from '@/features/auth/hooks/useCurrentUser';
 import { useCatalogue } from '../hooks/useCatalogue';
@@ -43,11 +44,8 @@ import type { VendorCard as VendorCardType } from '../types';
  *   - Fall back to Douala center if denied / unsupported (Story 3.15).
  *   - Catalogue refetches when coords change.
  */
-const PLAN_LABEL: Record<1 | 2 | 3, { title: string; subtitle: string }> = {
-  1: { title: 'Près de toi', subtitle: 'Moins de 2 km · livraison express' },
-  2: { title: 'Un peu plus loin', subtitle: 'Entre 2 et 5 km' },
-  3: { title: 'Tout Douala', subtitle: 'Plus de 5 km · frais plus élevés' },
-};
+// Plan labels resolved at render time via useTranslations (Consumer namespace).
+// Keys: nearbyHeading/nearbySubtitle, midHeading/midSubtitle, allDoualaHeading/allDoualaSubtitle.
 
 // URL params we sync the filter state to. `q` for query (matches conventions
 // across search engines + most marketplaces), `cat` for category (short, no
@@ -67,6 +65,8 @@ function readCategoryFromParams(params: URLSearchParams): CategoryId {
 }
 
 export function CataloguePage() {
+  const t = useTranslations('Consumer');
+  const tCommon = useTranslations('Common');
   const geo = useGeolocation();
   const user = useCurrentUser();
   const router = useRouter();
@@ -220,24 +220,24 @@ export function CataloguePage() {
           <div className="mx-5 mt-6 rounded-2xl border border-divider bg-chop-card-white p-4 text-sm md:mx-8 lg:mx-12">
             <p className="font-semibold text-chop-danger">{catalogue.message}</p>
             <Button variant="outline" size="sm" className="mt-3" onClick={() => geo.request()}>
-              Réessayer
+              {tCommon('retry')}
             </Button>
           </div>
         ) : null}
 
         {geo.status === 'denied' || geo.status === 'unsupported' ? (
           <div className="mx-5 mt-4 rounded-2xl bg-chop-surface-gray px-4 py-3 text-[12px] font-medium text-chop-ink-secondary md:mx-8 lg:mx-12">
-            Position approximative — centre de Douala.{' '}
+            {t('approxLocation')}{' '}
             {geo.status === 'denied' ? (
               <button
                 type="button"
                 className="font-semibold text-chop-red underline-offset-2 hover:underline"
                 onClick={() => setShowGpsHelp(true)}
               >
-                Activer la localisation
+                {t('enableLocation')}
               </button>
             ) : (
-              <span>Géolocalisation non supportée par ce navigateur.</span>
+              <span>{t('geolocationUnsupported')}</span>
             )}
           </div>
         ) : null}
@@ -251,37 +251,36 @@ export function CataloguePage() {
               // before reaching real content. The Section 3 below carries the
               // actual catalogue.
               <p className="mx-5 mt-5 rounded-xl bg-chop-surface-gray px-4 py-3 text-[12px] font-medium text-chop-ink-secondary md:mx-8 lg:mx-auto lg:max-w-3xl lg:px-5">
-                Aucun vendeur dans ton quartier ou les zones proches — voici tous les vendeurs
-                Douala.
+                {t('emptyNoneInZone')}
               </p>
             ) : (
               <>
                 <Section
-                  title={PLAN_LABEL[1].title}
-                  subtitle={PLAN_LABEL[1].subtitle}
+                  title={t('nearbyHeading')}
+                  subtitle={t('nearbySubtitle')}
                   vendors={buckets[1]}
-                  emptyMessage="Aucun vendeur ouvert dans ton quartier pour l'instant."
+                  emptyMessage={t('emptyNearby')}
                 />
                 <Section
-                  title={PLAN_LABEL[2].title}
-                  subtitle={PLAN_LABEL[2].subtitle}
+                  title={t('midHeading')}
+                  subtitle={t('midSubtitle')}
                   vendors={buckets[2]}
-                  emptyMessage="Aucun vendeur dans les quartiers adjacents."
+                  emptyMessage={t('emptyMid')}
                 />
               </>
             )}
 
             {effectiveShowPlan3 ? (
               <Section
-                title={PLAN_LABEL[3].title}
-                subtitle={PLAN_LABEL[3].subtitle}
+                title={t('allDoualaHeading')}
+                subtitle={t('allDoualaSubtitle')}
                 vendors={buckets[3]}
-                emptyMessage="Aucun vendeur disponible plus loin."
+                emptyMessage={t('emptyAllDouala')}
               />
             ) : buckets[3].length > 0 ? (
               <div className="px-5 pt-6 md:px-8 lg:px-12">
                 <Button variant="outline" className="w-full" onClick={() => setShowPlan3(true)}>
-                  Voir tout Douala ({buckets[3].length})
+                  {t('viewAllDouala', { count: buckets[3].length })}
                 </Button>
               </div>
             ) : null}
@@ -298,7 +297,7 @@ export function CataloguePage() {
 
             {totalShown === 0 && totalAll > 0 && !showPlan3 ? (
               <div className="px-5 pt-3 text-center text-[12px] font-medium text-chop-ink-secondary md:px-8 lg:px-12">
-                Aucun résultat à proximité — élargis la recherche.
+                {t('emptyNoMatch')}
               </div>
             ) : null}
           </>
@@ -335,6 +334,7 @@ function Section({
   vendors: VendorCardType[];
   emptyMessage: string;
 }) {
+  const t = useTranslations('Consumer');
   const [expanded, setExpanded] = React.useState(false);
   // When the underlying list shrinks below the window (filter narrowed),
   // the "Voir plus" button just stops rendering — no effect needed to
@@ -367,7 +367,7 @@ function Section({
                 className="w-full"
                 onClick={() => setExpanded(true)}
               >
-                Voir {hiddenCount} de plus
+                {t('viewMoreCount', { count: hiddenCount })}
               </Button>
             </div>
           ) : null}
@@ -403,20 +403,19 @@ function EmptyAll({
   hasQueryOrCategory: boolean;
   onClear: () => void;
 }) {
+  const t = useTranslations('Consumer');
   return (
     <div className="mx-5 mt-6 rounded-3xl bg-chop-card-white p-8 text-center shadow-card md:mx-8 lg:mx-12">
       <div className="text-5xl">🍽️</div>
       <h3 className="mt-3 text-[18px] font-extrabold tracking-tight">
-        {hasQueryOrCategory ? 'Rien trouvé' : 'Bientôt en ligne'}
+        {hasQueryOrCategory ? t('emptyFilterTitle') : t('emptyAllTitle')}
       </h3>
       <p className="mx-auto mt-1 max-w-[260px] text-[13px] font-medium text-chop-ink-secondary">
-        {hasQueryOrCategory
-          ? 'Essaye un autre mot ou efface les filtres.'
-          : 'Aucun vendeur ouvert dans ta zone — reviens dans quelques heures.'}
+        {hasQueryOrCategory ? t('emptyFilterBody') : t('emptyAllBody')}
       </p>
       {hasQueryOrCategory ? (
         <Button variant="outline" size="sm" className="mt-4" onClick={onClear}>
-          Effacer les filtres
+          {t('clearFilters')}
         </Button>
       ) : null}
     </div>

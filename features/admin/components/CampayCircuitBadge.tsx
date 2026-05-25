@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useTranslations } from 'next-intl';
 import { ApiClientError } from '@/lib/api/api-client';
 import { adminCampayApi, type CampayCircuitState } from '../api';
 
@@ -10,6 +11,7 @@ import { adminCampayApi, type CampayCircuitState } from '../api';
 const POLL_INTERVAL_MS = 30_000;
 
 export function CampayCircuitBadge() {
+  const t = useTranslations('Admin');
   const [state, setState] = React.useState<CampayCircuitState | null>(null);
   const [muted, setMuted] = React.useState(false); // 401 → stop polling
 
@@ -41,17 +43,17 @@ export function CampayCircuitBadge() {
 
   const tone =
     state.state === 'CLOSED'
-      ? { dot: 'bg-green-500', label: 'Campay OK', text: 'text-green-800' }
+      ? { dot: 'bg-green-500', label: t('campayBadgeOk'), text: 'text-green-800' }
       : state.state === 'HALF_OPEN'
-        ? { dot: 'bg-amber-500', label: 'Campay HALF', text: 'text-amber-800' }
-        : { dot: 'bg-red-500', label: 'Campay OPEN', text: 'text-red-800' };
+        ? { dot: 'bg-amber-500', label: t('campayBadgeHalf'), text: 'text-amber-800' }
+        : { dot: 'bg-red-500', label: t('campayBadgeOpen'), text: 'text-red-800' };
 
   const title =
     state.state === 'OPEN'
-      ? `Circuit OPEN — ${state.consecutiveFailures} échecs consécutifs · auto-recovery 60s`
+      ? t('campayTooltipOpen', { failures: state.consecutiveFailures })
       : state.state === 'HALF_OPEN'
-        ? 'Sonde Campay en cours…'
-        : 'Campay opérationnel';
+        ? t('campayTooltipHalf')
+        : t('campayTooltipClosed');
 
   return (
     <span

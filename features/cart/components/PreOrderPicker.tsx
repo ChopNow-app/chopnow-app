@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { Clock } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 
 /**
@@ -87,6 +88,7 @@ interface Props {
 }
 
 export function PreOrderPicker({ value, onChange }: Props): React.ReactElement {
+  const t = useTranslations('PreOrder');
   const [open, setOpen] = React.useState(value !== null);
   // Day defaults to whichever day the current `value` is on (so re-renders
   // don't jump tabs). When `value` is null, default to "today" unless today
@@ -105,7 +107,7 @@ export function PreOrderPicker({ value, onChange }: Props): React.ReactElement {
     <div className="rounded-2xl border border-chop-red-light/60 bg-chop-card-white p-4 shadow-card">
       <div className="mb-3 flex items-center gap-2 text-sm font-extrabold text-chop-ink">
         <Clock className="h-4 w-4 text-chop-red" aria-hidden />
-        Quand voulez-vous être livré ?
+        {t('title')}
       </div>
 
       <div className="flex gap-2">
@@ -122,7 +124,7 @@ export function PreOrderPicker({ value, onChange }: Props): React.ReactElement {
               : 'border-divider bg-chop-warm text-chop-ink-secondary hover:bg-chop-surface-gray',
           )}
         >
-          Maintenant
+          {t('now')}
         </button>
         <button
           type="button"
@@ -135,14 +137,12 @@ export function PreOrderPicker({ value, onChange }: Props): React.ReactElement {
               : 'border-divider bg-chop-warm text-chop-ink-secondary hover:bg-chop-surface-gray',
           )}
         >
-          Plus tard
+          {t('later')}
         </button>
       </div>
 
       {noSlotsAnyDay && open ? (
-        <p className="mt-3 text-xs text-muted-foreground">
-          Aucun créneau disponible dans les prochaines 24h.
-        </p>
+        <p className="mt-3 text-xs text-muted-foreground">{t('noSlots')}</p>
       ) : null}
 
       {open && !noSlotsAnyDay ? (

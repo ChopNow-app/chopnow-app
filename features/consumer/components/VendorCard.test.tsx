@@ -1,4 +1,5 @@
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
+import { renderWithIntlSync as render } from '@/tests/render-with-intl';
 import { describe, expect, it } from 'vitest';
 
 import { VendorCard } from './VendorCard';

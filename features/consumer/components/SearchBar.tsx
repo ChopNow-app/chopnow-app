@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { Search, SlidersHorizontal } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 
 interface SearchBarProps {
@@ -15,12 +16,10 @@ interface SearchBarProps {
 // red square filter button breaking the right edge. Per DESIGN.md §4 pills
 // dominate the UI, but this one accepts a sharp 14px-radius interruption to
 // signal that the filter is a discrete action, not a chip.
-export function SearchBar({
-  value,
-  onChange,
-  onFilterClick,
-  placeholder = 'Ndolé, poulet DG, pizza…',
-}: SearchBarProps) {
+export function SearchBar({ value, onChange, onFilterClick, placeholder }: SearchBarProps) {
+  const t = useTranslations('Consumer');
+  const tCommon = useTranslations('Common');
+  const finalPlaceholder = placeholder ?? t('searchPlaceholder');
   return (
     <div className="px-5 pt-5 md:px-8 lg:px-12">
       <div
@@ -35,13 +34,13 @@ export function SearchBar({
           inputMode="search"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
+          placeholder={finalPlaceholder}
           className="min-w-0 flex-1 bg-transparent py-2.5 text-[15px] font-medium text-chop-ink placeholder:text-chop-ink-secondary/70 focus:outline-none"
         />
         <button
           type="button"
           onClick={onFilterClick}
-          aria-label="Filtres"
+          aria-label={tCommon('filters')}
           className={cn(
             'flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl',
             'bg-chop-red text-white shadow-card transition-transform active:scale-95',

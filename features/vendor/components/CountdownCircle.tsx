@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 
 interface CountdownCircleProps {
@@ -31,6 +32,7 @@ export function CountdownCircle({
   strokeWidth = 10,
   className,
 }: CountdownCircleProps) {
+  const t = useTranslations('Vendor');
   const deadlineMs = React.useMemo(() => new Date(deadlineAt).getTime(), [deadlineAt]);
   const [now, setNow] = React.useState(() => Date.now());
 
@@ -84,7 +86,7 @@ export function CountdownCircle({
       style={{ width: size, height: size }}
       role="timer"
       aria-live="polite"
-      aria-label={`${remainingSec} secondes restantes`}
+      aria-label={t('countdownAria', { seconds: remainingSec })}
     >
       <svg width={size} height={size} className="-rotate-90" aria-hidden>
         <circle
@@ -122,7 +124,7 @@ export function CountdownCircle({
           {remainingSec}
         </span>
         <span className="mt-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-          secondes
+          {t('countdownUnit')}
         </span>
       </div>
     </div>

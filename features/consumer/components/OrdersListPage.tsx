@@ -6,6 +6,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { AuthRequired } from '@/components/ui/auth-required';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -41,6 +42,9 @@ const formatXAF = (n: number) => `${n.toLocaleString('fr-FR')} FCFA`;
 // a "Connecte-toi" panel on 401 instead of a Next.js 404, which was
 // surfacing in Lighthouse as a prefetch error).
 export function OrdersListPage() {
+  const t = useTranslations('Orders');
+  const tCommon = useTranslations('Common');
+  const tAuth = useTranslations('AuthRequired');
   const [state, setState] = React.useState<State>({ status: 'idle' });
 
   const load = React.useCallback(() => {
@@ -71,15 +75,15 @@ export function OrdersListPage() {
     return (
       <AuthRequired
         theme="light"
-        subtitle="Connecte-toi pour voir l'historique de tes commandes et re-commander en 2 taps."
+        subtitle={tAuth('subtitleOrderHistory')}
         loginHref="/login?next=/orders"
         features={[
-          { icon: '📦', label: 'Historique de toutes tes commandes passées' },
-          { icon: '⏱️', label: 'Re-commander ton dernier repas en 2 taps' },
-          { icon: '📍', label: 'Livraison à tes adresses sauvegardées' },
-          { icon: '🔔', label: 'Notifications quand ta commande arrive' },
+          { icon: '📦', label: tAuth('ordersFeature1') },
+          { icon: '⏱️', label: tAuth('ordersFeature2') },
+          { icon: '📍', label: tAuth('ordersFeature3') },
+          { icon: '🔔', label: tAuth('ordersFeature4') },
         ]}
-        reassurance="Connexion par OTP WhatsApp · 30 secondes · pas de carte bancaire."
+        reassurance={tAuth('reassurance')}
       />
     );
   }
@@ -88,7 +92,7 @@ export function OrdersListPage() {
       <main className="container max-w-md py-16 text-center md:max-w-2xl">
         <p className="text-chop-danger">{state.message}</p>
         <Button variant="outline" className="mt-4" onClick={load}>
-          Réessayer
+          {tCommon('retry')}
         </Button>
       </main>
     );
@@ -100,14 +104,14 @@ export function OrdersListPage() {
       <main className="min-h-dvh bg-chop-warm text-chop-ink">
         <div className="container max-w-md py-12 md:max-w-3xl lg:max-w-4xl">
           <h1 className="text-[28px] font-extrabold leading-tight tracking-tight md:text-[36px]">
-            Mes commandes
+            {t('title')}
           </h1>
           <EmptyState
             className="mt-8"
             icon="🍽️"
-            title="Aucune commande pour l'instant"
-            body="Quand tu commanderas un plat, tu le retrouveras ici."
-            cta={{ label: 'Découvrir les vendeurs', href: '/restaurants' }}
+            title={t('emptyTitle')}
+            body={t('emptyBodyAlt')}
+            cta={{ label: t('discoverVendors'), href: '/restaurants' }}
           />
         </div>
       </main>
@@ -125,6 +129,7 @@ const ORDERS_INITIAL_LIMIT = 10;
 const ORDERS_PAGE_SIZE = 10;
 
 function OrdersListReady({ orders }: { orders: OrderListItem[] }) {
+  const t = useTranslations('Orders');
   const [limit, setLimit] = React.useState(ORDERS_INITIAL_LIMIT);
   const visible = orders.slice(0, limit);
   const hiddenCount = orders.length - visible.length;
@@ -134,10 +139,10 @@ function OrdersListReady({ orders }: { orders: OrderListItem[] }) {
       <div className="container max-w-md py-8 md:max-w-3xl md:py-12 lg:max-w-4xl">
         <header className="mb-6 md:mb-8">
           <h1 className="text-[28px] font-extrabold leading-tight tracking-tight md:text-[36px]">
-            Mes commandes
+            {t('title')}
           </h1>
           <p className="mt-1 text-[13px] font-medium text-chop-ink-secondary md:text-[14px]">
-            Les 30 dernières commandes — touche pour suivre.
+            {t('subtitle')}
           </p>
         </header>
         <div className="mb-4">
@@ -157,7 +162,7 @@ function OrdersListReady({ orders }: { orders: OrderListItem[] }) {
               size="sm"
               onClick={() => setLimit((l) => l + ORDERS_PAGE_SIZE)}
             >
-              Voir {Math.min(hiddenCount, ORDERS_PAGE_SIZE)} de plus
+              {t('viewMore', { count: Math.min(hiddenCount, ORDERS_PAGE_SIZE) })}
             </Button>
           </div>
         ) : null}
@@ -167,11 +172,13 @@ function OrdersListReady({ orders }: { orders: OrderListItem[] }) {
 }
 
 function OrderRow({ order }: { order: OrderListItem }) {
+  const t = useTranslations('Orders');
   const status = STATUS_BADGE[order.status];
+  const badgeLabel = t(status.labelKey);
   const itemSummary =
     order.items.length === 1
       ? order.items[0].nameSnapshot
-      : `${order.items[0]?.nameSnapshot ?? '—'} + ${order.items.length - 1} autre${order.items.length > 2 ? 's' : ''}`;
+      : `${order.items[0]?.nameSnapshot ?? '—'} ${t('moreSuffix', { count: order.items.length - 1 })}`;
   return (
     <Link
       href={`/orders/${order.id}`}
@@ -182,12 +189,12 @@ function OrderRow({ order }: { order: OrderListItem }) {
         <span
           className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider ${status.classes}`}
         >
-          {status.label}
+          {badgeLabel}
         </span>
       </div>
       <p className="mt-1 truncate text-[12px] font-medium text-chop-ink-secondary">{itemSummary}</p>
       <div className="mt-2 flex items-center justify-between text-[12px] font-semibold">
-        <span className="text-chop-ink-secondary">{formatRelativeDate(order.createdAt)}</span>
+        <span className="text-chop-ink-secondary">{formatRelativeDate(order.createdAt, t)}</span>
         <span className="text-chop-red">{formatXAF(order.totalXAF)}</span>
       </div>
     </Link>
@@ -195,32 +202,44 @@ function OrderRow({ order }: { order: OrderListItem }) {
 }
 
 interface BadgeStyle {
-  label: string;
+  /** i18n key under `Orders` namespace. */
+  labelKey:
+    | 'badgePending'
+    | 'badgeConfirmed'
+    | 'badgeAccepted'
+    | 'badgeInPrep'
+    | 'badgeReady'
+    | 'badgePickedUp'
+    | 'badgeDelivered'
+    | 'badgeCancelled'
+    | 'badgeRefused'
+    | 'badgeExpired';
   classes: string;
 }
 const STATUS_BADGE: Record<OrderStatus, BadgeStyle> = {
-  PENDING: { label: 'En attente', classes: 'bg-chop-surface-gray text-chop-ink-secondary' },
-  CONFIRMED: { label: 'Confirmée', classes: 'bg-chop-red-light text-chop-red-dark' },
-  ACCEPTED: { label: 'Acceptée', classes: 'bg-chop-red-light text-chop-red-dark' },
-  IN_PREP: { label: 'En cuisine', classes: 'bg-chop-red-light text-chop-red-dark' },
-  READY_PICKUP: { label: 'Prête', classes: 'bg-chop-red-light text-chop-red-dark' },
-  PICKED_UP: { label: 'En route', classes: 'bg-chop-red-light text-chop-red-dark' },
-  DELIVERED: { label: 'Livrée', classes: 'bg-chop-mboue-light text-chop-mboue' },
-  CANCELLED: { label: 'Annulée', classes: 'bg-chop-danger-light text-chop-danger' },
-  REFUSED: { label: 'Refusée', classes: 'bg-chop-danger-light text-chop-danger' },
-  EXPIRED: { label: 'Expirée', classes: 'bg-chop-danger-light text-chop-danger' },
+  PENDING: { labelKey: 'badgePending', classes: 'bg-chop-surface-gray text-chop-ink-secondary' },
+  CONFIRMED: { labelKey: 'badgeConfirmed', classes: 'bg-chop-red-light text-chop-red-dark' },
+  ACCEPTED: { labelKey: 'badgeAccepted', classes: 'bg-chop-red-light text-chop-red-dark' },
+  IN_PREP: { labelKey: 'badgeInPrep', classes: 'bg-chop-red-light text-chop-red-dark' },
+  READY_PICKUP: { labelKey: 'badgeReady', classes: 'bg-chop-red-light text-chop-red-dark' },
+  PICKED_UP: { labelKey: 'badgePickedUp', classes: 'bg-chop-red-light text-chop-red-dark' },
+  DELIVERED: { labelKey: 'badgeDelivered', classes: 'bg-chop-mboue-light text-chop-mboue' },
+  CANCELLED: { labelKey: 'badgeCancelled', classes: 'bg-chop-danger-light text-chop-danger' },
+  REFUSED: { labelKey: 'badgeRefused', classes: 'bg-chop-danger-light text-chop-danger' },
+  EXPIRED: { labelKey: 'badgeExpired', classes: 'bg-chop-danger-light text-chop-danger' },
 };
 
-function formatRelativeDate(iso: string): string {
+// formatRelativeDate uses a t fn so it can be localized.
+function formatRelativeDate(iso: string, t: ReturnType<typeof useTranslations<'Orders'>>): string {
   const d = new Date(iso);
   const diffMs = Date.now() - d.getTime();
   const minutes = Math.floor(diffMs / 60_000);
-  if (minutes < 1) return "à l'instant";
-  if (minutes < 60) return `il y a ${minutes} min`;
+  if (minutes < 1) return t('justNow');
+  if (minutes < 60) return t('minutesAgo', { n: minutes });
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `il y a ${hours} h`;
+  if (hours < 24) return t('hoursAgo', { n: hours });
   const days = Math.floor(hours / 24);
-  if (days < 7) return `il y a ${days} j`;
+  if (days < 7) return t('daysAgo', { n: days });
   return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
 }
 

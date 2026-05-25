@@ -4,6 +4,7 @@ import * as React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ChevronLeft, MapPin, Share2 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { CartSheet } from '@/features/cart/components/CartSheet';
@@ -15,6 +16,7 @@ import type { PublicVendorView } from '../types';
 const formatXAF = (n: number) => `${n.toLocaleString('fr-FR')} FCFA`;
 
 export function VendorDetailPage({ vendorId }: { vendorId: string }) {
+  const t = useTranslations('VendorDetail');
   const state = useVendorPublic(vendorId);
 
   // Funnel event — fires once per mount of a vendor detail page.
@@ -32,12 +34,10 @@ export function VendorDetailPage({ vendorId }: { vendorId: string }) {
       <main className="min-h-dvh bg-chop-warm">
         <div className="container max-w-md py-16 text-center md:max-w-xl">
           <p className="text-5xl">🍽️</p>
-          <h1 className="mt-4 text-xl font-extrabold">Vendeur introuvable</h1>
-          <p className="mt-2 text-sm text-chop-ink-secondary">
-            Ce vendeur n&apos;est plus disponible.
-          </p>
+          <h1 className="mt-4 text-xl font-extrabold">{t('notFound')}</h1>
+          <p className="mt-2 text-sm text-chop-ink-secondary">{t('notFoundBody')}</p>
           <Button asChild className="mt-6">
-            <Link href="/restaurants">Voir d&apos;autres vendeurs</Link>
+            <Link href="/restaurants">{t('seeOthers')}</Link>
           </Button>
         </div>
       </main>
@@ -57,6 +57,7 @@ export function VendorDetailPage({ vendorId }: { vendorId: string }) {
 /* ------------------------------ Main view ------------------------------ */
 
 function VendorContent({ view }: { view: PublicVendorView }) {
+  const t = useTranslations('VendorDetail');
   const { vendor, categories, items } = view;
   const cart = useCart();
 
@@ -65,7 +66,7 @@ function VendorContent({ view }: { view: PublicVendorView }) {
   // mixed-mode menu get bucketed into "Autres" at the bottom.
   const grouped = React.useMemo(() => {
     if (categories.length === 0) {
-      return [{ id: '__all', name: 'Menu', items }];
+      return [{ id: '__all', name: t('menuFallback'), items }];
     }
     const byCat = new Map<string | null, typeof items>();
     for (const item of items) {
@@ -81,10 +82,10 @@ function VendorContent({ view }: { view: PublicVendorView }) {
     }));
     const uncat = byCat.get('__uncat');
     if (uncat && uncat.length > 0) {
-      sections.push({ id: '__uncat', name: 'Autres', items: uncat });
+      sections.push({ id: '__uncat', name: t('menuOther'), items: uncat });
     }
     return sections.filter((s) => s.items.length > 0);
-  }, [categories, items]);
+  }, [categories, items, t]);
 
   const handleAdd = (item: PublicVendorView['items'][number]) => {
     if (!item.isInStock) return;
@@ -95,9 +96,7 @@ function VendorContent({ view }: { view: PublicVendorView }) {
       photoUrl: item.photoUrl,
     });
     if (!result.ok && result.reason === 'different_vendor') {
-      const ok = window.confirm(
-        `Votre panier contient déjà des plats de ${result.currentVendorName}.\n\nRemplacer le panier ?`,
-      );
+      const ok = window.confirm(t('cartConfirmReplace', { vendor: result.currentVendorName }));
       if (ok) {
         cart.replaceVendor(vendor.id, vendor.name, {
           itemId: item.id,
@@ -139,9 +138,9 @@ function VendorContent({ view }: { view: PublicVendorView }) {
           {grouped.length === 0 ? (
             <EmptyState
               icon="🍳"
-              title="Menu en préparation"
-              body="Ce vendeur n'a pas encore publié ses plats. Reviens dans un instant — ou explore d'autres restaurants en attendant."
-              cta={{ label: "Voir d'autres restaurants", href: '/restaurants' }}
+              title={t('menuComingTitle')}
+              body={t('menuComingBody')}
+              cta={{ label: t('menuComingCta'), href: '/restaurants' }}
             />
           ) : null}
 
@@ -171,6 +170,7 @@ function VendorHero({
   vendor: PublicVendorView['vendor'];
   onShare: () => void;
 }) {
+  const t = useTranslations('VendorDetail');
   return (
     <div className="relative">
       {/* Full-bleed 16:9 hero photo with a soft dark gradient at the
@@ -203,7 +203,7 @@ function VendorHero({
         {/* Floating back chip — top-left, always visible over the hero. */}
         <Link
           href="/restaurants"
-          aria-label="Retour aux restaurants"
+          aria-label={t('backToRestaurants')}
           className="absolute left-4 top-4 inline-flex h-11 w-11 items-center justify-center rounded-full bg-chop-warm/95 text-chop-ink shadow-card backdrop-blur transition-colors hover:bg-chop-warm md:left-6 md:top-6"
         >
           <ChevronLeft className="h-5 w-5" strokeWidth={2.4} aria-hidden />
@@ -213,7 +213,7 @@ function VendorHero({
         <button
           type="button"
           onClick={onShare}
-          aria-label="Partager ce vendeur"
+          aria-label={t('share')}
           className="absolute right-4 top-4 inline-flex h-11 w-11 items-center justify-center rounded-full bg-chop-warm/95 text-chop-ink shadow-card backdrop-blur transition-colors hover:bg-chop-warm md:right-6 md:top-6"
         >
           <Share2 className="h-5 w-5" strokeWidth={2.2} aria-hidden />
@@ -231,7 +231,7 @@ function VendorHero({
               vendor.isOpenNow ? 'bg-white' : 'bg-chop-neutral'
             }`}
           />
-          {vendor.isOpenNow ? 'Ouvert maintenant' : 'Fermé'}
+          {vendor.isOpenNow ? t('openNow') : t('closed')}
         </span>
       </div>
     </div>
@@ -310,6 +310,7 @@ function MenuItem({
   vendorOpen: boolean;
   onAdd: (item: PublicVendorView['items'][number]) => void;
 }) {
+  const t = useTranslations('VendorDetail');
   const disabled = !item.isInStock || !vendorOpen;
 
   return (
@@ -336,7 +337,7 @@ function MenuItem({
         )}
         {!item.isInStock ? (
           <span className="absolute left-1 top-1 rounded-full bg-chop-ink/90 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">
-            Épuisé
+            {t('outOfStock')}
           </span>
         ) : null}
       </div>
@@ -359,7 +360,7 @@ function MenuItem({
             onClick={() => onAdd(item)}
             className="shrink-0"
           >
-            {item.isInStock ? 'Ajouter' : 'Épuisé'}
+            {item.isInStock ? t('addToCart') : t('outOfStock')}
           </Button>
         </div>
       </div>
@@ -370,6 +371,7 @@ function MenuItem({
 /* ------------------------------ Sticky cart bar ------------------------------ */
 
 function CartFooter() {
+  const t = useTranslations('VendorDetail');
   const cart = useCart();
   if (cart.isEmpty) return null;
 
@@ -390,15 +392,15 @@ function CartFooter() {
             >
               <div className="min-w-0">
                 <p className="text-xs font-bold uppercase tracking-[0.18em] text-chop-ink-secondary">
-                  Panier
+                  {t('cartLabel')}
                 </p>
                 <p className="text-sm font-extrabold text-chop-ink">
-                  {cart.itemCount} plat{cart.itemCount > 1 ? 's' : ''} ·{' '}
+                  {t('cartItemsPlural', { count: cart.itemCount })} ·{' '}
                   {cart.subtotalXAF.toLocaleString('fr-FR')} FCFA
                 </p>
               </div>
               <span className="inline-flex items-center gap-1.5 rounded-full bg-chop-red px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-chop-red-dark">
-                Voir le panier
+                {t('viewCart')}
                 <span aria-hidden>→</span>
               </span>
             </button>

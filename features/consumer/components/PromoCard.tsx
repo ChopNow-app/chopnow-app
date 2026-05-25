@@ -8,6 +8,7 @@
 
 import * as React from 'react';
 import { ArrowRight } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 interface PromoCardProps {
   onClick?: () => void;
@@ -76,32 +77,20 @@ interface Message {
   sub: string;
 }
 
+type Slot = 'morning' | 'lunch' | 'afternoon' | 'evening';
+
 function useTimeOfDayMessage(): Message {
-  const [msg, setMsg] = React.useState<Message>(EVENING);
+  const t = useTranslations('PromoCard');
+  const [slot, setSlot] = React.useState<Slot>('evening');
   React.useEffect(() => {
     const h = new Date().getHours();
-    setMsg(h < 5 ? EVENING : h < 11 ? MORNING : h < 15 ? LUNCH : h < 18 ? AFTERNOON : EVENING);
+    setSlot(
+      h < 5 ? 'evening' : h < 11 ? 'morning' : h < 15 ? 'lunch' : h < 18 ? 'afternoon' : 'evening',
+    );
   }, []);
-  return msg;
+  return {
+    kicker: t(`${slot}Kicker` as const),
+    headline: t(`${slot}Headline` as const),
+    sub: t(`${slot}Sub` as const),
+  };
 }
-
-const MORNING: Message = {
-  kicker: '⚡ Matin',
-  headline: 'Le petit-déj livré chaud.',
-  sub: 'Beignets-haricots, café, omelette — chez toi en 25 min.',
-};
-const LUNCH: Message = {
-  kicker: '🔥 Midi',
-  headline: 'Le déjeuner sans attendre.',
-  sub: 'Ndolé, poulet DG, koki — préparé maintenant, livré à ta porte.',
-};
-const AFTERNOON: Message = {
-  kicker: '☕ Après-midi',
-  headline: 'Une pause bien méritée.',
-  sub: 'Smoothies, brochettes, snacks — livraison express.',
-};
-const EVENING: Message = {
-  kicker: '🌙 Soir',
-  headline: 'Le dîner à la porte.',
-  sub: 'Tout Douala cuisine. Tu choisis. On amène.',
-};

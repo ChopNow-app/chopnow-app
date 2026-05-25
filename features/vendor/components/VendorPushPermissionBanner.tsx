@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { usePushSubscription } from '../hooks/usePushSubscription';
 
@@ -18,6 +19,7 @@ import { usePushSubscription } from '../hooks/usePushSubscription';
  *     stays hidden — WhatsApp fallback handles them silently.
  */
 export function VendorPushPermissionBanner(): React.ReactElement | null {
+  const t = useTranslations('Vendor');
   const { state, request } = usePushSubscription();
   const [pending, setPending] = React.useState(false);
 
@@ -35,12 +37,10 @@ export function VendorPushPermissionBanner(): React.ReactElement | null {
         <div aria-hidden className="w-1 shrink-0 bg-chop-red" />
         <div className="flex-1 p-4">
           <p className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-chop-red">
-            — Notifications
+            {t('pushBannerEyebrow')}
           </p>
-          <p className="mt-1.5 text-sm font-extrabold text-chop-ink">Active les notifications</p>
-          <p className="mt-0.5 text-xs text-chop-ink-secondary">
-            Pour ne rater aucune commande, même quand l&apos;app est fermée.
-          </p>
+          <p className="mt-1.5 text-sm font-extrabold text-chop-ink">{t('pushBannerTitle')}</p>
+          <p className="mt-0.5 text-xs text-chop-ink-secondary">{t('pushBannerBody')}</p>
           <Button
             type="button"
             size="sm"
@@ -55,7 +55,7 @@ export function VendorPushPermissionBanner(): React.ReactElement | null {
             }}
             className="mt-3 w-full bg-chop-red text-sm font-semibold text-white hover:bg-chop-red/90 disabled:opacity-50"
           >
-            {state.status === 'subscribing' ? '…' : 'Activer'}
+            {state.status === 'subscribing' ? '…' : t('pushBannerCta')}
           </Button>
         </div>
       </div>
