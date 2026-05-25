@@ -31,6 +31,15 @@ export interface PlaceOrderInput {
    * `pre_orders_not_accepted_by_this_vendor`.
    */
   scheduledFor?: string;
+  /**
+   * Promo coupon code (#167) — e.g. "BIENVENUE". Validated + redeemed
+   * atomically inside the order-creation transaction. Server uppercases
+   * before lookup, so casing here doesn't matter. An invalid code rejects
+   * the whole order with a structured `code` error (coupon_first_order_only,
+   * coupon_expired, coupon_already_redeemed, …) — UI should validate via
+   * POST /api/v1/coupons/validate before submit to avoid that round-trip.
+   */
+  couponCode?: string;
 }
 
 export interface PlacedOrder {
@@ -41,7 +50,56 @@ export interface PlacedOrder {
   paymentMethod: PaymentMethod;
   subtotalXAF: number;
   deliveryFeeXAF: number;
+  /** Coupon discount absorbed by the platform (#167). 0 if no coupon was applied. */
+  discountXAF?: number;
+  /** Uppercased redeemed code, e.g. "BIENVENUE". null if none. */
+  couponCode?: string | null;
   totalXAF: number;
+}
+
+// ── Coupon validation (#167) ─────────────────────────────────────────
+
+export type CouponType = 'FREE_DELIVERY' | 'FIXED_AMOUNT_OFF';
+
+export interface ValidatedCoupon {
+  couponId: string;
+  code: string;
+  type: CouponType;
+  description: string;
+  discountXAF: number;
+}
+
+/**
+ * Pre-validate a promo code against the current cart before submit.
+ * The backend re-runs every check inside the order-creation transaction,
+ * so this is advisory — the user gets immediate "valid/invalid" feedback
+ * instead of learning at POST /orders that their code is bad.
+ *
+ * Throws an Error with a `.code` property set to one of:
+ *   coupon_not_found, coupon_disabled, coupon_not_yet_active, coupon_expired,
+ *   coupon_first_order_only, coupon_min_subtotal, coupon_already_redeemed,
+ *   coupon_exhausted.
+ */
+export async function validateCoupon(
+  code: string,
+  subtotalXAF: number,
+  deliveryFeeXAF: number,
+): Promise<ValidatedCoupon> {
+  try {
+    return await apiRaw.post<ValidatedCoupon>('/api/v1/coupons/validate', {
+      code,
+      subtotalXAF,
+      deliveryFeeXAF,
+    });
+  } catch (err) {
+    if (err instanceof ApiClientError) {
+      const e = extractCode(err);
+      const customError = new Error(e.message) as Error & OrderError;
+      customError.code = e.code;
+      throw customError;
+    }
+    throw err;
+  }
 }
 
 /** Surface backend codes 1:1 so the UI can branch on the structured `code` field. */

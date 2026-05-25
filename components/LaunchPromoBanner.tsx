@@ -19,16 +19,15 @@ const STORAGE_KEY = 'chopnow.promo.bienvenue.dismissed';
  * via (consumer)/layout.tsx. Auto-hidden on actor surfaces (/admin,
  * /vendor, /livreur) because they live outside the (consumer) group.
  *
- * # Coupon enforcement (pilot phase)
- * Right now this banner is *marketing-only* — there is no coupon table
- * in the backend yet. The founder honors the offer manually:
- *   - User places first order with delivery fee charged via MoMo
- *   - Admin spots it (first-time consumer + within promo window)
- *   - Admin issues a Campay refund for the delivery-fee amount
+ * # Coupon enforcement
+ * Backed by the chopnow-api coupon system (#167). The user types
+ * BIENVENUE into the /cart "Code promo" input; backend validates
+ * atomically inside the order-creation transaction and applies the
+ * delivery-fee waiver. No manual admin operation is required.
  *
- * For alpha-test scale (~50 orders), manual honor is faster than building
- * a coupon system. Move to a proper Coupon model + redemption hook on
- * /cart once we cross 100+ daily orders post-Week-1.
+ * The BIENVENUE row itself is seeded on every staging deploy
+ * (cd-staging.yml runs prisma/seed-coupons.ts as an idempotent upsert)
+ * so the launch funnel can never break due to a missing row.
  *
  * # Dismissal
  * Stored in localStorage under `chopnow.promo.bienvenue.dismissed`.
