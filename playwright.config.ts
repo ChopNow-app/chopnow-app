@@ -37,6 +37,15 @@ export default defineConfig({
     // The dev server is permissive about CORS; in CI we run against
     // the same server so credentials work cleanly.
     ignoreHTTPSErrors: true,
+    // Pin Playwright's browser locale to French. Required after #168
+    // (i18n) — the request handler picks locale from the `chopnow.locale`
+    // cookie OR the Accept-Language header (fr / en fall-through).
+    // Playwright's default headless Chromium sends Accept-Language:
+    // en-US, which would flip the rendered copy to English and break
+    // tests that assert on French strings ("Recevoir le code",
+    // "attendre.", visual baselines).
+    locale: 'fr-FR',
+    extraHTTPHeaders: { 'Accept-Language': 'fr-FR,fr;q=0.9' },
   },
   projects: [
     {
