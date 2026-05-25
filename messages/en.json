@@ -68,6 +68,11 @@
       { "title": "Get it in 30 min", "body": "Bike. Hot. At your door." }
     ],
     "rolesEyebrow": "You are?",
+    "rolesHeadingL1": "Pick",
+    "rolesHeadingL2": "your path.",
+    "trustEyebrow": "The promise",
+    "trustHeadingL1": "Three commitments,",
+    "trustHeadingL2": "no fluff.",
     "roleConsumerLabel": "I order",
     "roleConsumerSub": "Eat hot, delivered in 30 min.",
     "roleVendorLabel": "I sell my dishes",

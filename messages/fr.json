@@ -68,6 +68,11 @@
       { "title": "Reçois en 30 min", "body": "Moto. Chaud. À ta porte." }
     ],
     "rolesEyebrow": "Tu es ?",
+    "rolesHeadingL1": "Choisis",
+    "rolesHeadingL2": "ton chemin.",
+    "trustEyebrow": "La promesse",
+    "trustHeadingL1": "Trois engagements,",
+    "trustHeadingL2": "rien qui traîne.",
     "roleConsumerLabel": "Je commande",
     "roleConsumerSub": "Mange chaud, livré en 30 min.",
     "roleVendorLabel": "Je vends mes plats",
