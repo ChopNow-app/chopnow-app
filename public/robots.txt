@@ -1,4 +1,4 @@
-# TChopNow — crawler directives.
+# Tchop NoW — crawler directives.
 #
 # Allow indexing of the public consumer surface (home, restaurant list,
 # vendor detail, marketing pages). Disallow the actor backends and any

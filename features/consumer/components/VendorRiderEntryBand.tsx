@@ -32,7 +32,7 @@ export function VendorRiderEntryBand() {
           Tu n&apos;es pas client&nbsp;?
         </p>
         <h2 className="mt-1.5 text-xl font-extrabold tracking-tight text-chop-ink sm:text-2xl">
-          Rejoins ChopNow comme vendeur ou livreur.
+          Rejoins Tchop NoW comme vendeur ou livreur.
         </h2>
         <p className="mt-1.5 max-w-xl text-sm text-chop-ink-secondary">
           Tu cuisines déjà, ou tu roules en moto&nbsp;? Inscris-toi gratuitement et commence à

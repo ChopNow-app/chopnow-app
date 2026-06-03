@@ -40,17 +40,17 @@ export async function generateMetadata(): Promise<Metadata> {
     metadataBase: new URL(SITE_URL),
     title: {
       default: title,
-      // Per-route metadata exports get sandwiched into "%s | TChopNow" so
+      // Per-route metadata exports get sandwiched into "%s | Tchop NoW" so
       // every browser tab + screen-reader announcement carries the brand.
-      template: '%s | TChopNow',
+      template: '%s | Tchop NoW',
     },
     description,
     manifest: '/manifest.json',
-    applicationName: 'TChopNow',
+    applicationName: 'Tchop NoW',
     appleWebApp: {
       capable: true,
       statusBarStyle: 'default',
-      title: 'TChopNow',
+      title: 'Tchop NoW',
     },
     formatDetection: {
       telephone: false,
@@ -65,7 +65,7 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     openGraph: {
       type: 'website',
-      siteName: 'TChopNow',
+      siteName: 'Tchop NoW',
       title,
       description,
       locale: locale === 'en' ? 'en_US' : 'fr_CM',

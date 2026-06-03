@@ -101,9 +101,17 @@ function LoginScreen() {
             href="/"
             className="inline-flex items-center gap-2 text-base font-extrabold uppercase tracking-tight"
           >
-            <Image src="/brand-icon.svg" alt="" width={28} height={28} aria-hidden priority />
+            <Image
+              src="/brand-icon.svg"
+              alt=""
+              width={28}
+              height={28}
+              className="object-contain"
+              aria-hidden
+              priority
+            />
             <span>
-              TChop<span className="text-chop-red">Now.</span>
+              Tchop <span className="text-chop-red">NoW</span>
             </span>
           </Link>
           <LanguageSwitcher />

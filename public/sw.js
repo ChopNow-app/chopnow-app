@@ -1,4 +1,4 @@
-// ChopNow service worker
+// Tchop NoW service worker
 // MVP scope: web push (VAPID) + offline-shell minimum. Grows per epic.
 //
 // Cache strategy (v0.2.0, 2026-05-16):
@@ -185,7 +185,7 @@ self.addEventListener('fetch', (event) => {
 // payload (e.g., Campay sends a push with bad JSON) used to crash the
 // handler silently — user got no notification + no breadcrumb. Now we
 // report to Sentry via the postMessage bridge AND fall back to a generic
-// "Une mise à jour ChopNow" notification so the user at least sees
+// "Une mise à jour Tchop NoW" notification so the user at least sees
 // something.
 self.addEventListener('push', (event) => {
   event.waitUntil(
@@ -195,10 +195,10 @@ self.addEventListener('push', (event) => {
           try {
             return event.data ? event.data.json() : {};
           } catch {
-            return { title: 'ChopNow', body: event.data ? event.data.text() : '' };
+            return { title: 'Tchop NoW', body: event.data ? event.data.text() : '' };
           }
         })();
-        const title = data.title || 'ChopNow';
+        const title = data.title || 'Tchop NoW';
         const orderId = data.data && data.data.orderId;
         await Promise.all([
           self.registration.showNotification(title, {
@@ -220,7 +220,7 @@ self.addEventListener('push', (event) => {
         // Belt-and-braces user-facing fallback. Without this, a push
         // handler crash leaves the user with no notification at all.
         try {
-          await self.registration.showNotification('ChopNow', {
+          await self.registration.showNotification('Tchop NoW', {
             body: 'Une mise à jour est disponible.',
             icon: '/icons/icon-192.png',
             badge: '/icons/icon-192.png',

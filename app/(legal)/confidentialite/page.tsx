@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 export const metadata: Metadata = {
   title: 'Politique de confidentialité',
   description:
-    'Politique de confidentialité TChopNow — comment nous collectons, traitons et protégeons tes données personnelles (numéro WhatsApp, adresse, commandes).',
+    'Politique de confidentialité Tchop NoW — comment nous collectons, traitons et protégeons tes données personnelles (numéro WhatsApp, adresse, commandes).',
   alternates: { canonical: '/confidentialite' },
 };
 
@@ -25,7 +25,7 @@ export default function ConfidentialitePage() {
       <section>
         <h2 className="text-xl font-extrabold">Données collectées</h2>
         <p className="mt-3 text-[15px] leading-relaxed text-chop-ink">
-          TChopNow collecte uniquement les données strictement nécessaires au fonctionnement du
+          Tchop NoW collecte uniquement les données strictement nécessaires au fonctionnement du
           service :
         </p>
         <ul className="mt-3 list-disc space-y-2 pl-6 text-[15px] leading-relaxed text-chop-ink">
@@ -163,10 +163,10 @@ export default function ConfidentialitePage() {
       <section>
         <h2 className="text-xl font-extrabold">Cookies et stockage local</h2>
         <p className="mt-3 text-[15px] leading-relaxed text-chop-ink">
-          TChopNow utilise un cookie HttpOnly (<code>chopnow_rt</code>) pour maintenir ta session de
-          connexion et le stockage local du navigateur pour conserver temporairement ton panier en
-          cours et tes préférences d&apos;interface. Aucun cookie publicitaire ou de tracking tiers
-          n&apos;est utilisé.
+          Tchop NoW utilise un cookie HttpOnly (<code>chopnow_rt</code>) pour maintenir ta session
+          de connexion et le stockage local du navigateur pour conserver temporairement ton panier
+          en cours et tes préférences d&apos;interface. Aucun cookie publicitaire ou de tracking
+          tiers n&apos;est utilisé.
         </p>
       </section>
 

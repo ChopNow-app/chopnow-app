@@ -21,7 +21,7 @@ const ToastViewport = React.forwardRef<
   // Caller-passed props still win (...props is spread last).
   <ToastPrimitives.Viewport
     ref={ref}
-    label="Notifications TChopNow"
+    label="Notifications Tchop NoW"
     className={cn(
       // Bottom-positioned on mobile (above the 64px bottom nav + safe area),
       // top-right on md+ so it doesn't cover the catalogue/order list.

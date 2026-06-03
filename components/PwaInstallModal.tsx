@@ -26,7 +26,7 @@ type Platform = 'android-chrome' | 'ios-safari' | 'unsupported' | 'unknown';
 
 /**
  * App-store-style install popup for the PWA. Replaces the bare "Installer
- * TChopNow" button on the splash with a richer surface — icon + slogan,
+ * Tchop NoW" button on the splash with a richer surface — icon + slogan,
  * 3 value bullets, install CTA. Two platform paths inside:
  *
  *   - Android Chrome (or any Chromium with beforeinstallprompt support)
@@ -163,7 +163,7 @@ function AppCard() {
         />
       </div>
       <div className="min-w-0">
-        <p className="text-[18px] font-extrabold leading-tight tracking-tight">TChopNow</p>
+        <p className="text-[18px] font-extrabold leading-tight tracking-tight">Tchop NoW</p>
         <p className="mt-0.5 text-[13px] font-medium text-chop-ink-secondary">
           Mange sans attendre.
         </p>
@@ -265,7 +265,7 @@ function IosFlow({ open, setOpen }: { open: boolean; setOpen: (v: boolean) => vo
           body={
             <>
               Tape <span className="font-semibold">Ajouter</span> en haut à droite — l&apos;icône
-              TChopNow apparaît sur ton écran d&apos;accueil
+              Tchop NoW apparaît sur ton écran d&apos;accueil
             </>
           }
         />
@@ -334,7 +334,7 @@ function Modal({ onClose, children }: { onClose: () => void; children: React.Rea
     <div
       role="dialog"
       aria-modal="true"
-      aria-label="Installer TChopNow"
+      aria-label="Installer Tchop NoW"
       className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm sm:items-center"
       onClick={onClose}
     >

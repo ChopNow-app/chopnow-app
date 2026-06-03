@@ -13,14 +13,14 @@ export default function LegalLayout({ children }: { children: React.ReactNode })
         <div className="mx-auto flex max-w-3xl items-center gap-3 px-5 py-4 md:px-8 lg:px-12">
           <Link
             href="/"
-            aria-label="Accueil TChopNow"
+            aria-label="Accueil Tchop NoW"
             className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-chop-ink-secondary transition-colors hover:text-chop-ink"
           >
             <ChevronLeft className="h-4 w-4" strokeWidth={2.2} aria-hidden />
             Accueil
           </Link>
           <span className="ml-auto text-[15px] font-extrabold uppercase tracking-[0.18em] text-chop-ink md:text-[17px]">
-            TChop<span className="text-chop-red">Now.</span>
+            Tchop <span className="text-chop-red">NoW</span>
           </span>
         </div>
       </header>

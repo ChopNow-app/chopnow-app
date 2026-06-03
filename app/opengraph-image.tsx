@@ -10,7 +10,7 @@ import { ImageResponse } from 'next/og';
 // avoids checking a 100 KB binary into git. Re-renders on each deploy
 // since Vercel invalidates the OG cache when /app changes.
 
-export const alt = 'TChopNow — Mange sans attendre';
+export const alt = 'Tchop NoW — Mange sans attendre';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
@@ -52,7 +52,7 @@ export default async function Image() {
         </div>
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           <div style={{ fontSize: 28, fontWeight: 800, color: CHOP_INK, letterSpacing: -0.5 }}>
-            TChopNow
+            Tchop NoW
           </div>
           <div
             style={{

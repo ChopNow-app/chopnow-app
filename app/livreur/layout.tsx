@@ -2,7 +2,7 @@ import { RoleGate } from '@/components/auth/RoleGate';
 
 // Auth-gated subtree — see vendor/layout.tsx for the rationale.
 export const metadata = {
-  title: 'TChopNow — Livreur',
+  title: 'Tchop NoW — Livreur',
   robots: { index: false, follow: false },
 };
 
@@ -31,7 +31,7 @@ export default function LivreurLayout({ children }: { children: React.ReactNode 
           style={{ paddingTop: 'calc(env(safe-area-inset-top) + 0.75rem)' }}
         >
           <span className="text-sm font-extrabold uppercase tracking-widest text-chop-red">
-            TChopNow · Livreur
+            Tchop NoW · Livreur
           </span>
         </header>
         <div className="container max-w-md px-4 py-6">{children}</div>

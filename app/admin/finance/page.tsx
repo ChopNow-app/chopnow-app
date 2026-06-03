@@ -1,6 +1,6 @@
 import { AdminFinanceDashboard } from '@/features/admin/components/AdminFinanceDashboard';
 
-export const metadata = { title: 'TchopNow — Finance' };
+export const metadata = { title: 'Tchop NoW — Finance' };
 
 export default function AdminFinancePage() {
   return <AdminFinanceDashboard />;

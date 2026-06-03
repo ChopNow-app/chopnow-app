@@ -99,10 +99,10 @@ export function ConsumerTopNav() {
             header so the logo identity stays consistent across surfaces. */}
         <Link
           href="/"
-          aria-label="TChopNow accueil"
+          aria-label="Tchop NoW accueil"
           className="text-[17px] font-extrabold uppercase tracking-[0.18em] text-chop-ink"
         >
-          TChop<span className="text-chop-red">Now.</span>
+          Tchop <span className="text-chop-red">NoW</span>
         </Link>
 
         {/* 4 tabs — same 4 destinations as the mobile bottom nav. Active

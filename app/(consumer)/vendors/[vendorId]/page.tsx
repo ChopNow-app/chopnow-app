@@ -58,7 +58,7 @@ export async function generateMetadata({
     ? // Keep descriptions under Google's ~160-char cutoff. Backend
       // doesn't enforce a max so trim defensively.
       vendor.description.slice(0, 155) + (vendor.description.length > 155 ? '…' : '')
-    : `Commande chez ${vendor.name} à ${vendor.quartier}, Douala. Livraison via TChopNow, paie via MoMo.`;
+    : `Commande chez ${vendor.name} à ${vendor.quartier}, Douala. Livraison via Tchop NoW, paie via MoMo.`;
 
   const photoUrl = vendor.profilePhotoUrl ? `${SITE_URL}/r2/${vendor.profilePhotoUrl}` : undefined;
 
