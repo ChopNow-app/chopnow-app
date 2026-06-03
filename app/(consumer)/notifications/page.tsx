@@ -112,7 +112,7 @@ function PushSubscriptionCard({
         <div className="flex-1">
           <h2 className="text-base font-bold">Notifications non disponibles</h2>
           <p className="mt-1 text-sm text-chop-ink-secondary">
-            Ton navigateur ne supporte pas les notifications push. Ouvre TChopNow sur Chrome ou
+            Ton navigateur ne supporte pas les notifications push. Ouvre Tchop NoW sur Chrome ou
             Safari pour les recevoir.
           </p>
         </div>

@@ -28,14 +28,14 @@ export default function LaunchPage() {
         <div className="relative">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="/brand-icon.svg"
+            src="/brand-icon-white.svg"
             alt=""
             aria-hidden
-            className="h-20 w-20 duration-500 ease-out animate-in zoom-in-50"
+            className="h-20 w-20 object-contain duration-500 ease-out animate-in zoom-in-50"
           />
         </div>
         <h1 className="text-4xl font-extrabold tracking-tight delay-200 duration-700 animate-in fade-in slide-in-from-bottom-2">
-          TChopNow
+          Tchop NoW
         </h1>
         <p className="text-sm font-medium uppercase tracking-[0.3em] text-white/80 delay-500 duration-700 animate-in fade-in">
           Mange sans attendre

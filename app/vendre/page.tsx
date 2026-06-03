@@ -30,7 +30,7 @@ export default async function VendrePage() {
       <header className="relative z-10 border-b border-divider/50">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-5 py-4 md:px-8">
           <Link href="/" className="text-[15px] font-extrabold uppercase tracking-[0.18em]">
-            TChop<span className="text-chop-red">Now.</span>
+            Tchop <span className="text-chop-red">NoW</span>
           </Link>
           <Link
             href="/"

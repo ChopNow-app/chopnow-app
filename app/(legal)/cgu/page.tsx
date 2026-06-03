@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 export const metadata: Metadata = {
   title: "Conditions d'utilisation",
   description:
-    "Conditions générales d'utilisation de TChopNow — règles de la plateforme de livraison de nourriture à Douala, Cameroun.",
+    "Conditions générales d'utilisation de Tchop NoW — règles de la plateforme de livraison de nourriture à Douala, Cameroun.",
   alternates: { canonical: '/cgu' },
 };
 
@@ -26,8 +26,8 @@ export default function CguPage() {
         <h2 className="text-xl font-extrabold">1. Objet</h2>
         <p className="mt-3 text-[15px] leading-relaxed text-chop-ink">
           Les présentes Conditions Générales d&apos;Utilisation (CGU) régissent l&apos;usage du
-          service TChopNow — application web mobile (PWA) accessible à l&apos;adresse{' '}
-          <strong>app.tchopnow.app</strong>. TChopNow met en relation trois acteurs :{' '}
+          service Tchop NoW — application web mobile (PWA) accessible à l&apos;adresse{' '}
+          <strong>app.tchopnow.app</strong>. Tchop NoW met en relation trois acteurs :{' '}
           <strong>Consommateurs</strong> (personnes commandant de la nourriture),{' '}
           <strong>Vendeurs</strong> (restaurants, maquis, cuisines maison référencés) et{' '}
           <strong>Livreurs</strong> (transporteurs à moto, vélo ou à pied).
@@ -37,8 +37,8 @@ export default function CguPage() {
       <section>
         <h2 className="text-xl font-extrabold">2. Acceptation</h2>
         <p className="mt-3 text-[15px] leading-relaxed text-chop-ink">
-          L&apos;utilisation de TChopNow implique l&apos;acceptation pleine et entière des présentes
-          CGU. L&apos;utilisateur les accepte au premier usage de la plateforme. En cas de
+          L&apos;utilisation de Tchop NoW implique l&apos;acceptation pleine et entière des
+          présentes CGU. L&apos;utilisateur les accepte au premier usage de la plateforme. En cas de
           désaccord, l&apos;utilisateur s&apos;abstient d&apos;utiliser le service.
         </p>
       </section>
@@ -71,7 +71,7 @@ export default function CguPage() {
       <section>
         <h2 className="text-xl font-extrabold">5. Livraison</h2>
         <p className="mt-3 text-[15px] leading-relaxed text-chop-ink">
-          TChopNow vise un délai de livraison de 30 minutes à partir de la prise en charge de la
+          Tchop NoW vise un délai de livraison de 30 minutes à partir de la prise en charge de la
           commande par le livreur. Ce délai est indicatif et peut varier selon les conditions de
           trafic, météorologiques ou opérationnelles.
         </p>
@@ -85,13 +85,13 @@ export default function CguPage() {
       <section>
         <h2 className="text-xl font-extrabold">6. Responsabilités</h2>
         <p className="mt-3 text-[15px] leading-relaxed text-chop-ink">
-          TChopNow agit comme intermédiaire technique. La qualité, la fraîcheur, l&apos;hygiène et
+          Tchop NoW agit comme intermédiaire technique. La qualité, la fraîcheur, l&apos;hygiène et
           la conformité de la nourriture vendue relèvent de la responsabilité exclusive du{' '}
           <strong>Vendeur</strong>. Le bon déroulement de la livraison (intégrité du colis,
           ponctualité) relève de la responsabilité du <strong>Livreur</strong>.
         </p>
         <p className="mt-3 text-[15px] leading-relaxed text-chop-ink">
-          TChopNow ne saurait être tenu responsable des dommages directs ou indirects résultant
+          Tchop NoW ne saurait être tenu responsable des dommages directs ou indirects résultant
           d&apos;un manquement à ces responsabilités par les vendeurs ou les livreurs. Un mécanisme
           de réclamation est disponible via WhatsApp à{' '}
           <a
@@ -119,7 +119,7 @@ export default function CguPage() {
       <section>
         <h2 className="text-xl font-extrabold">8. Suspension et résiliation</h2>
         <p className="mt-3 text-[15px] leading-relaxed text-chop-ink">
-          TChopNow se réserve le droit de suspendre ou résilier tout compte en cas de violation des
+          Tchop NoW se réserve le droit de suspendre ou résilier tout compte en cas de violation des
           présentes CGU, d&apos;activité suspecte (fraude, paiements contestés) ou d&apos;atteinte à
           la communauté de la plateforme.
         </p>
@@ -128,7 +128,7 @@ export default function CguPage() {
       <section>
         <h2 className="text-xl font-extrabold">9. Évolution des CGU</h2>
         <p className="mt-3 text-[15px] leading-relaxed text-chop-ink">
-          TChopNow peut modifier les présentes CGU pour refléter l&apos;évolution du service.
+          Tchop NoW peut modifier les présentes CGU pour refléter l&apos;évolution du service.
           L&apos;utilisateur est informé par notification dans l&apos;application au moins 15 jours
           avant l&apos;entrée en vigueur. La poursuite de l&apos;usage de la plateforme vaut
           acceptation des nouvelles CGU.

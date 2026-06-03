@@ -28,7 +28,7 @@ export async function SiteFooter() {
             href="/"
             className="inline-block text-[15px] font-extrabold uppercase tracking-[0.18em] text-chop-ink md:text-[17px]"
           >
-            TChop<span className="text-chop-red">Now.</span>
+            Tchop <span className="text-chop-red">NoW</span>
           </Link>
           <p className="mt-3 max-w-[28ch] text-[13px] font-medium leading-relaxed text-chop-ink-secondary">
             {t('brandTagline')}

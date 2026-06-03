@@ -38,7 +38,7 @@ export function PwaInstallPrompt() {
         setEvent(null);
       }}
     >
-      Installer TChopNow
+      Installer Tchop NoW
     </Button>
   );
 }

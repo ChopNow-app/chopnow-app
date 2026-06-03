@@ -49,7 +49,7 @@ const STATUS_COPY: Record<
   SUSPENDED: {
     label: 'Suspendu',
     tone: 'danger',
-    body: 'Le compte est temporairement suspendu. Contacte le support TChopNow pour la suite.',
+    body: 'Le compte est temporairement suspendu. Contacte le support Tchop NoW pour la suite.',
   },
   REJECTED: {
     label: 'Refusé',

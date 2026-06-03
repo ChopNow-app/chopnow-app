@@ -4,7 +4,7 @@ import { CataloguePage } from '@/features/consumer/components/CataloguePage';
 
 // Per-route metadata override — distinct title + description so SERPs
 // and screen readers can tell this page apart from the marketing splash
-// at `/`. Title template `%s | TChopNow` is applied automatically.
+// at `/`. Title template `%s | Tchop NoW` is applied automatically.
 export const metadata: Metadata = {
   title: 'Restaurants à Douala',
   description:

@@ -90,7 +90,7 @@ export function RoleRedirector({ fallbackHref }: Props) {
       className="fixed inset-0 z-[60] flex flex-col items-center justify-center bg-chop-warm text-chop-ink"
     >
       <span className="text-[15px] font-extrabold uppercase tracking-[0.18em]">
-        TChop<span className="text-chop-red">Now.</span>
+        Tchop <span className="text-chop-red">NoW</span>
       </span>
       <p className="mt-3 text-sm text-chop-ink-secondary">On te ramène à ton espace…</p>
       <span

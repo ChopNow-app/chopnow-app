@@ -2,9 +2,9 @@ import Link from 'next/link';
 import { StatusCheckPage } from '@/features/onboarding-status/components/StatusCheckPage';
 
 export const metadata = {
-  title: 'Vérifier mon inscription — TChopNow',
+  title: 'Vérifier mon inscription — Tchop NoW',
   description:
-    "Suis ton statut d'inscription vendeur ou livreur sur TChopNow. Entre ton numéro WhatsApp pour voir où en est ta demande.",
+    "Suis ton statut d'inscription vendeur ou livreur sur Tchop NoW. Entre ton numéro WhatsApp pour voir où en est ta demande.",
 };
 
 // Story 1.4 / 2.0 follow-up (#13) — public status check page. Vendor or rider
@@ -26,7 +26,7 @@ export default function StatutPage() {
       <header className="relative z-10 border-b border-divider/50">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-5 py-4 md:px-8">
           <Link href="/" className="text-[15px] font-extrabold uppercase tracking-[0.18em]">
-            TChop<span className="text-chop-red">Now.</span>
+            Tchop <span className="text-chop-red">NoW</span>
           </Link>
           <Link
             href="/"

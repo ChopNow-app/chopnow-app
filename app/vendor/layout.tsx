@@ -6,7 +6,7 @@ import { VendorTabs } from '@/components/VendorTabs';
 // on the layout signals "don't even try" to compliant crawlers — saves
 // budget that would otherwise be spent re-crawling the redirect chain.
 export const metadata = {
-  title: 'TChopNow — Vendeur',
+  title: 'Tchop NoW — Vendeur',
   robots: { index: false, follow: false },
 };
 
@@ -25,7 +25,7 @@ export default function VendorLayout({ children }: { children: React.ReactNode }
         <header className="sticky top-0 z-30 border-b border-divider bg-chop-card-white px-4 py-2.5 backdrop-blur supports-[backdrop-filter]:bg-chop-card-white/90">
           <div className="container flex max-w-5xl items-center gap-4">
             <span className="shrink-0 text-xs font-extrabold uppercase tracking-widest text-chop-red">
-              TChopNow · Vendeur
+              Tchop NoW · Vendeur
             </span>
             <VendorTabs />
           </div>

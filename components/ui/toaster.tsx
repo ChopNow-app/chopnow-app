@@ -32,7 +32,7 @@ export function Toaster() {
     // and (b) announce the F8 hotkey to screen readers when a toast
     // appears. Setting it in French keeps the announcement consistent
     // with the rest of the UI.
-    <ToastProvider swipeDirection="right" label="Notifications TChopNow">
+    <ToastProvider swipeDirection="right" label="Notifications Tchop NoW">
       {toasts.map(({ id, title, description, action, variant, ...props }) => (
         <Toast key={id} variant={variant} {...props}>
           <Icon variant={variant} />

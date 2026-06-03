@@ -100,13 +100,13 @@ export function MobileOnboarding() {
   return (
     <div
       role="dialog"
-      aria-label="Bienvenue chez TChopNow"
+      aria-label="Bienvenue chez Tchop NoW"
       className="fixed inset-0 z-50 flex flex-col bg-chop-warm text-chop-ink"
     >
       {/* Top bar — brand wordmark + Passer */}
       <header className="flex shrink-0 items-center justify-between px-5 pt-4">
         <span className="text-[15px] font-extrabold uppercase tracking-[0.18em]">
-          TChop<span className="text-chop-red">Now.</span>
+          Tchop <span className="text-chop-red">NoW</span>
         </span>
         <button
           type="button"
@@ -308,7 +308,7 @@ function RolesSlide({ onDismiss }: { onDismiss: (href: string) => void }) {
           tone="default"
           eyebrow="02"
           label="Je vends mes plats"
-          sub="Devenir vendeur TChopNow."
+          sub="Devenir vendeur Tchop NoW."
           onClick={() => onDismiss('/vendre')}
         />
         <RoleCard

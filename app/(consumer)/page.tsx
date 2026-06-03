@@ -83,7 +83,7 @@ export default async function HomePage() {
       <header className="relative z-10 border-b border-divider/50 lg:hidden">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 md:px-8 lg:px-12">
           <span className="text-[15px] font-extrabold uppercase tracking-[0.18em] text-chop-ink md:text-[17px]">
-            TChop<span className="text-chop-red">Now.</span>
+            Tchop <span className="text-chop-red">NoW</span>
           </span>
           <div className="flex items-center gap-2">
             <LanguageSwitcher />

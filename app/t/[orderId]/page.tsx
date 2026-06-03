@@ -16,6 +16,6 @@ export default async function PublicTrackPage({
 }
 
 export const metadata = {
-  title: 'Suivi de commande — TChopNow',
+  title: 'Suivi de commande — Tchop NoW',
   robots: { index: false, follow: false }, // share links shouldn't appear in search engines.
 };

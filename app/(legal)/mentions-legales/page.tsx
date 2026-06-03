@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 export const metadata: Metadata = {
   title: 'Mentions légales',
   description:
-    'Mentions légales de TChopNow — éditeur, hébergement, propriété intellectuelle. Service de livraison de nourriture à Douala, Cameroun.',
+    'Mentions légales de Tchop NoW — éditeur, hébergement, propriété intellectuelle. Service de livraison de nourriture à Douala, Cameroun.',
   alternates: { canonical: '/mentions-legales' },
 };
 
@@ -28,14 +28,14 @@ export default function MentionsLegalesPage() {
       <section>
         <h2 className="text-xl font-extrabold">Éditeur</h2>
         <p className="mt-3 text-[15px] leading-relaxed text-chop-ink">
-          TChopNow est un service de mise en relation entre des vendeurs de nourriture camerounais
+          Tchop NoW est un service de mise en relation entre des vendeurs de nourriture camerounais
           (cuisines maison, maquis, restaurants), des livreurs à moto, et des consommateurs résidant
           à Douala.
         </p>
         <p className="mt-3 text-[15px] leading-relaxed text-chop-ink">
           Le service est actuellement exploité, dans le cadre d&apos;un pilote, par{' '}
           <strong>Andre Liar Kanmegne Tabouguie</strong> sous la dénomination commerciale{' '}
-          <strong>TChopNow</strong>. L&apos;entité légale (SARL ou SAS) est en cours
+          <strong>Tchop NoW</strong>. L&apos;entité légale (SARL ou SAS) est en cours
           d&apos;enregistrement auprès du RCCM (Registre du Commerce et du Crédit Mobilier) et de la
           DGI (NIU). Cette page sera mise à jour avec la dénomination formelle dès la finalisation
           des formalités.
@@ -72,7 +72,7 @@ export default function MentionsLegalesPage() {
       <section>
         <h2 className="text-xl font-extrabold">Directeur de la publication</h2>
         <p className="mt-3 text-[15px] leading-relaxed text-chop-ink">
-          Andre Liar Kanmegne Tabouguie, fondateur de TChopNow.
+          Andre Liar Kanmegne Tabouguie, fondateur de Tchop NoW.
         </p>
       </section>
 
@@ -102,7 +102,7 @@ export default function MentionsLegalesPage() {
       <section>
         <h2 className="text-xl font-extrabold">Propriété intellectuelle</h2>
         <p className="mt-3 text-[15px] leading-relaxed text-chop-ink">
-          La marque <strong>TChopNow</strong>, son logo (stopwatch dans le wordmark NOW, palette
+          La marque <strong>Tchop NoW</strong>, son logo (stopwatch dans le wordmark NOW, palette
           rouge/noir/blanc) et l&apos;ensemble du contenu rédactionnel, graphique et code applicatif
           sont la propriété exclusive de l&apos;éditeur. Toute reproduction, totale ou partielle,
           sans autorisation écrite préalable est interdite.
@@ -110,7 +110,7 @@ export default function MentionsLegalesPage() {
         <p className="mt-3 text-[15px] leading-relaxed text-chop-ink">
           Les photos des vendeurs et des plats publiées sur la plateforme appartiennent à leurs
           propriétaires respectifs et sont publiées avec leur consentement dans le cadre du
-          référencement TChopNow.
+          référencement Tchop NoW.
         </p>
       </section>
 
