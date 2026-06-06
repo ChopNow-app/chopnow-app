@@ -109,6 +109,22 @@ describe('PhoneInput', () => {
     expect(select.value).toBe('US');
   });
 
+  it('keeps an explicit Canada pick selected after digits are typed', async () => {
+    const user = userEvent.setup();
+    function Wrapper() {
+      const [v, setV] = React.useState('');
+      return <PhoneInput value={v} onChange={setV} />;
+    }
+    render(<Wrapper />);
+    const select = screen.getByLabelText('Indicatif pays') as HTMLSelectElement;
+    // Pick Canada, then type a number. The emitted value is '+1…', which is
+    // ambiguous between US and CA — but the explicit pick must win, so the
+    // dropdown stays on Canada rather than snapping to US (the first +1 entry).
+    await user.selectOptions(select, 'CA');
+    await user.type(screen.getByPlaceholderText('(XXX) XXX-XXXX'), '4165551234');
+    expect((screen.getByLabelText('Indicatif pays') as HTMLSelectElement).value).toBe('CA');
+  });
+
   it('parses an E.164 value back to dial code + local digits', () => {
     render(<PhoneInput value="+33695412820" />);
     const select = screen.getByLabelText('Indicatif pays') as HTMLSelectElement;

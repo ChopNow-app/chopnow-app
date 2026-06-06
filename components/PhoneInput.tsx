@@ -133,9 +133,16 @@ export function PhoneInput({
   // (see `emit` below), which round-trips back to the default and snaps the
   // dropdown to Cameroun — making it impossible to pick another country first.
   const [codeState, setCodeState] = React.useState(parsed.code);
-  // A non-empty value carries its own dial prefix and is authoritative;
-  // when the value is empty we fall back to the remembered selection.
-  const code = value ? parsed.code : codeState;
+  // A non-empty value carries its own dial prefix and is authoritative for
+  // the dial code; when empty we fall back to the remembered selection.
+  // For dial-code twins (US/CA both +1), parseValue can only resolve to the
+  // first match, so an inbound value would clobber an explicit pick of the
+  // other twin. Keep the remembered country when its dial still matches the
+  // value's prefix — that disambiguates the twins without overriding a
+  // genuine dial change.
+  const parsedDial = (COUNTRIES.find((c) => c.code === parsed.code) ?? DEFAULT_COUNTRY).dial;
+  const rememberedDial = COUNTRIES.find((c) => c.code === codeState)?.dial;
+  const code = !value ? codeState : rememberedDial === parsedDial ? codeState : parsed.code;
   const selected = COUNTRIES.find((c) => c.code === code) ?? DEFAULT_COUNTRY;
 
   const emit = (newDial: string, rawDigits: string) => {
