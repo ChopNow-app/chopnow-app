@@ -9,7 +9,7 @@ describe('PhoneInput', () => {
     render(<PhoneInput />);
     const select = screen.getByLabelText('Indicatif pays') as HTMLSelectElement;
     expect(select).toBeInTheDocument();
-    expect(select.value).toBe('237');
+    expect(select.value).toBe('CM');
   });
 
   it('emits E.164 with selected dial code when user types digits', async () => {
@@ -71,15 +71,48 @@ describe('PhoneInput', () => {
     }
     render(<Wrapper />);
     // User picks France (+33). Existing digits are kept and re-emitted
-    // under the new dial code.
-    await user.selectOptions(screen.getByLabelText('Indicatif pays'), '33');
+    // under the new dial code. The dropdown is keyed by ISO code.
+    await user.selectOptions(screen.getByLabelText('Indicatif pays'), 'FR');
     expect(onChange).toHaveBeenLastCalledWith('+33670000000');
+  });
+
+  it('keeps the chosen dial code when changed before any digits are typed', async () => {
+    const user = userEvent.setup();
+    function Wrapper() {
+      const [v, setV] = React.useState('');
+      return <PhoneInput value={v} onChange={setV} />;
+    }
+    render(<Wrapper />);
+    const select = screen.getByLabelText('Indicatif pays') as HTMLSelectElement;
+    // Pick France first, with the number field still empty — the selection
+    // must stick instead of snapping back to Cameroun.
+    await user.selectOptions(select, 'FR');
+    expect(select.value).toBe('FR');
+    // Now typing digits emits E.164 under the remembered dial code.
+    await user.type(screen.getByPlaceholderText(/6 12 34/), '695412820');
+    expect((screen.getByLabelText('Indicatif pays') as HTMLSelectElement).value).toBe('FR');
+  });
+
+  it('distinguishes countries that share a dial code (US vs Canada)', async () => {
+    const user = userEvent.setup();
+    function Wrapper() {
+      const [v, setV] = React.useState('');
+      return <PhoneInput value={v} onChange={setV} />;
+    }
+    render(<Wrapper />);
+    const select = screen.getByLabelText('Indicatif pays') as HTMLSelectElement;
+    // Both US and CA dial +1; selecting Canada must keep Canada selected
+    // rather than snapping to the first +1 entry (US).
+    await user.selectOptions(select, 'CA');
+    expect(select.value).toBe('CA');
+    await user.selectOptions(select, 'US');
+    expect(select.value).toBe('US');
   });
 
   it('parses an E.164 value back to dial code + local digits', () => {
     render(<PhoneInput value="+33695412820" />);
     const select = screen.getByLabelText('Indicatif pays') as HTMLSelectElement;
-    expect(select.value).toBe('33');
+    expect(select.value).toBe('FR');
     expect((screen.getByPlaceholderText(/6 12 34/) as HTMLInputElement).value).toBe('695412820');
   });
 

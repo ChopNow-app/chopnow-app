@@ -87,22 +87,28 @@ export function isValidCameroonPhone(value: string): boolean {
   return /^6[5-9]\d{7}$/.test(value) || /^\+2376[5-9]\d{7}$/.test(value);
 }
 
-/** Parse an inbound value into a dial code + local-digit pair. */
-function parseValue(value: string): { dial: string; localDigits: string } {
-  if (!value) return { dial: DEFAULT_COUNTRY.dial, localDigits: '' };
+/**
+ * Parse an inbound value into a country (ISO code) + local-digit pair.
+ * Countries are keyed by ISO code, not dial code, because dial codes
+ * collide (US and Canada both use +1). An inbound E.164 +1 number is
+ * inherently ambiguous, so it resolves to the first matching entry (US).
+ */
+function parseValue(value: string): { code: string; localDigits: string } {
+  if (!value) return { code: DEFAULT_COUNTRY.code, localDigits: '' };
   if (value.startsWith('+')) {
     // Match longest dial prefix first so '+237' beats '+2' on a hypothetical
-    // overlap. Falls back to default if nothing matches.
+    // overlap. Stable sort keeps array order among equal-length dials, so the
+    // first-listed country wins a collision (e.g. US before CA on +1).
     const sorted = [...COUNTRIES].sort((a, b) => b.dial.length - a.dial.length);
     for (const c of sorted) {
       if (value.startsWith(`+${c.dial}`)) {
-        return { dial: c.dial, localDigits: value.slice(c.dial.length + 1) };
+        return { code: c.code, localDigits: value.slice(c.dial.length + 1) };
       }
     }
-    return { dial: DEFAULT_COUNTRY.dial, localDigits: value.slice(1) };
+    return { code: DEFAULT_COUNTRY.code, localDigits: value.slice(1) };
   }
   // Legacy bare 9-digit Cameroon local — treat as +237.
-  return { dial: '237', localDigits: value };
+  return { code: 'CM', localDigits: value };
 }
 
 export function PhoneInput({
@@ -117,10 +123,20 @@ export function PhoneInput({
   const reactId = React.useId();
   const inputId = id ?? `phone-${reactId}`;
   const errorId = `${inputId}-error`;
-  const dialSelectId = `${inputId}-dial`;
+  const countrySelectId = `${inputId}-country`;
 
-  const { dial, localDigits } = parseValue(value);
-  const selected = COUNTRIES.find((c) => c.dial === dial) ?? DEFAULT_COUNTRY;
+  const parsed = parseValue(value);
+  const { localDigits } = parsed;
+
+  // Keep the chosen country in local state so it survives an empty value.
+  // Without this, changing the country *before* typing any digits emits ''
+  // (see `emit` below), which round-trips back to the default and snaps the
+  // dropdown to Cameroun — making it impossible to pick another country first.
+  const [codeState, setCodeState] = React.useState(parsed.code);
+  // A non-empty value carries its own dial prefix and is authoritative;
+  // when the value is empty we fall back to the remembered selection.
+  const code = value ? parsed.code : codeState;
+  const selected = COUNTRIES.find((c) => c.code === code) ?? DEFAULT_COUNTRY;
 
   const emit = (newDial: string, rawDigits: string) => {
     const cleanDigits = rawDigits.replace(/\D/g, '');
@@ -129,6 +145,12 @@ export function PhoneInput({
       return;
     }
     onChange?.(`+${newDial}${cleanDigits}`);
+  };
+
+  const onCountryChange = (newCode: string) => {
+    const next = COUNTRIES.find((c) => c.code === newCode) ?? DEFAULT_COUNTRY;
+    setCodeState(newCode);
+    emit(next.dial, localDigits);
   };
 
   return (
@@ -146,14 +168,14 @@ export function PhoneInput({
             JS. Trade-off: less control over styling — acceptable for an
             indicator that's tapped once. */}
         <select
-          id={dialSelectId}
+          id={countrySelectId}
           aria-label="Indicatif pays"
-          value={dial}
-          onChange={(e) => emit(e.target.value, localDigits)}
+          value={code}
+          onChange={(e) => onCountryChange(e.target.value)}
           className="h-10 shrink-0 rounded-md border border-input bg-muted px-2 text-sm font-semibold text-chop-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-chop-red"
         >
           {COUNTRIES.map((c) => (
-            <option key={c.code} value={c.dial}>
+            <option key={c.code} value={c.code}>
               {c.flag} +{c.dial}
             </option>
           ))}
@@ -167,7 +189,7 @@ export function PhoneInput({
           maxLength={15}
           placeholder={selected.exampleLocal}
           value={localDigits}
-          onChange={(e) => emit(dial, e.target.value)}
+          onChange={(e) => emit(selected.dial, e.target.value)}
           aria-invalid={!!error}
           aria-describedby={error ? errorId : undefined}
           aria-required="true"
