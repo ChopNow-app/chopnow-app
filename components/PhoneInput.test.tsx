@@ -125,6 +125,63 @@ describe('PhoneInput', () => {
     expect((screen.getByLabelText('Indicatif pays') as HTMLSelectElement).value).toBe('CA');
   });
 
+  // Covers the countries spot-checked on the live site: a unique-dial
+  // country must stay selected through typing and emit the right E.164.
+  it.each([
+    ['FR', '33', '6 12 34 56 78', '695412820'],
+    ['NG', '234', '8XX XXX XXXX', '8031234567'],
+    ['SN', '221', '7X XXX XX XX', '770001122'],
+    ['CM', '237', '6XX XXX XXX', '670000000'],
+  ])('keeps %s selected and emits E.164 after typing', async (code, dial, placeholder, digits) => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    function Wrapper() {
+      const [v, setV] = React.useState('');
+      return (
+        <PhoneInput
+          value={v}
+          onChange={(next) => {
+            setV(next);
+            onChange(next);
+          }}
+        />
+      );
+    }
+    render(<Wrapper />);
+    const select = screen.getByLabelText('Indicatif pays') as HTMLSelectElement;
+    await user.selectOptions(select, code);
+    await user.type(screen.getByPlaceholderText(placeholder), digits);
+    expect((screen.getByLabelText('Indicatif pays') as HTMLSelectElement).value).toBe(code);
+    expect(onChange).toHaveBeenLastCalledWith(`+${dial}${digits}`);
+  });
+
+  it('preserves typed digits when switching country mid-edit', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    function Wrapper() {
+      const [v, setV] = React.useState('');
+      return (
+        <PhoneInput
+          value={v}
+          onChange={(next) => {
+            setV(next);
+            onChange(next);
+          }}
+        />
+      );
+    }
+    render(<Wrapper />);
+    const select = screen.getByLabelText('Indicatif pays') as HTMLSelectElement;
+    // Type under Nigeria, then switch to Senegal: the digits carry over and
+    // are re-emitted under the new dial code, the dropdown follows the switch.
+    await user.selectOptions(select, 'NG');
+    await user.type(screen.getByPlaceholderText('8XX XXX XXXX'), '8031234567');
+    expect(onChange).toHaveBeenLastCalledWith('+2348031234567');
+    await user.selectOptions(select, 'SN');
+    expect((screen.getByLabelText('Indicatif pays') as HTMLSelectElement).value).toBe('SN');
+    expect(onChange).toHaveBeenLastCalledWith('+2218031234567');
+  });
+
   it('parses an E.164 value back to dial code + local digits', () => {
     render(<PhoneInput value="+33695412820" />);
     const select = screen.getByLabelText('Indicatif pays') as HTMLSelectElement;
