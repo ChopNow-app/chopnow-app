@@ -17,19 +17,29 @@ export type CatalogueState =
  *
  * `null` coords keep the hook in `idle` — call `useGeolocation().request()`
  * first to populate them.
+ *
+ * `q` is the free-text search query — passed through to the backend, which
+ * matches vendor name/badge AND menu item names (e.g. "Ndolé" surfaces
+ * vendors that serve it). Caller is responsible for debouncing `q` so
+ * keystrokes don't each fire a request.
  */
 export function useCatalogue(
   coords: { lat: number; lng: number } | null,
   radiusKm = 10,
+  q = '',
 ): CatalogueState {
   const query = useQuery({
-    queryKey: [...queryKeys.catalogue(), coords?.lat, coords?.lng, radiusKm],
+    queryKey: [...queryKeys.catalogue(), coords?.lat, coords?.lng, radiusKm, q],
     queryFn: () => {
       const lat = coords!.lat;
       const lng = coords!.lng;
-      return apiRaw.get(
-        `/api/v1/catalogue?lat=${lat}&lng=${lng}&radiusKm=${radiusKm}`,
-      ) as Promise<CatalogueResponse>;
+      const params = new URLSearchParams({
+        lat: String(lat),
+        lng: String(lng),
+        radiusKm: String(radiusKm),
+      });
+      if (q.trim()) params.set('q', q.trim());
+      return apiRaw.get(`/api/v1/catalogue?${params.toString()}`) as Promise<CatalogueResponse>;
     },
     enabled: !!coords,
     // Catalogue doesn't change often during a session — keep cached for 1 min

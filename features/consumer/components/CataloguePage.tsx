@@ -76,6 +76,11 @@ export function CataloguePage() {
   // Hydrate from URL on first render so a deep-link like
   // /restaurants?q=ndolé&cat=local renders the filtered view immediately.
   const [query, setQuery] = React.useState(() => searchParams.get(URL_PARAM_QUERY) ?? '');
+  // Debounced copy of `query` sent to the catalogue API (matches vendor
+  // name/badge AND menu item names server-side). Kept separate from `query`
+  // so the input stays instantly responsive while the network call waits
+  // for the user to pause typing.
+  const [debouncedQuery, setDebouncedQuery] = React.useState(query);
   const [category, setCategory] = React.useState<CategoryId>(() =>
     readCategoryFromParams(new URLSearchParams(searchParams.toString())),
   );
@@ -89,6 +94,7 @@ export function CataloguePage() {
     const handle = setTimeout(() => {
       const next = new URLSearchParams(searchParams.toString());
       const trimmed = query.trim();
+      setDebouncedQuery(trimmed);
       if (trimmed) next.set(URL_PARAM_QUERY, trimmed);
       else next.delete(URL_PARAM_QUERY);
       if (category !== 'all') next.set(URL_PARAM_CATEGORY, category);
@@ -131,22 +137,19 @@ export function CataloguePage() {
   const coords = resolved.coords;
   const coordsSource = resolved.source;
 
-  const catalogue = useCatalogue(coords);
+  const catalogue = useCatalogue(coords, 10, debouncedQuery);
 
-  // Pre-bucket by plan, then apply client-side category + query filters on
-  // each bucket. Filtering at the bucket level (not before) keeps the empty
-  // section copy ("aucun vendeur ouvert dans ton quartier") meaningful.
+  // Pre-bucket by plan, then apply the client-side category filter on each
+  // bucket. The free-text query is already applied server-side (matches
+  // vendor name/badge AND menu item names — see useCatalogue). Filtering at
+  // the bucket level (not before) keeps the empty section copy ("aucun
+  // vendeur ouvert dans ton quartier") meaningful.
   const buckets = React.useMemo(() => {
     if (catalogue.status !== 'ready') {
       return { 1: [] as VendorCardType[], 2: [] as VendorCardType[], 3: [] as VendorCardType[] };
     }
     const cat = CATEGORIES.find((c) => c.id === category);
-    const q = query.trim().toLowerCase();
     const matches = (v: VendorCardType) => {
-      if (q) {
-        const hay = `${v.name} ${v.badge ?? ''}`.toLowerCase();
-        if (!hay.includes(q)) return false;
-      }
       if (cat && cat.match.length > 0) {
         const hay = `${v.name} ${v.badge ?? ''}`.toLowerCase();
         if (!cat.match.some((m) => hay.includes(m))) return false;
@@ -158,7 +161,7 @@ export function CataloguePage() {
       if (matches(v)) out[v.plan].push(v);
     }
     return out;
-  }, [catalogue, query, category]);
+  }, [catalogue, category]);
 
   const totalShown = buckets[1].length + buckets[2].length + (showPlan3 ? buckets[3].length : 0);
   const totalAll = buckets[1].length + buckets[2].length + buckets[3].length;

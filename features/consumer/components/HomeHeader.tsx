@@ -107,12 +107,16 @@ export function HomeHeader({
           {/* Anon visitors get a generic welcome — "Bonjour." with no name
               read as a stranded greeting. Authenticated users still get
               the time-of-day greeting + their first name, which is the
-              "this app knows me" signal we want for repeat visits. */}
-          <h1 className="mt-3 text-[34px] font-extrabold leading-[1.05] tracking-tight text-chop-ink">
+              "this app knows me" signal we want for repeat visits.
+              On desktop the greeting drops to a single compact line —
+              it's a "we know you" courtesy, not the page's job, so it
+              shouldn't eat the hero; the search bar takes that role. */}
+          <h1 className="mt-3 text-[34px] font-extrabold leading-[1.05] tracking-tight text-chop-ink lg:mt-1.5 lg:text-xl lg:leading-tight">
             {firstName ? (
               <>
-                {greetingWord},<br />
-                <span className="text-chop-red">{firstName}.</span>
+                {greetingWord}
+                <br className="lg:hidden" />
+                <span className="text-chop-red lg:ml-1.5">{firstName}.</span>
               </>
             ) : (
               <>
