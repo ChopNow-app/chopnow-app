@@ -92,5 +92,9 @@
     "*.{json,md,yml,yaml,css}": [
       "prettier --write"
     ]
+  },
+  "overrides": {
+    "esbuild": "^0.28.1",
+    "postcss": "^8.5.13"
   }
 }
