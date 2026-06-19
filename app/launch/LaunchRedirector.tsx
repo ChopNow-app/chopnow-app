@@ -79,7 +79,7 @@ export function LaunchRedirector() {
     //    beat" budget. On 401 we clear the stale token and route to
     //    /restaurants as anonymous.
     apiRaw
-      .get<{ role: UserRole }>('/api/users/me')
+      .get<{ role: UserRole }>('/api/v1/users/me')
       .then((me) => {
         if (cancelled) return;
         auth.saveRole(me.role);

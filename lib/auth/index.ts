@@ -76,7 +76,7 @@ export const auth = {
     const body: { phone: string; cfTurnstileResponse?: string } = { phone };
     if (captchaToken) body.cfTurnstileResponse = captchaToken;
     const result = await apiRaw.post<{ ok: true; expiresInSeconds: number }>(
-      '/api/auth/request-otp',
+      '/api/v1/auth/request-otp',
       body,
     );
     // Funnel event — no phone in the payload (PII contract in
@@ -86,7 +86,7 @@ export const auth = {
     return result;
   },
   async verifyOtp(phone: string, code: string) {
-    const tokens = await apiRaw.post<AuthTokens>('/api/auth/verify-otp', { phone, code });
+    const tokens = await apiRaw.post<AuthTokens>('/api/v1/auth/verify-otp', { phone, code });
     this.saveTokens(tokens);
     // Fires only on successful verify (a 4xx earlier throws). The
     // otp_requested → otp_verified pair gives the OTP-delivery
