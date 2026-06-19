@@ -72,7 +72,7 @@ function LoginScreen() {
       return;
     }
     try {
-      const me = await apiRaw.get<{ role: UserRole }>('/api/users/me');
+      const me = await apiRaw.get<{ role: UserRole }>('/api/v1/users/me');
       auth.saveRole(me.role);
       router.replace(redirectPathForRole(me.role));
     } catch {
@@ -85,129 +85,178 @@ function LoginScreen() {
   };
 
   return (
-    <div className="flex min-h-dvh flex-col">
-      {/* ── Header band ──────────────────────────────────────────── */}
-      <header className="px-5 pt-5 md:px-8 md:pt-6">
-        <div className="mx-auto flex w-full max-w-md items-center justify-between gap-3 md:max-w-xl">
-          <button
-            type="button"
-            onClick={goBack}
-            aria-label={t('back')}
-            className="-ml-1 flex h-10 w-10 items-center justify-center rounded-full text-chop-ink transition-colors hover:bg-chop-surface-gray"
-          >
-            <ChevronLeft className="h-5 w-5" strokeWidth={2.4} aria-hidden />
-          </button>
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 text-base font-extrabold uppercase tracking-tight"
-          >
-            <Image
-              src="/brand-icon.svg"
-              alt=""
-              width={28}
-              height={28}
-              className="object-contain"
-              aria-hidden
-              priority
-            />
-            <span>
-              Tchop <span className="text-chop-red">NoW</span>
-            </span>
-          </Link>
-          <LanguageSwitcher />
-        </div>
-      </header>
+    <div className="flex min-h-dvh flex-col lg:flex-row">
+      {/* ── Desktop brand panel (lg+) ───────────────────────────────── */}
+      <aside className="hidden bg-chop-ink px-12 py-12 lg:flex lg:w-[46%] lg:shrink-0 lg:flex-col lg:justify-between xl:px-16">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-2.5 text-base font-extrabold uppercase tracking-tight text-white"
+        >
+          <Image
+            src="/brand-icon.svg"
+            alt=""
+            width={30}
+            height={30}
+            className="object-contain brightness-0 invert"
+            aria-hidden
+            priority
+          />
+          <span>
+            Tchop <span className="text-chop-red">NoW</span>
+          </span>
+        </Link>
 
-      {/* ── Hero + form band — anchored upper-middle ─────────────── */}
-      {/* On md+ we widen to max-w-xl and wrap the form area in a card
-          so it no longer feels like a 400px column floating in
-          whitespace. Mobile unchanged. */}
-      <section className="container mx-auto w-full max-w-md px-5 pt-8 md:max-w-xl md:rounded-3xl md:bg-chop-card-white md:px-10 md:py-10 md:shadow-card lg:mt-4">
-        <h1 className="text-4xl font-extrabold leading-[1.05] tracking-tight md:text-5xl">
-          {phone ? (
-            <>
-              {t('otpStepTitleL1')}
-              <br />
-              <span className="text-chop-red">{t('otpStepTitleL2')}</span>
-            </>
-          ) : (
-            <>
-              {t('phoneStepTitleL1')}
-              <br />
-              <span className="text-chop-red">{t('phoneStepTitleL2')}</span>
-            </>
-          )}
-        </h1>
-        <p className="mt-4 text-base text-chop-ink-secondary">
-          {phone
-            ? t('otpStepSubtitle', {
-                part1: phone.slice(-9, -6),
-                part2: phone.slice(-6, -3),
-                part3: phone.slice(-3),
-              })
-            : t('phoneStepSubtitle')}
-        </p>
-
-        <div className="mt-8">
-          {phone ? (
-            <div className="space-y-5">
-              <OtpVerifyForm phone={phone} onVerified={onVerified} onResend={resend} />
-              <button
-                type="button"
-                onClick={() => setPhone(null)}
-                className="text-sm font-semibold text-chop-ink-secondary underline-offset-2 hover:underline"
+        <div>
+          <h2 className="text-[2.75rem] font-extrabold leading-[1.05] tracking-tight text-white xl:text-5xl">
+            {t('desktopHeroTitleL1')}
+            <br />
+            <span className="text-chop-red">{t('desktopHeroTitleL2')}</span>
+          </h2>
+          <p className="mt-5 max-w-xs text-base leading-relaxed text-white/60 xl:text-lg">
+            {t('desktopHeroSubtitle')}
+          </p>
+          <ul className="mt-9 space-y-3" aria-hidden>
+            {[t('trust1'), t('trust2'), t('trust3')].map((label) => (
+              <li
+                key={label}
+                className="flex items-center gap-3 text-sm font-semibold text-white/80"
               >
-                {t('changeNumber')}
-              </button>
-            </div>
-          ) : (
-            <OtpRequestForm onRequested={setPhone} />
-          )}
-        </div>
-      </section>
-
-      {/* ── Filler / trust band — only on phone-entry step ───────── */}
-      {phone ? (
-        <div className="flex-1" aria-hidden />
-      ) : (
-        <section className="mx-auto mt-10 w-full max-w-md flex-1 px-5 md:max-w-xl md:px-0">
-          <ul className="grid grid-cols-3 gap-3">
-            <TrustPill index="01">{t('trust1')}</TrustPill>
-            <TrustPill index="02">{t('trust2')}</TrustPill>
-            <TrustPill index="03">{t('trust3')}</TrustPill>
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-chop-red text-[10px] font-bold text-white">
+                  ✓
+                </span>
+                {label}
+              </li>
+            ))}
           </ul>
-        </section>
-      )}
+        </div>
 
-      {/* ── Bottom band — register entry points, pinned to bottom ── */}
-      {phone ? null : (
-        <footer className="mx-auto w-full max-w-md px-5 pb-[max(env(safe-area-inset-bottom),24px)] pt-8 md:max-w-xl md:px-0">
-          <div className="rounded-3xl bg-chop-card-white p-5 shadow-card">
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-chop-ink-secondary">
-              {t('registerEyebrow')}
-            </p>
-            <p className="mt-1 text-sm text-chop-ink-secondary">
-              {t.rich('registerBody', {
-                strong: (chunks) => <strong className="text-chop-ink">{chunks}</strong>,
-              })}
-            </p>
-            <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-              <Link
-                href="/vendre"
-                className="inline-flex flex-1 items-center justify-center rounded-full bg-chop-ink px-4 py-3 text-sm font-bold text-white transition-colors hover:bg-chop-red"
-              >
-                {t('registerVendor')}
-              </Link>
-              <Link
-                href="/livrer"
-                className="inline-flex flex-1 items-center justify-center rounded-full bg-chop-ink px-4 py-3 text-sm font-bold text-white transition-colors hover:bg-chop-red"
-              >
-                {t('registerRider')}
-              </Link>
-            </div>
+        <p className="text-xs font-bold uppercase tracking-[0.25em] text-white/30">
+          {t('desktopSlogan')}
+        </p>
+      </aside>
+
+      {/* ── Right column — auth flow (all breakpoints) ──────────────── */}
+      <div className="flex flex-1 flex-col lg:justify-between">
+        {/* Header band */}
+        <header className="px-5 pt-5 md:px-8 md:pt-6">
+          <div className="mx-auto flex w-full max-w-md items-center justify-between gap-3 md:max-w-xl">
+            <button
+              type="button"
+              onClick={goBack}
+              aria-label={t('back')}
+              className="-ml-1 flex h-10 w-10 items-center justify-center rounded-full text-chop-ink transition-colors hover:bg-chop-surface-gray"
+            >
+              <ChevronLeft className="h-5 w-5" strokeWidth={2.4} aria-hidden />
+            </button>
+            {/* Logo visible on mobile/tablet only — desktop brand panel carries it */}
+            <Link
+              href="/"
+              className="inline-flex items-center gap-2 text-base font-extrabold uppercase tracking-tight lg:hidden"
+            >
+              <Image
+                src="/brand-icon.svg"
+                alt=""
+                width={28}
+                height={28}
+                className="object-contain"
+                aria-hidden
+              />
+              <span>
+                Tchop <span className="text-chop-red">NoW</span>
+              </span>
+            </Link>
+            <LanguageSwitcher />
           </div>
-        </footer>
-      )}
+        </header>
+
+        {/* Hero + form */}
+        <section className="container mx-auto w-full max-w-md px-5 pt-8 md:max-w-xl md:rounded-3xl md:bg-chop-card-white md:px-10 md:py-10 md:shadow-card lg:px-0">
+          <h1 className="text-4xl font-extrabold leading-[1.05] tracking-tight md:text-5xl">
+            {phone ? (
+              <>
+                {t('otpStepTitleL1')}
+                <br />
+                <span className="text-chop-red">{t('otpStepTitleL2')}</span>
+              </>
+            ) : (
+              <>
+                {t('phoneStepTitleL1')}
+                <br />
+                <span className="text-chop-red">{t('phoneStepTitleL2')}</span>
+              </>
+            )}
+          </h1>
+          <p className="mt-4 text-base text-chop-ink-secondary">
+            {phone
+              ? t('otpStepSubtitle', {
+                  part1: phone.slice(-9, -6),
+                  part2: phone.slice(-6, -3),
+                  part3: phone.slice(-3),
+                })
+              : t('phoneStepSubtitle')}
+          </p>
+
+          <div className="mt-8">
+            {phone ? (
+              <div className="space-y-5">
+                <OtpVerifyForm phone={phone} onVerified={onVerified} onResend={resend} />
+                <button
+                  type="button"
+                  onClick={() => setPhone(null)}
+                  className="text-sm font-semibold text-chop-ink-secondary underline-offset-2 hover:underline"
+                >
+                  {t('changeNumber')}
+                </button>
+              </div>
+            ) : (
+              <OtpRequestForm onRequested={setPhone} />
+            )}
+          </div>
+        </section>
+
+        {/* Trust pills — mobile/tablet only; desktop panel shows them */}
+        {phone ? (
+          <div className="flex-1" aria-hidden />
+        ) : (
+          <section className="mx-auto mt-10 w-full max-w-md flex-1 px-5 md:max-w-xl md:px-0 lg:hidden">
+            <ul className="grid grid-cols-3 gap-3">
+              <TrustPill index="01">{t('trust1')}</TrustPill>
+              <TrustPill index="02">{t('trust2')}</TrustPill>
+              <TrustPill index="03">{t('trust3')}</TrustPill>
+            </ul>
+          </section>
+        )}
+
+        {/* Register entry points — pinned to bottom */}
+        {phone ? null : (
+          <footer className="mx-auto w-full max-w-md px-5 pb-[max(env(safe-area-inset-bottom),24px)] pt-8 md:max-w-xl md:px-0">
+            <div className="rounded-3xl bg-chop-card-white p-5 shadow-card">
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-chop-ink-secondary">
+                {t('registerEyebrow')}
+              </p>
+              <p className="mt-1 text-sm text-chop-ink-secondary">
+                {t.rich('registerBody', {
+                  strong: (chunks) => <strong className="text-chop-ink">{chunks}</strong>,
+                })}
+              </p>
+              <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                <Link
+                  href="/vendre"
+                  className="inline-flex flex-1 items-center justify-center rounded-full bg-chop-ink px-4 py-3 text-sm font-bold text-white transition-colors hover:bg-chop-red"
+                >
+                  {t('registerVendor')}
+                </Link>
+                <Link
+                  href="/livrer"
+                  className="inline-flex flex-1 items-center justify-center rounded-full bg-chop-ink px-4 py-3 text-sm font-bold text-white transition-colors hover:bg-chop-red"
+                >
+                  {t('registerRider')}
+                </Link>
+              </div>
+            </div>
+          </footer>
+        )}
+      </div>
     </div>
   );
 }

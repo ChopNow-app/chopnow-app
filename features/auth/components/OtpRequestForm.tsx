@@ -112,6 +112,7 @@ export function OtpRequestForm({ onRequested }: OtpRequestFormProps) {
         value={phone}
         onChange={(v) => setValue('phone', v, { shouldValidate: true })}
         error={errors.phone?.message}
+        label={t('phoneLabel')}
       />
 
       {captchaActive ? (
