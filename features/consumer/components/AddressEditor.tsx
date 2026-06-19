@@ -27,7 +27,10 @@ const schema = z.object({
   quartier: z.string().min(2, 'Quartier requis').max(80),
   phone: z
     .string()
-    .regex(/^(?:6[5-9]\d{7}|\+?[1-9]\d{7,14})$/, 'Numéro invalide')
+    .regex(
+      /^(?:6[5-9]\d{7}|\+?[1-9]\d{7,14}|0\d{8,9})$/,
+      'Numéro invalide — ex: 670000000, 0695412820 ou +33695412820',
+    )
     .optional()
     .or(z.literal('')),
   isDefault: z.boolean().optional(),
@@ -161,7 +164,7 @@ export function AddressEditor({ initial, onSaved, onCancel }: AddressEditorProps
           type="tel"
           inputMode="numeric"
           autoComplete="tel-national"
-          placeholder="670000000"
+          placeholder="670000000 ou +33695412820"
           {...register('phone')}
         />
         {errors.phone ? (

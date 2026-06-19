@@ -121,7 +121,7 @@ export function CartPage() {
 
   if (cart.isEmpty) {
     return (
-      <main className="container py-16 text-center">
+      <main className="container max-w-2xl py-16 text-center">
         <h1 className="text-xl font-bold">{t('empty')}</h1>
         <p className="mt-2 text-sm text-muted-foreground">{t('emptyBody')}</p>
         <Button asChild className="mt-6">
@@ -246,7 +246,7 @@ export function CartPage() {
 
   return (
     <main className="min-h-dvh bg-chop-warm pb-40 text-chop-ink">
-      <header className="container py-4">
+      <header className="container max-w-2xl py-4">
         <Link
           href={cart.vendorId ? `/vendors/${cart.vendorId}` : '/restaurants'}
           className="text-sm text-muted-foreground"
@@ -255,7 +255,7 @@ export function CartPage() {
         </Link>
       </header>
 
-      <section className="container space-y-6 py-2">
+      <section className="container max-w-2xl space-y-6 py-2">
         <h1 className="text-2xl font-extrabold">{t('title')}</h1>
         {cart.vendorName ? (
           <p className="text-sm text-muted-foreground">
@@ -392,7 +392,7 @@ export function CartPage() {
         className="fixed inset-x-0 bottom-16 z-30 border-t border-divider bg-background/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/80"
         style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 0.75rem)' }}
       >
-        <div className="mx-auto flex max-w-md items-center justify-between gap-3">
+        <div className="mx-auto flex max-w-2xl items-center justify-between gap-3">
           <div className="min-w-0">
             <p className="truncate text-xs text-muted-foreground">
               {t('stickyArticle', { count: cart.lines.length })} ·{' '}

@@ -84,7 +84,7 @@ export function AccountPage() {
 
   if (state.status === 'loading') {
     return (
-      <main className="container py-10">
+      <main className="container max-w-2xl py-10">
         <div className="h-32 animate-pulse rounded-lg border bg-background" />
       </main>
     );
@@ -107,7 +107,7 @@ export function AccountPage() {
   }
   if (state.status === 'error') {
     return (
-      <main className="container py-16 text-center">
+      <main className="container max-w-2xl py-16 text-center">
         <p className="text-destructive">{state.message}</p>
       </main>
     );
@@ -117,12 +117,12 @@ export function AccountPage() {
 
   return (
     <main className="min-h-dvh bg-chop-warm pb-16 text-chop-ink">
-      <header className="container py-6">
+      <header className="container max-w-2xl py-6">
         <p className="text-xs uppercase tracking-widest text-muted-foreground">{t('eyebrow')}</p>
         <h1 className="mt-1 text-2xl font-extrabold">{profile.displayName ?? t('fallbackName')}</h1>
       </header>
 
-      <section className="container space-y-4">
+      <section className="container max-w-2xl space-y-4">
         <div className="bg-card rounded-lg border p-4 text-sm">
           <p className="font-semibold">{t('whatsappNumberLabel')}</p>
           <p className="mt-0.5 font-mono text-muted-foreground">{profile.phone}</p>

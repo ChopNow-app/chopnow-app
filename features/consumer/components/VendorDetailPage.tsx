@@ -3,13 +3,16 @@
 import * as React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { ChevronLeft, MapPin, Share2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { CartSheet } from '@/features/cart/components/CartSheet';
 import { useCart } from '@/features/cart/store';
+import { toast } from '@/hooks/use-toast';
 import { track } from '@/lib/analytics';
+import { cn } from '@/lib/utils';
 import { useVendorPublic } from '../hooks/useVendorPublic';
 import type { PublicVendorView } from '../types';
 
@@ -87,6 +90,11 @@ function VendorContent({ view }: { view: PublicVendorView }) {
     return sections.filter((s) => s.items.length > 0);
   }, [categories, items, t]);
 
+  const [conflict, setConflict] = React.useState<{
+    item: PublicVendorView['items'][number];
+    currentVendorName: string;
+  } | null>(null);
+
   const handleAdd = (item: PublicVendorView['items'][number]) => {
     if (!item.isInStock) return;
     const result = cart.addLine(vendor.id, vendor.name, {
@@ -96,16 +104,21 @@ function VendorContent({ view }: { view: PublicVendorView }) {
       photoUrl: item.photoUrl,
     });
     if (!result.ok && result.reason === 'different_vendor') {
-      const ok = window.confirm(t('cartConfirmReplace', { vendor: result.currentVendorName }));
-      if (ok) {
-        cart.replaceVendor(vendor.id, vendor.name, {
-          itemId: item.id,
-          name: item.name,
-          priceXAF: item.priceXAF,
-          photoUrl: item.photoUrl,
-        });
-      }
+      setConflict({ item, currentVendorName: result.currentVendorName });
     }
+  };
+
+  const handleReplaceCart = () => {
+    if (!conflict) return;
+    const { item } = conflict;
+    cart.replaceVendor(vendor.id, vendor.name, {
+      itemId: item.id,
+      name: item.name,
+      priceXAF: item.priceXAF,
+      photoUrl: item.photoUrl,
+    });
+    setConflict(null);
+    toast({ title: t('cartReplacedToastTitle'), description: t('cartReplacedToastBody') });
   };
 
   const handleShare = async () => {
@@ -157,7 +170,92 @@ function VendorContent({ view }: { view: PublicVendorView }) {
       </div>
 
       <CartFooter />
+
+      <CartConflictDialog
+        open={conflict !== null}
+        onOpenChange={(open) => {
+          if (!open) setConflict(null);
+        }}
+        vendorName={conflict?.currentVendorName ?? ''}
+        onKeep={() => setConflict(null)}
+        onReplace={handleReplaceCart}
+      />
     </main>
+  );
+}
+
+/* ------------------------------ Cart conflict dialog ------------------------------ */
+
+/**
+ * Decision prompt for "cart already has another vendor's items" — replaces
+ * window.confirm() (unstyled, blocks the UI, can't be localised cleanly).
+ * One Radix Dialog with responsive positioning: bottom sheet on mobile
+ * (where this conflict is most common — small screens, one-handed use),
+ * centered modal on desktop. The actual cart swap fires a toast separately
+ * (decision = modal, feedback = toast).
+ */
+function CartConflictDialog({
+  open,
+  onOpenChange,
+  vendorName,
+  onKeep,
+  onReplace,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  vendorName: string;
+  onKeep: () => void;
+  onReplace: () => void;
+}) {
+  const t = useTranslations('VendorDetail');
+
+  return (
+    <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
+      <DialogPrimitive.Portal>
+        <DialogPrimitive.Overlay
+          className={cn(
+            'fixed inset-0 z-50 bg-black/60',
+            'data-[state=open]:animate-in data-[state=closed]:animate-out',
+            'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
+          )}
+        />
+        <DialogPrimitive.Content
+          role="alertdialog"
+          className={cn(
+            // Mobile: bottom sheet, full width, rounded top corners only.
+            'fixed inset-x-0 bottom-0 z-50 rounded-t-3xl bg-chop-card-white p-6 text-chop-ink shadow-modal',
+            'pb-[calc(env(safe-area-inset-bottom)+1.5rem)]',
+            'data-[state=open]:animate-in data-[state=closed]:animate-out',
+            'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
+            'data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom',
+            // Desktop: centered modal, capped width, fully rounded.
+            'md:inset-x-auto md:bottom-auto md:left-1/2 md:top-1/2 md:w-[calc(100%-32px)] md:max-w-md',
+            'md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-3xl md:pb-6',
+            'md:data-[state=closed]:slide-out-to-bottom-0 md:data-[state=open]:slide-in-from-bottom-0',
+            'md:data-[state=closed]:zoom-out-95 md:data-[state=open]:zoom-in-95',
+          )}
+        >
+          {/* Grabber — signals "swipe down to dismiss" on mobile sheets. */}
+          <div className="mx-auto mb-4 h-1.5 w-10 rounded-full bg-chop-surface-gray md:hidden" />
+
+          <DialogPrimitive.Title className="text-lg font-extrabold tracking-tight">
+            {t('cartConflictTitle')}
+          </DialogPrimitive.Title>
+          <DialogPrimitive.Description className="mt-2 whitespace-pre-line text-sm text-chop-ink-secondary">
+            {t('cartConflictBody', { vendor: vendorName })}
+          </DialogPrimitive.Description>
+
+          <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row">
+            <Button type="button" variant="outline" className="flex-1" onClick={onKeep}>
+              {t('keepCart')}
+            </Button>
+            <Button type="button" className="flex-1" onClick={onReplace}>
+              {t('replaceCart')}
+            </Button>
+          </div>
+        </DialogPrimitive.Content>
+      </DialogPrimitive.Portal>
+    </DialogPrimitive.Root>
   );
 }
 
