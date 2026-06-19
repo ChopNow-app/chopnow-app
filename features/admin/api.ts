@@ -1,6 +1,7 @@
 import { apiRaw, ApiClientError } from '@/lib/api/api-client';
 import { auth } from '@/lib/auth';
 import { accessTokenStore } from '@/lib/auth/access-token-store';
+import { setAuthHintCookie, clearAuthHintCookie } from '@/lib/auth/auth-hint';
 
 export type AdminRole = 'SUPER_ADMIN' | 'ADMIN' | 'OPERATOR' | 'VIEWER';
 
@@ -28,6 +29,7 @@ export async function adminLogin(email: string, password: string): Promise<Admin
       password,
     });
     accessTokenStore.set(result.accessToken);
+    setAuthHintCookie();
     if (typeof window !== 'undefined') {
       // Belt-and-braces: wipe any pre-Phase-D1 admin tokens (and any
       // pre-Phase-B1 consumer tokens) sitting in localStorage from
@@ -72,6 +74,7 @@ export function adminEmail(): string | null {
  */
 export async function adminLogout() {
   await auth.logout();
+  clearAuthHintCookie();
   if (typeof window === 'undefined') return;
   window.localStorage.removeItem('chopnow.admin.token');
   window.localStorage.removeItem('chopnow.admin.role');

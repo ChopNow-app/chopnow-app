@@ -17,6 +17,7 @@
  */
 
 import { accessTokenStore } from './access-token-store';
+import { setAuthHintCookie, clearAuthHintCookie } from './auth-hint';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
 
@@ -112,6 +113,9 @@ export function bootRehydrate(): Promise<BootStatus> {
       // an XSS bug can't read them.
       window.localStorage.removeItem(LEGACY_ACCESS_KEY);
       window.localStorage.removeItem(LEGACY_REFRESH_KEY);
+      // Keep the middleware hint in sync: a valid refresh means an active
+      // session. This handles page reloads where adminLogin() wasn't called.
+      setAuthHintCookie();
       setStatus('authenticated');
       return 'authenticated' as const;
     }
@@ -125,6 +129,7 @@ export function bootRehydrate(): Promise<BootStatus> {
       window.localStorage.removeItem(LEGACY_ACCESS_KEY);
       if (migrated?.accessToken) {
         accessTokenStore.set(migrated.accessToken);
+        setAuthHintCookie();
         setStatus('authenticated');
         return 'authenticated' as const;
       }
@@ -135,6 +140,10 @@ export function bootRehydrate(): Promise<BootStatus> {
     // the cutover deploy; their cookie + memory model takes over from
     // the next sign-in.
     window.localStorage.removeItem(LEGACY_ADMIN_KEY);
+
+    // No valid session — clear the middleware hint so /admin/* redirects
+    // to login instead of reaching component-level 401 panels.
+    clearAuthHintCookie();
 
     setStatus('anonymous');
     return 'anonymous' as const;

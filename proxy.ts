@@ -23,6 +23,12 @@ import { NextResponse, type NextRequest } from 'next/server';
  */
 
 const REFRESH_COOKIE = 'chopnow_rt';
+// Non-secret hint set by the browser after a successful admin login (see
+// lib/auth/auth-hint.ts). chopnow_rt lives on the API subdomain and is
+// invisible to this middleware; the hint bridges the gap so /admin/* routes
+// aren't permanently redirected to login. Carries no token — still a UX
+// layer only; real auth is enforced by the API on every request.
+const AUTH_HINT_COOKIE = 'chopnow_auth_hint';
 
 // Routes inside the protected matcher that are themselves the login UI.
 // They MUST NOT redirect (else we loop) and they MUST be reachable while
@@ -37,7 +43,7 @@ export function proxy(req: NextRequest) {
   // surface, which lives outside the matcher.
   if (PUBLIC_WITHIN_MATCHER.has(pathname)) return NextResponse.next();
 
-  const hasRefresh = req.cookies.has(REFRESH_COOKIE);
+  const hasRefresh = req.cookies.has(REFRESH_COOKIE) || req.cookies.has(AUTH_HINT_COOKIE);
   if (hasRefresh) return NextResponse.next();
 
   // Anonymous → bounce to login. Admin segment routes to /admin/login
