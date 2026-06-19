@@ -9,6 +9,7 @@ interface SearchBarProps {
   value: string;
   onChange: (next: string) => void;
   onFilterClick?: () => void;
+  isFilterActive?: boolean;
   placeholder?: string;
 }
 
@@ -16,7 +17,13 @@ interface SearchBarProps {
 // red square filter button breaking the right edge. Per DESIGN.md §4 pills
 // dominate the UI, but this one accepts a sharp 14px-radius interruption to
 // signal that the filter is a discrete action, not a chip.
-export function SearchBar({ value, onChange, onFilterClick, placeholder }: SearchBarProps) {
+export function SearchBar({
+  value,
+  onChange,
+  onFilterClick,
+  isFilterActive,
+  placeholder,
+}: SearchBarProps) {
   const t = useTranslations('Consumer');
   const tCommon = useTranslations('Common');
   const finalPlaceholder = placeholder ?? t('searchPlaceholder');
@@ -49,13 +56,19 @@ export function SearchBar({ value, onChange, onFilterClick, placeholder }: Searc
           onClick={onFilterClick}
           aria-label={tCommon('filters')}
           className={cn(
-            'flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl',
+            'relative flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl',
             'bg-chop-red text-white shadow-card transition-transform active:scale-95',
             'hover:bg-chop-red-dark',
             'lg:h-12 lg:w-12',
           )}
         >
           <SlidersHorizontal className="h-4 w-4 lg:h-5 lg:w-5" strokeWidth={2.4} />
+          {isFilterActive ? (
+            <span
+              aria-hidden
+              className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-white ring-2 ring-chop-red lg:right-2 lg:top-2"
+            />
+          ) : null}
         </button>
       </div>
     </div>

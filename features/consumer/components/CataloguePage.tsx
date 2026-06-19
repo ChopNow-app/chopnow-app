@@ -26,6 +26,7 @@ import { CategoryRail, CATEGORIES, type CategoryId } from './CategoryRail';
 import { ConsumerPushPermissionBanner } from './ConsumerPushPermissionBanner';
 import { PromoCard } from './PromoCard';
 import { SectionHeader } from './SectionHeader';
+import { FilterSheet, type FilterState } from './FilterSheet';
 import type { VendorCard as VendorCardType } from '../types';
 
 /**
@@ -84,6 +85,8 @@ export function CataloguePage() {
   const [category, setCategory] = React.useState<CategoryId>(() =>
     readCategoryFromParams(new URLSearchParams(searchParams.toString())),
   );
+  const [openNow, setOpenNow] = React.useState(false);
+  const [showFilter, setShowFilter] = React.useState(false);
   const [showPlan3, setShowPlan3] = React.useState(false);
   const [showGpsHelp, setShowGpsHelp] = React.useState(false);
 
@@ -150,6 +153,7 @@ export function CataloguePage() {
     }
     const cat = CATEGORIES.find((c) => c.id === category);
     const matches = (v: VendorCardType) => {
+      if (openNow && !v.isOpenNow) return false;
       if (cat && cat.match.length > 0) {
         const hay = `${v.name} ${v.badge ?? ''}`.toLowerCase();
         if (!cat.match.some((m) => hay.includes(m))) return false;
@@ -161,10 +165,7 @@ export function CataloguePage() {
       if (matches(v)) out[v.plan].push(v);
     }
     return out;
-  }, [catalogue, category]);
-
-  const totalShown = buckets[1].length + buckets[2].length + (showPlan3 ? buckets[3].length : 0);
-  const totalAll = buckets[1].length + buckets[2].length + buckets[3].length;
+  }, [catalogue, category, openNow]);
 
   // Auto-expand the "Tout Douala" bucket when the two closer buckets are
   // empty but vendors exist further out. Avoids the bad first impression of
@@ -176,6 +177,9 @@ export function CataloguePage() {
     buckets[2].length === 0 &&
     buckets[3].length > 0;
   const effectiveShowPlan3 = showPlan3 || autoExpandPlan3;
+
+  const totalAll = buckets[1].length + buckets[2].length + buckets[3].length;
+  const hasActiveFilter = query.length > 0 || category !== 'all' || openNow;
 
   return (
     <main className="relative min-h-dvh bg-chop-warm text-chop-ink">
@@ -200,18 +204,37 @@ export function CataloguePage() {
           }}
         />
 
-        <SearchBar value={query} onChange={setQuery} />
+        <SearchBar
+          value={query}
+          onChange={setQuery}
+          onFilterClick={() => setShowFilter(true)}
+          isFilterActive={openNow}
+        />
 
         <CategoryRail selected={category} onChange={setCategory} />
 
-        <PromoCard />
+        {/* Active-filter result count — shows how many vendors survived the current
+            filters and offers a one-tap escape hatch back to the unfiltered list. */}
+        {catalogue.status === 'ready' && hasActiveFilter ? (
+          <div className="flex items-center justify-between px-5 pt-4 md:px-8 lg:px-12">
+            <p className="text-[13px] font-semibold text-chop-ink-secondary">
+              {t('filterResults', { count: totalAll })}
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setQuery('');
+                setCategory('all');
+                setOpenNow(false);
+              }}
+              className="text-[13px] font-semibold text-chop-red underline-offset-2 hover:underline"
+            >
+              {t('clearFilters')}
+            </button>
+          </div>
+        ) : null}
 
-        {/* Contextual push opt-in. Self-gated to surface from the 2nd
-            page-view onwards, only when permission isn't already decided,
-            with a 30-day dismissal TTL. Renders null in the common case. */}
-        <div className="mx-5 mt-4 md:mx-8 lg:mx-12">
-          <ConsumerPushPermissionBanner />
-        </div>
+        <PromoCard />
 
         {/* Loading + error states keep the editorial frame; we don't blow the
             page away to a centered spinner. */}
@@ -273,6 +296,15 @@ export function CataloguePage() {
               </>
             )}
 
+            {/* Contextual push opt-in. Sits after the first content tier so
+                the user sees restaurants before being asked for permission.
+                Self-gated: only surfaces from the 2nd page-view onwards,
+                only when permission isn't already decided, with a 30-day
+                dismissal TTL. Renders null in the common case. */}
+            <div className="mx-5 mt-4 md:mx-8 lg:mx-12 lg:max-w-2xl">
+              <ConsumerPushPermissionBanner />
+            </div>
+
             {effectiveShowPlan3 ? (
               <Section
                 title={t('allDoualaHeading')}
@@ -290,18 +322,15 @@ export function CataloguePage() {
 
             {totalAll === 0 ? (
               <EmptyAll
-                hasQueryOrCategory={query.length > 0 || category !== 'all'}
+                hasQueryOrCategory={hasActiveFilter}
                 onClear={() => {
                   setQuery('');
                   setCategory('all');
+                  setOpenNow(false);
                 }}
+                isLocationApproximate={coordsSource === 'unavailable'}
+                onShowGpsHelp={() => setShowGpsHelp(true)}
               />
-            ) : null}
-
-            {totalShown === 0 && totalAll > 0 && !showPlan3 ? (
-              <div className="px-5 pt-3 text-center text-[12px] font-medium text-chop-ink-secondary md:px-8 lg:px-12">
-                {t('emptyNoMatch')}
-              </div>
             ) : null}
           </>
         ) : null}
@@ -312,6 +341,13 @@ export function CataloguePage() {
             role picker) still finds the vendor / rider onboarding. */}
         <VendorRiderEntryBand />
       </div>
+
+      <FilterSheet
+        open={showFilter}
+        onClose={() => setShowFilter(false)}
+        filters={{ openNow }}
+        onApply={(next: FilterState) => setOpenNow(next.openNow)}
+      />
 
       {showGpsHelp ? <GpsHelpDialog onClose={() => setShowGpsHelp(false)} /> : null}
     </main>
@@ -402,14 +438,18 @@ function SectionHeaderSkeleton() {
 function EmptyAll({
   hasQueryOrCategory,
   onClear,
+  isLocationApproximate,
+  onShowGpsHelp,
 }: {
   hasQueryOrCategory: boolean;
   onClear: () => void;
+  isLocationApproximate?: boolean;
+  onShowGpsHelp?: () => void;
 }) {
   const t = useTranslations('Consumer');
   return (
     <div className="mx-5 mt-6 rounded-3xl bg-chop-card-white p-8 text-center shadow-card md:mx-8 lg:mx-12">
-      <div className="text-5xl">🍽️</div>
+      <div className="text-5xl">{hasQueryOrCategory ? '🔍' : '🍽️'}</div>
       <h3 className="mt-3 text-[18px] font-extrabold tracking-tight">
         {hasQueryOrCategory ? t('emptyFilterTitle') : t('emptyAllTitle')}
       </h3>
@@ -419,6 +459,12 @@ function EmptyAll({
       {hasQueryOrCategory ? (
         <Button variant="outline" size="sm" className="mt-4" onClick={onClear}>
           {t('clearFilters')}
+        </Button>
+      ) : isLocationApproximate && onShowGpsHelp ? (
+        // No vendors found and we're using the Douala fallback — activating GPS
+        // may reveal vendors that are actually nearby.
+        <Button variant="outline" size="sm" className="mt-4" onClick={onShowGpsHelp}>
+          {t('enableLocation')}
         </Button>
       ) : null}
     </div>

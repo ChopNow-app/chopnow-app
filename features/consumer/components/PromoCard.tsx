@@ -28,7 +28,7 @@ const STEAM_PATTERN_URL =
 export function PromoCard({ onClick }: PromoCardProps) {
   const msg = useTimeOfDayMessage();
   return (
-    <div className="px-5 pt-5 md:px-8 lg:px-12">
+    <div className="px-5 pt-5 md:px-8 lg:max-w-3xl lg:px-12">
       <button
         type="button"
         onClick={onClick}
