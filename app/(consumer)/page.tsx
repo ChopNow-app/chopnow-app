@@ -3,6 +3,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { ShieldCheck, Bike, MessageCircle } from 'lucide-react';
 import { getTranslations } from 'next-intl/server';
+import { AnimateInView } from '@/components/AnimateInView';
 import { Button } from '@/components/ui/button';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { SiteFooter } from '@/components/SiteFooter';
@@ -97,13 +98,13 @@ export default async function HomePage() {
         <div className="grid items-start gap-10 lg:grid-cols-[1.3fr_1fr] lg:gap-14 xl:gap-20">
           {/* ── Left: editorial hero ── */}
           <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-chop-ink-secondary md:text-[12px]">
+            <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-chop-ink-secondary duration-500 animate-in fade-in slide-in-from-bottom-2 md:text-[12px]">
               {t('locationEyebrow').split('·')[0]}
               <span className="text-chop-red">·</span>
               {t('locationEyebrow').split('·')[1]}
             </p>
 
-            <h1 className="mt-3 text-[64px] font-extrabold leading-[0.92] tracking-[-0.04em] md:text-[96px] lg:text-[120px] xl:text-[140px]">
+            <h1 className="mt-3 text-[64px] font-extrabold leading-[0.92] tracking-[-0.04em] delay-100 duration-700 animate-in fade-in slide-in-from-bottom-4 md:text-[96px] lg:text-[120px] xl:text-[140px]">
               {t('heroLine1')}
               <br />
               {t('heroLine2')}
@@ -111,11 +112,11 @@ export default async function HomePage() {
               <span className="text-chop-red">{t('heroLine3')}</span>
             </h1>
 
-            <p className="mt-5 max-w-[44ch] text-[15px] font-medium leading-[1.55] text-chop-ink-secondary md:mt-6 md:max-w-[52ch] md:text-[17px] lg:text-[18px]">
+            <p className="mt-5 max-w-[44ch] text-[15px] font-medium leading-[1.55] text-chop-ink-secondary delay-300 duration-500 animate-in fade-in slide-in-from-bottom-2 md:mt-6 md:max-w-[52ch] md:text-[17px] lg:text-[18px]">
               {t('subtitle')}
             </p>
 
-            <div className="mt-6 flex flex-wrap items-center gap-3 md:mt-8">
+            <div className="mt-6 flex flex-wrap items-center gap-3 delay-500 duration-500 animate-in fade-in slide-in-from-bottom-2 md:mt-8">
               <Button asChild size="lg">
                 <Link href="/restaurants">{t('ctaOrder')}</Link>
               </Button>
@@ -132,7 +133,7 @@ export default async function HomePage() {
               poster card was identity-strong but commodity from a
               category-positioning standpoint; the photo makes the
               splash say "ChopNow = Douala food" at a glance. ────── */}
-          <div className="lg:sticky lg:top-8">
+          <div className="delay-200 duration-700 animate-in fade-in zoom-in-95 lg:sticky lg:top-8">
             <div className="relative overflow-hidden rounded-3xl shadow-elevated">
               {/* Eru (legume stew) + Fufu — a classic Cameroon dish.
                   Photo by Unsplash contributor, free for commercial use.
@@ -179,7 +180,10 @@ export default async function HomePage() {
           but as a separate "manifesto" beat between hero and role
           picker, which actually feels more deliberate — readers parse
           hero → photo → "how it works" → "who are you?" in order. */}
-      <section className="relative z-10 mx-auto mt-16 max-w-7xl px-5 md:mt-20 md:px-8 lg:px-12">
+      <AnimateInView
+        as="section"
+        className="relative z-10 mx-auto mt-16 max-w-7xl px-5 md:mt-20 md:px-8 lg:px-12"
+      >
         <div className="relative overflow-hidden rounded-3xl bg-chop-red text-white shadow-elevated">
           <div
             aria-hidden
@@ -226,7 +230,7 @@ export default async function HomePage() {
             </ul>
           </div>
         </div>
-      </section>
+      </AnimateInView>
 
       {/* ── Role picker — promoted from "Autres espaces" footer to a proper
           3-card section. After the consumer-led hero, this is where a
@@ -237,37 +241,45 @@ export default async function HomePage() {
           which role the marketing surface is actually optimizing for. */}
       <section className="relative z-10 mx-auto max-w-7xl px-5 pb-16 pt-16 md:px-8 md:pt-24 lg:px-12 lg:pt-32">
         <div className="border-t border-divider pt-8 md:pt-12">
-          <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-chop-ink-secondary md:text-[12px]">
-            {t('rolesEyebrow')}
-          </p>
-          <h2 className="mt-3 max-w-[18ch] text-[34px] font-extrabold leading-[0.95] tracking-tight md:text-[44px] lg:text-[52px]">
-            {t('rolesHeadingL1')} <span className="text-chop-red">{t('rolesHeadingL2')}</span>
-          </h2>
+          <AnimateInView>
+            <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-chop-ink-secondary md:text-[12px]">
+              {t('rolesEyebrow')}
+            </p>
+            <h2 className="mt-3 max-w-[18ch] text-[34px] font-extrabold leading-[0.95] tracking-tight md:text-[44px] lg:text-[52px]">
+              {t('rolesHeadingL1')} <span className="text-chop-red">{t('rolesHeadingL2')}</span>
+            </h2>
+          </AnimateInView>
 
           {/* Admin is intentionally NOT here — staff-only entry point, not a
               public role. Reach it directly at /admin/login. */}
           <ul className="mt-8 grid grid-cols-1 gap-4 md:mt-10 md:grid-cols-2 md:gap-5 lg:grid-cols-[1.5fr_1fr_1fr]">
-            <RoleCard
-              href="/restaurants"
-              eyebrow="01"
-              label={t('roleConsumerLabel')}
-              sub={t('roleConsumerSub')}
-              tone="primary"
-            />
-            <RoleCard
-              href="/vendre"
-              eyebrow="02"
-              label={t('roleVendorLabel')}
-              sub={t('roleVendorSub')}
-              tone="default"
-            />
-            <RoleCard
-              href="/livrer"
-              eyebrow="03"
-              label={t('roleRiderLabel')}
-              sub={t('roleRiderSub')}
-              tone="default"
-            />
+            <AnimateInView as="li" delay={100}>
+              <RoleCard
+                href="/restaurants"
+                eyebrow="01"
+                label={t('roleConsumerLabel')}
+                sub={t('roleConsumerSub')}
+                tone="primary"
+              />
+            </AnimateInView>
+            <AnimateInView as="li" delay={220}>
+              <RoleCard
+                href="/vendre"
+                eyebrow="02"
+                label={t('roleVendorLabel')}
+                sub={t('roleVendorSub')}
+                tone="default"
+              />
+            </AnimateInView>
+            <AnimateInView as="li" delay={340}>
+              <RoleCard
+                href="/livrer"
+                eyebrow="03"
+                label={t('roleRiderLabel')}
+                sub={t('roleRiderSub')}
+                tone="default"
+              />
+            </AnimateInView>
           </ul>
         </div>
       </section>
@@ -296,32 +308,40 @@ async function TrustRow() {
   return (
     <section className="relative z-10 mx-auto mt-16 max-w-7xl px-5 md:mt-24 md:px-8 lg:px-12">
       <div className="border-t border-divider pt-8 md:pt-12">
-        <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-chop-ink-secondary md:text-[12px]">
-          {t('trustEyebrow')}
-        </p>
-        <h2 className="mt-3 max-w-[18ch] text-[34px] font-extrabold leading-[0.95] tracking-tight md:text-[44px] lg:text-[52px]">
-          {t('trustHeadingL1')} <span className="text-chop-red">{t('trustHeadingL2')}</span>
-        </h2>
+        <AnimateInView>
+          <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-chop-ink-secondary md:text-[12px]">
+            {t('trustEyebrow')}
+          </p>
+          <h2 className="mt-3 max-w-[18ch] text-[34px] font-extrabold leading-[0.95] tracking-tight md:text-[44px] lg:text-[52px]">
+            {t('trustHeadingL1')} <span className="text-chop-red">{t('trustHeadingL2')}</span>
+          </h2>
+        </AnimateInView>
 
         <div className="mt-8 grid gap-4 md:mt-10 md:grid-cols-3 md:gap-5">
-          <TrustPillar
-            ordinal="01"
-            icon={<ShieldCheck className="h-7 w-7" strokeWidth={2} />}
-            label={t('trustPaymentLabel')}
-            sub={t('trustPaymentSub')}
-          />
-          <TrustPillar
-            ordinal="02"
-            icon={<Bike className="h-7 w-7" strokeWidth={2} />}
-            label={t('trustDeliveryLabel')}
-            sub={t('trustDeliverySub')}
-          />
-          <TrustPillar
-            ordinal="03"
-            icon={<MessageCircle className="h-7 w-7" strokeWidth={2} />}
-            label={t('trustSupportLabel')}
-            sub={t('trustSupportSub')}
-          />
+          <AnimateInView delay={100}>
+            <TrustPillar
+              ordinal="01"
+              icon={<ShieldCheck className="h-7 w-7" strokeWidth={2} />}
+              label={t('trustPaymentLabel')}
+              sub={t('trustPaymentSub')}
+            />
+          </AnimateInView>
+          <AnimateInView delay={220}>
+            <TrustPillar
+              ordinal="02"
+              icon={<Bike className="h-7 w-7" strokeWidth={2} />}
+              label={t('trustDeliveryLabel')}
+              sub={t('trustDeliverySub')}
+            />
+          </AnimateInView>
+          <AnimateInView delay={340}>
+            <TrustPillar
+              ordinal="03"
+              icon={<MessageCircle className="h-7 w-7" strokeWidth={2} />}
+              label={t('trustSupportLabel')}
+              sub={t('trustSupportSub')}
+            />
+          </AnimateInView>
         </div>
       </div>
     </section>
@@ -379,7 +399,7 @@ async function ServiceZones() {
   const t = await getTranslations('Splash');
   return (
     <section className="relative z-10 mx-auto mt-16 max-w-7xl px-5 md:mt-24 md:px-8 lg:px-12">
-      <div className="border-t border-divider pt-8 md:pt-12">
+      <AnimateInView className="border-t border-divider pt-8 md:pt-12">
         <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-chop-ink-secondary md:text-[12px]">
           {t('zonesEyebrow')}
         </p>
@@ -391,7 +411,7 @@ async function ServiceZones() {
             strong: (chunks) => <strong>{chunks}</strong>,
           })}
         </p>
-      </div>
+      </AnimateInView>
     </section>
   );
 }
@@ -411,7 +431,7 @@ async function Faq() {
 
   return (
     <section className="relative z-10 mx-auto mt-16 max-w-7xl px-5 md:mt-24 md:px-8 lg:px-12">
-      <div className="border-t border-divider pt-8 md:pt-12">
+      <AnimateInView className="border-t border-divider pt-8 md:pt-12">
         <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-chop-ink-secondary md:text-[12px]">
           {tSplash('faqEyebrow')}
         </p>
@@ -444,7 +464,7 @@ async function Faq() {
             </li>
           ))}
         </ul>
-      </div>
+      </AnimateInView>
     </section>
   );
 }
@@ -464,59 +484,57 @@ function RoleCard({
 }) {
   const isPrimary = tone === 'primary';
   return (
-    <li>
-      <Link
-        href={href}
-        className={
-          isPrimary
-            ? 'group relative flex h-full min-h-[200px] flex-col justify-between gap-8 overflow-hidden rounded-3xl bg-chop-red p-6 text-white shadow-card transition-all hover:shadow-elevated md:min-h-[260px] md:p-8 lg:min-h-[300px] lg:p-10'
-            : 'group relative flex h-full min-h-[200px] flex-col justify-between gap-8 overflow-hidden rounded-3xl border-2 border-chop-ink/10 bg-chop-card-white p-6 text-chop-ink transition-all hover:border-chop-ink hover:bg-chop-warm hover:shadow-elevated motion-safe:hover:-translate-y-0.5 md:min-h-[260px] md:p-8 lg:min-h-[300px] lg:p-10'
-        }
-      >
-        {/* Giant ornamental eyebrow number that fills the empty top-right
+    <Link
+      href={href}
+      className={
+        isPrimary
+          ? 'group relative flex h-full min-h-[200px] flex-col justify-between gap-8 overflow-hidden rounded-3xl bg-chop-red p-6 text-white shadow-card transition-all hover:shadow-elevated md:min-h-[260px] md:p-8 lg:min-h-[300px] lg:p-10'
+          : 'group relative flex h-full min-h-[200px] flex-col justify-between gap-8 overflow-hidden rounded-3xl border-2 border-chop-ink/10 bg-chop-card-white p-6 text-chop-ink transition-all hover:border-chop-ink hover:bg-chop-warm hover:shadow-elevated motion-safe:hover:-translate-y-0.5 md:min-h-[260px] md:p-8 lg:min-h-[300px] lg:p-10'
+      }
+    >
+      {/* Giant ornamental eyebrow number that fills the empty top-right
             of the card. Subtle by opacity; reinforces the 01/02/03
             rhythm without competing with the label. */}
-        <span
-          aria-hidden
-          className={`pointer-events-none absolute -right-4 -top-2 select-none font-extrabold leading-none tracking-tighter md:-right-6 md:-top-4 ${
-            isPrimary
-              ? 'text-[140px] text-white/[0.08] md:text-[180px] lg:text-[220px]'
-              : 'text-[140px] text-chop-ink/[0.05] md:text-[180px] lg:text-[220px]'
-          }`}
-        >
-          {eyebrow}
-        </span>
+      <span
+        aria-hidden
+        className={`pointer-events-none absolute -right-4 -top-2 select-none font-extrabold leading-none tracking-tighter md:-right-6 md:-top-4 ${
+          isPrimary
+            ? 'text-[140px] text-white/[0.08] md:text-[180px] lg:text-[220px]'
+            : 'text-[140px] text-chop-ink/[0.05] md:text-[180px] lg:text-[220px]'
+        }`}
+      >
+        {eyebrow}
+      </span>
 
-        <span
-          className={`relative font-mono text-[12px] font-bold tabular-nums md:text-[13px] ${
-            isPrimary ? 'text-white/70' : 'text-chop-ink-secondary'
+      <span
+        className={`relative font-mono text-[12px] font-bold tabular-nums md:text-[13px] ${
+          isPrimary ? 'text-white/70' : 'text-chop-ink-secondary'
+        }`}
+      >
+        {eyebrow}.
+      </span>
+      <div className="relative">
+        <p className="text-[22px] font-extrabold leading-[1.05] tracking-tight md:text-[26px] lg:text-[30px]">
+          {label}
+        </p>
+        <p
+          className={`mt-2 max-w-[28ch] text-[14px] font-medium leading-relaxed md:mt-3 md:text-[15px] lg:text-[16px] ${
+            isPrimary ? 'text-white/85' : 'text-chop-ink-secondary'
           }`}
         >
-          {eyebrow}.
-        </span>
-        <div className="relative">
-          <p className="text-[22px] font-extrabold leading-[1.05] tracking-tight md:text-[26px] lg:text-[30px]">
-            {label}
-          </p>
-          <p
-            className={`mt-2 max-w-[28ch] text-[14px] font-medium leading-relaxed md:mt-3 md:text-[15px] lg:text-[16px] ${
-              isPrimary ? 'text-white/85' : 'text-chop-ink-secondary'
-            }`}
-          >
-            {sub}
-          </p>
-        </div>
-        <span
-          aria-hidden
-          className={`relative inline-flex h-10 w-10 items-center justify-center rounded-full text-[20px] font-bold transition-transform motion-safe:group-hover:translate-x-1 md:h-12 md:w-12 md:text-[22px] ${
-            isPrimary
-              ? 'bg-white/15 text-white group-hover:bg-white/25'
-              : 'bg-chop-ink/5 text-chop-ink group-hover:bg-chop-ink group-hover:text-white'
-          }`}
-        >
-          →
-        </span>
-      </Link>
-    </li>
+          {sub}
+        </p>
+      </div>
+      <span
+        aria-hidden
+        className={`relative inline-flex h-10 w-10 items-center justify-center rounded-full text-[20px] font-bold transition-transform motion-safe:group-hover:translate-x-1 md:h-12 md:w-12 md:text-[22px] ${
+          isPrimary
+            ? 'bg-white/15 text-white group-hover:bg-white/25'
+            : 'bg-chop-ink/5 text-chop-ink group-hover:bg-chop-ink group-hover:text-white'
+        }`}
+      >
+        →
+      </span>
+    </Link>
   );
 }
